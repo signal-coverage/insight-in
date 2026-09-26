@@ -1,0 +1,35 @@
+- generic [active] [ref=f16e1]:
+  - generic [ref=f16e2]:
+    - complementary [ref=f16e3]:
+      - generic [ref=f16e5]:
+        - generic [aria-hidden] [ref=f16e6]: I
+        - generic [ref=f16e7]: Insight In
+      - navigation "Main navigation" [ref=f16e8]:
+        - list [ref=f16e9]:
+          - listitem [ref=f16e10]:
+            - link "Overview" [ref=f16e11] [cursor=pointer]:
+              - /url: /overview
+          - listitem [ref=f16e15]:
+            - link "Billing" [ref=f16e16] [cursor=pointer]:
+              - /url: /billing
+          - listitem [ref=f16e21]:
+            - link "Calendar" [ref=f16e22] [cursor=pointer]:
+              - /url: /calendar
+          - listitem [ref=f16e26]:
+            - link "Invoices" [ref=f16e27] [cursor=pointer]:
+              - /url: /invoices
+    - generic [ref=f16e31]:
+      - banner [ref=f16e32]:
+        - button "Collapse sidebar" [expanded] [ref=f16e33] [cursor=pointer]
+        - list "Breadcrumbs" [ref=f16e34]:
+          - listitem [ref=f16e35]:
+            - link "Home" [ref=f16e36] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f16e39]:
+            - link "Billing" [disabled]
+        - group "Account" [ref=f16e40]:
+          - generic [ref=f16e42]: A
+      - generic [ref=f16e46]:
+        - heading "404" [level=1] [ref=f16e47]
+        - heading "This page could not be found." [level=2] [ref=f16e49]
+  - button "Open Next.js Dev Tools" [ref=f16e55] [cursor=pointer]

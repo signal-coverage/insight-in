@@ -1,0 +1,1375 @@
+[      76ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[      86ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[    3161ms] [WARNING] The resource http://localhost:3000/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[    3161ms] [WARNING] The resource http://localhost:3000/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   59545ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59545ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59586ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   59629ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59630ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59684ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59684ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59749ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59749ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59796ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59796ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59846ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59846ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59899ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59899ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59963ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   59963ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60012ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60013ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60076ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60076ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60127ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60127ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60176ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60176ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60228ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60228ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60296ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60296ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60345ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60345ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60394ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60394ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60444ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60444ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60496ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60496ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60546ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-client] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60546ms] [ERROR] ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx:2:1
+Error: Export ROOT_CLASS_NAME doesn't exist in target module
+   1 | import { BRAND_NAME, LOGO_LETTER } from "./consts";
+>  2 | import {
+     | ^^^^^^^
+>  3 |   BRAND_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^
+>  4 |   getWordmarkClassName,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  5 |   LOGO_MARK_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  6 |   ROOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+>  7 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+   8 | import type { SidebarHeaderProps } from "./types";
+   9 |
+  10 | export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
+
+The export ROOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarHeader/styles.ts [app-ssr] (ecmascript).
+Did you mean to import LOGO_MARK_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarHeader/SidebarHeader.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   60665ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   60722ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   60735ms] ReferenceError: ROOT_CLASS_NAME is not defined
+    at SidebarHeader (http://localhost:3000/_next/static/chunks/components_0dz6edd._.js?id=%255Bproject%255D/components/Sidebar/components/SidebarHeader/SidebarHeader.tsx+%255Bapp-client%255D+(ecmascript):16:20)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:14894:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:4425:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:5892:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6518:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:761:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9385:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9279:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9263:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8928:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10093:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10009:316)
+    at processRootScheduleInMicrotask (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10030:106)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10104:158
+[   60796ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   60860ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   60910ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   60963ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61012ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61062ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61116ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61177ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61228ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61278ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61328ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61366ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61428ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61480ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61528ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61580ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61629ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61678ms] [LOG] [Fast Refresh] done in 13ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61809ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61812ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61886ms] [LOG] [Fast Refresh] done in 15ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61947ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   61964ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776

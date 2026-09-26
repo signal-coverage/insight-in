@@ -1,0 +1,1430 @@
+[      86ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[      99ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79223ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79313ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79373ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79423ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79487ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79566ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79620ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79676ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79725ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79789ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79853ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79905ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   79968ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80032ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80090ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80139ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80190ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80238ms] [LOG] [Fast Refresh] done in 56ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80389ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80389ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80439ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   80447ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80447ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80507ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80508ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80558ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80558ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80609ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80609ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80674ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80674ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80722ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80723ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80773ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80773ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80836ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80837ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80888ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80889ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80957ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   80957ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81021ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81021ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81089ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81089ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81151ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81151ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81207ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81207ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81257ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81257ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81307ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81308ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81372ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-client] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81372ms] [ERROR] ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx:5:1
+Error: Export DOT_CLASS_NAME doesn't exist in target module
+   3 | import { usePathname } from "next/navigation";
+   4 |
+>  5 | import {
+     | ^^^^^^^
+>  6 |   DOT_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^
+>  7 |   getLabelClassName,
+     | ^^^^^^^^^^^^^^^^^^^^
+>  8 |   getLinkClassName,
+     | ^^^^^^^^^^^^^^^^^^^
+>  9 |   ICON_CLASS_NAME,
+     | ^^^^^^^^^^^^^^^^^^
+> 10 | } from "./styles";
+     | ^^^^^^^^^^^^^^^^^
+  11 | import type { SidebarNavItemProps } from "./types";
+  12 | import { isActivePath } from "./utils";
+  13 |
+
+The export DOT_CLASS_NAME was not found in module [project]/components/Sidebar/components/SidebarNav/components/SidebarNavItem/styles.ts [app-ssr] (ecmascript).
+Did you mean to import ICON_CLASS_NAME?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component Browser]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Client Component Browser]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Sidebar/components/SidebarNav/components/SidebarNavItem/SidebarNavItem.tsx [Client Component SSR]
+    ./components/Sidebar/components/SidebarNav/SidebarNav.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Client Component SSR]
+    ./components/Sidebar/Sidebar.tsx [Server Component]
+    ./app/layout.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:1052
+[   81519ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81634ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81689ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81744ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81818ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81911ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   81975ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82026ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82091ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82149ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82207ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82257ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82325ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82470ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82570ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82639ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82694ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82757ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82820ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82881ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   82939ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83001ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83040ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83099ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83140ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83190ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83239ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83289ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83339ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83391ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83439ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83491ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83554ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83605ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83655ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83704ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83755ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83793ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83840ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83891ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776
+[   83941ms] [LOG] [Fast Refresh] done in 43ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_1e8vcs8._.js:776

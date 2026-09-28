@@ -1,19 +1,17 @@
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { Avatar, Button, Dropdown, Separator } from "@heroui/react";
+import { Button, Dropdown, Separator } from "@heroui/react";
 
+import { AccountAvatar } from "./components/AccountAvatar";
 import { AccountMenuHeader } from "./components/AccountMenuHeader";
 import { AccountMenuItem } from "./components/AccountMenuItem";
 import { AccountMenuPlan } from "./components/AccountMenuPlan";
 import {
   ACCOUNT_LABEL,
   ACCOUNT_MENU_ENTRIES,
-  AVATAR_INITIAL,
   LOGOUT_ENTRY,
   MENU_ARIA_LABEL,
 } from "./consts";
 import {
-  AVATAR_CLASS_NAME,
-  AVATAR_FALLBACK_CLASS_NAME,
   CHEVRON_CLASS_NAME,
   LABEL_CLASS_NAME,
   MENU_CLASS_NAME,
@@ -26,11 +24,7 @@ export function NavbarAccount() {
   return (
     <Dropdown>
       <Button variant="ghost" className={TRIGGER_CLASS_NAME}>
-        <Avatar size="sm" className={AVATAR_CLASS_NAME} aria-hidden="true">
-          <Avatar.Fallback className={AVATAR_FALLBACK_CLASS_NAME}>
-            {AVATAR_INITIAL}
-          </Avatar.Fallback>
-        </Avatar>
+        <AccountAvatar size="sm" />
         <span className={LABEL_CLASS_NAME}>{ACCOUNT_LABEL}</span>
         <ChevronDownIcon className={CHEVRON_CLASS_NAME} aria-hidden="true" />
       </Button>

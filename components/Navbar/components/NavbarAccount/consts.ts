@@ -10,7 +10,6 @@ import {
 import type { AccountMenuEntry } from "./types";
 
 export const ACCOUNT_LABEL = "Account";
-export const AVATAR_INITIAL = "A";
 export const MENU_ARIA_LABEL = "Account menu";
 
 export const ACCOUNT_MENU_ENTRIES: readonly AccountMenuEntry[] = [

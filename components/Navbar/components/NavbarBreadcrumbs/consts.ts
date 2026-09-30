@@ -1,2 +1,2 @@
-export const HOME_LABEL = "Home";
-export const HOME_HREF = "/";
+export const HOME_LABEL = "Dashboard";
+export const HOME_HREF = "/dashboard";

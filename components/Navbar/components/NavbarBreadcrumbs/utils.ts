@@ -20,6 +20,8 @@ export const buildCrumbs = (pathname: string): Crumb[] => {
   const crumbs: Crumb[] = [{ label: HOME_LABEL, href: HOME_HREF }];
 
   segments.forEach((segment, index) => {
+    if (`/${segment}` === HOME_HREF) return;
+
     crumbs.push({
       label: formatSegment(segment),
       href: `/${segments.slice(0, index + 1).join("/")}`,

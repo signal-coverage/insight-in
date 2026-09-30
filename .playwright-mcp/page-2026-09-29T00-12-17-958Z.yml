@@ -1,0 +1,73 @@
+- generic [ref=f40e1]:
+  - generic [ref=f40e2]:
+    - complementary [ref=f40e3]:
+      - generic [ref=f40e4]:
+        - generic [aria-hidden] [ref=f40e7]: I
+        - navigation "Main navigation" [ref=f40e12]:
+          - list [ref=f40e14]:
+            - listitem [ref=f40e15]:
+              - button "Overview" [expanded] [ref=f40e115] [cursor=pointer]
+            - listitem [ref=f40e29]:
+              - link "Billing" [ref=f40e30] [cursor=pointer]:
+                - /url: /billing
+            - listitem [ref=f40e34]:
+              - link "Calendar" [ref=f40e35] [cursor=pointer]:
+                - /url: /calendar
+            - listitem [ref=f40e39]:
+              - link "Invoices" [ref=f40e40] [cursor=pointer]:
+                - /url: /invoices
+        - button "Sign in" [ref=f40e66] [cursor=pointer]
+      - button "Expand sidebar" [ref=f40e119] [cursor=pointer]
+    - generic [ref=f40e45]:
+      - banner [ref=f40e46]:
+        - list "Migas de pan" [ref=f40e47]:
+          - listitem [ref=f40e48]:
+            - link "Home" [ref=f40e49] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f40e52]:
+            - link "Sign in" [disabled]
+      - generic [ref=f40e70]:
+        - generic [ref=f40e71]:
+          - generic [ref=f40e73]:
+            - heading "Sign in to InsightIn" [level=1] [ref=f40e74]
+            - paragraph [ref=f40e75]: Welcome back! Please sign in to continue
+          - generic [ref=f40e76]:
+            - button "Last used Continue with Google" [ref=f40e79] [cursor=pointer]:
+              - generic: Last used
+              - generic [ref=f40e80]: Continue with Google
+            - paragraph [ref=f40e86]: or
+            - generic [ref=f40e88]:
+              - generic [ref=f40e89]:
+                - generic [ref=f40e92]:
+                  - generic [ref=f40e93]: Email address
+                  - textbox "Email address" [ref=f40e95]:
+                    - /placeholder: Enter your email address
+                - generic:
+                  - generic: Password
+                  - generic:
+                    - textbox:
+                      - /placeholder: Enter your password
+                    - button
+              - button "Continue" [ref=f40e98] [cursor=pointer]
+        - generic [ref=f40e104]:
+          - generic [ref=f40e106]:
+            - paragraph [ref=f40e107]: Secured by
+            - link "Clerk logo" [ref=f40e108] [cursor=pointer]:
+              - /url: https://go.clerk.com/components
+          - paragraph [ref=f40e114]: Development mode
+  - button "Open Next.js Dev Tools" [ref=f40e60] [cursor=pointer]
+  - alert [ref=f40e64]
+  - generic [ref=f40e122]:
+    - button "Descartar" [ref=f40e124] [cursor=pointer]
+    - dialog "Overview" [active] [ref=f40e125]:
+      - list [ref=f40e126]:
+        - listitem [ref=f40e127]:
+          - link "Project" [ref=f40e128] [cursor=pointer]:
+            - /url: /overview/project
+        - listitem [ref=f40e129]:
+          - link "Revenue" [ref=f40e130] [cursor=pointer]:
+            - /url: /overview/revenue
+        - listitem [ref=f40e131]:
+          - link "Insights" [ref=f40e132] [cursor=pointer]:
+            - /url: /overview/insights
+    - button "Descartar" [ref=f40e134] [cursor=pointer]

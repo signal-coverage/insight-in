@@ -13,15 +13,114 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+}
+
+* {
+  /* Excludes Clerk's own UI (sign-in/sign-up forms, `<UserButton>`, etc.) — every Clerk
+     element carries a `cl-*` class, and that UI ships its own design system that our
+     app-wide button defaults should never override. */
+  button:not([class*="cl-"]) {
+    cursor: pointer;
+    max-width: fit-content;
+    border-radius: 0.5rem;
+    &:not(.button--icon-only) {
+      min-width: 6rem;
+    }
+
+    /* A row-style button that must match its sibling <a> links' own height exactly (the
+       nav category toggle) instead of the standard control height below — opted in per
+       button, never the default. */
+    &:not(.app-button--row-height) {
+      height: 2.5rem;
+    }
+
+    /* This unlayered padding always beats a Tailwind padding utility (px-*, py-*)
+       regardless of its own specificity, so an `.app-button--full-width` button is
+       excluded here entirely instead of having its padding "reset" by another unlayered
+       rule — an override value would still out-rank Tailwind's utility the same way. */
+    &:not(.app-button--full-width) {
+      padding: 0.5rem .5rem;
+    }
+
+    /* A row-style button (a nav category toggle, a full-width CTA) needs to span its
+       container instead of shrinking to its content, and keep its own padding utility —
+       opted in per button, never the default, so the "sin excepción" default above still
+       holds everywhere else. Named `app-*` (not HeroUI's own `.button--full-width`) since
+       this applies to plain native <button>s too, not just HeroUI's Button component. */
+    &.app-button--full-width {
+      max-width: none;
+    }
+
+    /* A small floating chip (the sidebar collapse toggle) needs to be its own compact,
+       fully-round size instead of the standard control dimensions above — opted in per
+       button, never the default. */
+    &.app-button--chip {
+      height: 1.5rem;
+      min-width: 0;
+      max-width: none;
+      padding: 0;
+      border-radius: 9999px;
+    }
+
+    /* Cancels HeroUI's own pressed look (`.button`'s `:active`/`[data-pressed="true"]`
+       rule sets a background-color and `transform: scale(...)`), which for a Popover /
+       Dropdown trigger specifically stays applied for as long as the menu is open, not
+       just for the instant of the click. `!important` is deliberate: HeroUI's rule lives
+       in its own `components` CSS layer, and a Tailwind utility-based override (tried
+       first) sits in the `utilities` layer, whose relative priority against `components`
+       depends on both files' `@layer` declaration order — not something worth relying
+       on. `!important` sidesteps the whole layer question. Scoped to one opt-in class;
+       never the default. */
+    &.app-button--static {
+      &:active,
+      &[data-pressed="true"] {
+        background-color: transparent !important;
+        transform: none !important;
+      }
+    }
+  }
+}
+
+/* Theme switch reveal: the new theme grows from the top-left corner as a blurred circular
+   mask (see runThemeTransition). The UA's default cross-fade is replaced, so both
+   snapshots opt out of it and only the new one animates. */
+:root {
+  --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* HeroUI's base layer sets `view-transition-name: none` on :root, which takes the whole
+     page out of every view transition — there is no `::view-transition-*(root)` to animate
+     and the theme flips instantly. This rule is unlayered, so it beats HeroUI's. */
+  view-transition-name: root;
+}
+
+::view-transition-group(root) {
+  animation-timing-function: var(--expo-out);
+}
+
+::view-transition-new(root) {
+  mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="0" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>') top left / 0 no-repeat;
+  mask-origin: content-box;
+  animation: theme-reveal .7s;
+  animation-fill-mode: both;
+  transform-origin: top left;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  z-index: -1;
+}
+
+@keyframes theme-reveal {
+  to {
+    mask-size: 350vmax;
+  }
 }

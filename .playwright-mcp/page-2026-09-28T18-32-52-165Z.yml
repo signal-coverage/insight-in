@@ -1,0 +1,30 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - complementary [ref=f1e3]:
+      - generic [ref=f1e5]:
+        - generic [aria-hidden] [ref=f1e6]: I
+        - generic [ref=f1e7]: Insight In
+      - navigation "Main navigation" [ref=f1e8]:
+        - list [ref=f1e9]:
+          - listitem [ref=f1e10]:
+            - link "Overview" [ref=f1e11] [cursor=pointer]:
+              - /url: /overview
+          - listitem [ref=f1e15]:
+            - link "Billing" [ref=f1e16] [cursor=pointer]:
+              - /url: /billing
+          - listitem [ref=f1e20]:
+            - link "Calendar" [ref=f1e21] [cursor=pointer]:
+              - /url: /calendar
+          - listitem [ref=f1e25]:
+            - link "Invoices" [ref=f1e26] [cursor=pointer]:
+              - /url: /invoices
+    - generic [ref=f1e30]:
+      - banner [ref=f1e31]:
+        - button "Collapse sidebar" [expanded] [ref=f1e32] [cursor=pointer]
+        - list "Migas de pan" [ref=f1e33]:
+          - listitem [ref=f1e34]:
+            - link "Home" [disabled]
+      - main [ref=f1e36]:
+        - heading "Hello world" [level=1] [ref=f1e37]
+  - button "Open Next.js Dev Tools" [ref=f1e43] [cursor=pointer]
+  - alert [ref=f1e47]

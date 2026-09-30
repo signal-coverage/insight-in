@@ -1,0 +1,68 @@
+- generic [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - complementary [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e6]:
+          - generic [aria-hidden] [ref=f3e7]: I
+          - generic [ref=f3e8]: Insight In
+        - group [ref=f3e10]:
+          - searchbox "Search navigation" [ref=f3e11]
+        - navigation "Main navigation" [ref=f3e12]:
+          - generic [ref=f3e13]: Main
+          - list [ref=f3e14]:
+            - listitem [ref=f3e15]:
+              - button "Overview" [ref=f3e16] [cursor=pointer]
+              - list [ref=f3e22]:
+                - listitem [ref=f3e23]:
+                  - link "Project" [ref=f3e24] [cursor=pointer]:
+                    - /url: /dashboard/overview/project
+                - listitem [ref=f3e25]:
+                  - link "Revenue" [ref=f3e26] [cursor=pointer]:
+                    - /url: /dashboard/overview/revenue
+                - listitem [ref=f3e27]:
+                  - link "Insights" [ref=f3e28] [cursor=pointer]:
+                    - /url: /dashboard/overview/insights
+            - listitem [ref=f3e29]:
+              - link "Billing" [ref=f3e30] [cursor=pointer]:
+                - /url: /dashboard/billing
+            - listitem [ref=f3e34]:
+              - link "Calendar" [ref=f3e35] [cursor=pointer]:
+                - /url: /dashboard/calendar
+            - listitem [ref=f3e39]:
+              - link "Invoices" [ref=f3e40] [cursor=pointer]:
+                - /url: /dashboard/invoices
+        - button "Account menu" [expanded] [ref=f3e63] [cursor=pointer]:
+          - generic [ref=f3e65]:
+            - generic [ref=f3e66]: Nicolas Rafael Sanchez
+            - generic [ref=f3e67]: nicosanchez673@gmail.com
+      - button "Collapse sidebar" [expanded] [ref=f3e44] [cursor=pointer]
+    - generic [ref=f3e45]:
+      - banner [ref=f3e46]:
+        - list "Migas de pan" [ref=f3e47]:
+          - listitem [ref=f3e48]:
+            - link "Dashboard" [disabled]
+      - main [ref=f3e50]:
+        - heading "Hello world" [level=1] [ref=f3e51]
+  - button "Open Next.js Dev Tools" [ref=f3e57] [cursor=pointer]
+  - alert [ref=f3e61]
+  - dialog [ref=f3e70]:
+    - button "Descartar" [ref=f3e72] [cursor=pointer]
+    - generic [ref=f3e75]:
+      - paragraph [ref=f3e76]: Nicolas Rafael Sanchez
+      - paragraph [ref=f3e77]: nicosanchez673@gmail.com
+    - separator [ref=f3e78]
+    - menu "Account menu" [ref=f3e79]:
+      - menuitem "Account Settings" [ref=f3e80] [cursor=pointer]
+      - menuitem "Settings" [ref=f3e83] [cursor=pointer]
+      - menuitem "Activity" [ref=f3e87] [cursor=pointer]
+      - menuitem "Help Center" [ref=f3e90] [cursor=pointer]
+      - menuitem "Integration" [ref=f3e93] [cursor=pointer]
+      - menuitem "Dark mode" [active] [ref=f3e96] [cursor=pointer]
+      - separator [ref=f3e99]
+      - menuitem [ref=f3e100] [cursor=pointer]:
+        - generic [ref=f3e101]:
+          - generic: Best Plan
+          - generic: 2M Tokens
+      - separator [ref=f3e105]
+      - menuitem "Logout" [ref=f3e106] [cursor=pointer]
+    - button "Descartar" [ref=f3e110] [cursor=pointer]

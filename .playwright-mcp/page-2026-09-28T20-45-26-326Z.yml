@@ -1,0 +1,27 @@
+- generic [ref=f22e1]:
+  - generic [ref=f22e2]:
+    - complementary [ref=f22e3]:
+      - button "Expand sidebar" [active] [ref=f22e68] [cursor=pointer]
+      - navigation "Main navigation" [ref=f22e15]:
+        - list [ref=f22e17]:
+          - listitem [ref=f22e18]:
+            - button "Overview" [ref=f22e69] [cursor=pointer]
+          - listitem [ref=f22e32]:
+            - link "Billing" [ref=f22e33] [cursor=pointer]:
+              - /url: /billing
+          - listitem [ref=f22e37]:
+            - link "Calendar" [ref=f22e38] [cursor=pointer]:
+              - /url: /calendar
+          - listitem [ref=f22e42]:
+            - link "Invoices" [ref=f22e43] [cursor=pointer]:
+              - /url: /invoices
+      - button "Sign in" [ref=f22e65] [cursor=pointer]
+    - generic [ref=f22e47]:
+      - banner [ref=f22e48]:
+        - list "Migas de pan" [ref=f22e49]:
+          - listitem [ref=f22e50]:
+            - link "Home" [disabled]
+      - main [ref=f22e52]:
+        - heading "Hello world" [level=1] [ref=f22e53]
+  - button "Open Next.js Dev Tools" [ref=f22e59] [cursor=pointer]
+  - alert [ref=f22e63]

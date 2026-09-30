@@ -8,8 +8,17 @@ import {
 import type { NavItem } from "./types";
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { label: "Overview", href: "/overview", icon: Squares2X2Icon },
-  { label: "Billing", href: "/billing", icon: CreditCardIcon },
-  { label: "Calendar", href: "/calendar", icon: CalendarDaysIcon },
-  { label: "Invoices", href: "/invoices", icon: DocumentTextIcon },
+  {
+    label: "Overview",
+    href: "/dashboard/overview",
+    icon: Squares2X2Icon,
+    children: [
+      { label: "Project", href: "/dashboard/overview/project", icon: Squares2X2Icon },
+      { label: "Revenue", href: "/dashboard/overview/revenue", icon: Squares2X2Icon },
+      { label: "Insights", href: "/dashboard/overview/insights", icon: Squares2X2Icon },
+    ],
+  },
+  { label: "Billing", href: "/dashboard/billing", icon: CreditCardIcon },
+  { label: "Calendar", href: "/dashboard/calendar", icon: CalendarDaysIcon },
+  { label: "Invoices", href: "/dashboard/invoices", icon: DocumentTextIcon },
 ];

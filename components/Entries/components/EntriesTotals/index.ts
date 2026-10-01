@@ -1,0 +1,1 @@
+export { EntriesTotals } from "./EntriesTotals";

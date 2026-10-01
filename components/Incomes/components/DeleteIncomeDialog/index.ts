@@ -1,0 +1,1 @@
+export { DeleteIncomeDialog } from "./DeleteIncomeDialog";

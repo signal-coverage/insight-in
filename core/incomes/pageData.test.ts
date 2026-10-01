@@ -1,0 +1,175 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const service = vi.hoisted(() => ({
+  listIncomes: vi.fn(),
+  listIncomeTotals: vi.fn(),
+  listCategoriesWithCounts: vi.fn(),
+  listIncomeCurrencies: vi.fn(),
+  listRecurringIncomes: vi.fn(),
+  materializeRecurringIncomes: vi.fn(),
+}));
+
+vi.mock("./service", () => service);
+
+import { loadIncomesPageData } from "./pageData";
+import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
+
+const USER_ID = "user_123";
+const TODAY = "2026-09-30";
+
+const reads = (label: string) => {
+  service.listIncomes.mockResolvedValue({
+    rows: [],
+    total: 0,
+    page: 1,
+    pageSize: 25,
+    totalPages: 1,
+    label,
+  });
+  service.listIncomeTotals.mockResolvedValue([
+    { currency: "USD", total: label.length },
+  ]);
+  service.listCategoriesWithCounts.mockResolvedValue([]);
+  service.listIncomeCurrencies.mockResolvedValue(["USD"]);
+  service.listRecurringIncomes.mockResolvedValue([]);
+};
+
+const READS = [
+  service.listIncomes,
+  service.listIncomeTotals,
+  service.listCategoriesWithCounts,
+  service.listIncomeCurrencies,
+  service.listRecurringIncomes,
+];
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  reads("first");
+  service.materializeRecurringIncomes.mockResolvedValue(0);
+});
+
+describe("loadIncomesPageData", () => {
+  it("passes the user, query and today to the service functions", async () => {
+    await loadIncomesPageData(USER_ID, DEFAULT_ENTRIES_QUERY, TODAY);
+
+    expect(service.materializeRecurringIncomes).toHaveBeenCalledWith(
+      USER_ID,
+      TODAY,
+    );
+    expect(service.listIncomes).toHaveBeenCalledWith(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+    );
+    expect(service.listIncomeTotals).toHaveBeenCalledWith(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+    );
+    expect(service.listCategoriesWithCounts).toHaveBeenCalledWith(USER_ID);
+    expect(service.listIncomeCurrencies).toHaveBeenCalledWith(USER_ID);
+    expect(service.listRecurringIncomes).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("uses the first reads, exactly once, when nothing was generated", async () => {
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    READS.forEach((read) => expect(read).toHaveBeenCalledTimes(1));
+    expect(service.materializeRecurringIncomes).toHaveBeenCalledTimes(1);
+    expect(data.page).toMatchObject({ label: "first" });
+    expect(data.totals).toEqual([{ currency: "USD", total: 5 }]);
+    expect(data.currencies).toEqual(["USD"]);
+  });
+
+  it("starts the reads and the generation at the same time", async () => {
+    let releaseMaterialize: (value: number) => void = () => {};
+
+    service.materializeRecurringIncomes.mockReturnValue(
+      new Promise<number>((resolve) => {
+        releaseMaterialize = resolve;
+      }),
+    );
+
+    const pending = loadIncomesPageData(USER_ID, DEFAULT_ENTRIES_QUERY, TODAY);
+
+    await Promise.resolve();
+
+    // Generation is still pending, yet every read has already been issued.
+    READS.forEach((read) => expect(read).toHaveBeenCalledTimes(1));
+
+    releaseMaterialize(0);
+    await pending;
+  });
+
+  it("re-runs the reads and returns the second result when incomes were generated", async () => {
+    service.materializeRecurringIncomes.mockResolvedValue(2);
+    service.listIncomes
+      .mockResolvedValueOnce({
+        rows: [],
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        totalPages: 1,
+        label: "stale",
+      })
+      .mockResolvedValueOnce({
+        rows: [],
+        total: 2,
+        page: 1,
+        pageSize: 25,
+        totalPages: 1,
+        label: "fresh",
+      });
+
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    READS.forEach((read) => expect(read).toHaveBeenCalledTimes(2));
+    expect(service.materializeRecurringIncomes).toHaveBeenCalledTimes(1);
+    expect(data.page).toMatchObject({ label: "fresh", total: 2 });
+  });
+
+  it("does not run the second reads until generation has finished", async () => {
+    let releaseMaterialize: (value: number) => void = () => {};
+
+    service.materializeRecurringIncomes.mockReturnValue(
+      new Promise<number>((resolve) => {
+        releaseMaterialize = resolve;
+      }),
+    );
+
+    const pending = loadIncomesPageData(USER_ID, DEFAULT_ENTRIES_QUERY, TODAY);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(service.listIncomes).toHaveBeenCalledTimes(1);
+
+    releaseMaterialize(1);
+    await pending;
+
+    expect(service.listIncomes).toHaveBeenCalledTimes(2);
+  });
+
+  it("propagates a failing read", async () => {
+    service.listIncomeTotals.mockRejectedValue(new Error("db down"));
+
+    await expect(
+      loadIncomesPageData(USER_ID, DEFAULT_ENTRIES_QUERY, TODAY),
+    ).rejects.toThrow("db down");
+  });
+
+  it("propagates a failing generation", async () => {
+    service.materializeRecurringIncomes.mockRejectedValue(
+      new Error("insert failed"),
+    );
+
+    await expect(
+      loadIncomesPageData(USER_ID, DEFAULT_ENTRIES_QUERY, TODAY),
+    ).rejects.toThrow("insert failed");
+  });
+});

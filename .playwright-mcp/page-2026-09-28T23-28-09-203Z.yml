@@ -1,0 +1,43 @@
+- generic [active] [ref=f25e1]:
+  - generic [ref=f25e2]:
+    - complementary [ref=f25e3]:
+      - generic [ref=f25e4]:
+        - generic [ref=f25e6]:
+          - generic [aria-hidden] [ref=f25e7]: I
+          - generic [ref=f25e8]: Insight In
+        - group [ref=f25e10]:
+          - searchbox "Search navigation" [ref=f25e11]
+        - navigation "Main navigation" [ref=f25e12]:
+          - generic [ref=f25e13]: Main
+          - list [ref=f25e14]:
+            - listitem [ref=f25e15]:
+              - button "Overview" [ref=f25e16] [cursor=pointer]
+              - list [ref=f25e22]:
+                - listitem [ref=f25e23]:
+                  - link "Project" [ref=f25e24] [cursor=pointer]:
+                    - /url: /overview/project
+                - listitem [ref=f25e25]:
+                  - link "Revenue" [ref=f25e26] [cursor=pointer]:
+                    - /url: /overview/revenue
+                - listitem [ref=f25e27]:
+                  - link "Insights" [ref=f25e28] [cursor=pointer]:
+                    - /url: /overview/insights
+            - listitem [ref=f25e29]:
+              - link "Billing" [ref=f25e30] [cursor=pointer]:
+                - /url: /billing
+            - listitem [ref=f25e34]:
+              - link "Calendar" [ref=f25e35] [cursor=pointer]:
+                - /url: /calendar
+            - listitem [ref=f25e39]:
+              - link "Invoices" [ref=f25e40] [cursor=pointer]:
+                - /url: /invoices
+      - button "Collapse sidebar" [expanded] [ref=f25e44] [cursor=pointer]
+    - banner [ref=f25e46]:
+      - list "Migas de pan" [ref=f25e47]:
+        - listitem [ref=f25e48]:
+          - link "Home" [ref=f25e49] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=f25e52]:
+          - link "Sign in" [disabled]
+  - button "Open Next.js Dev Tools" [ref=f25e60] [cursor=pointer]
+  - alert [ref=f25e64]

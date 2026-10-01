@@ -1,44 +1,36 @@
+import { esES } from "@clerk/localizations";
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Navbar } from "@/components/Navbar";
-import { Sidebar, SidebarProvider } from "@/components/Sidebar";
 import { LocatorSetup } from "@/components/locator-setup";
+import { CLERK_APPEARANCE } from "@/lib/clerk-appearance";
+import { geistMono, geistSans } from "./fonts";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Insight In",
-  description: "Income and expense tracker",
+  description: "Seguimiento de ingresos y gastos",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="h-dvh overflow-hidden">
-        <LocatorSetup />
-        <SidebarProvider>
-          <div className="flex h-full flex-row gap-3 bg-[color-mix(in_oklab,var(--background),var(--foreground)_5%)] p-3 text-foreground">
-            <Sidebar />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <Navbar />
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                {children}
-              </div>
-            </div>
-          </div>
-        </SidebarProvider>
+        <Providers>
+          <ClerkProvider
+            appearance={CLERK_APPEARANCE}
+            localization={esES}
+            signInUrl="/"
+            signInFallbackRedirectUrl="/dashboard"
+          >
+            <LocatorSetup />
+            {children}
+          </ClerkProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -1,0 +1,35 @@
+- generic [ref=f10e1]:
+  - generic [ref=f10e2]:
+    - complementary [ref=f10e3]:
+      - generic [ref=f10e4]:
+        - generic [ref=f10e62]:
+          - generic [aria-hidden] [ref=f10e63]: I
+          - generic [ref=f10e64]: Insight In
+        - button "Collapse sidebar" [expanded] [active] [ref=f10e65] [cursor=pointer]
+      - group [ref=f10e67]:
+        - searchbox "Search navigation" [ref=f10e68]: bill
+        - generic [ref=f10e69]:
+          - generic "Command" [ref=f10e70]: ⌘
+          - generic [ref=f10e71]: K
+      - navigation "Main navigation" [ref=f10e15]:
+        - list [ref=f10e16]:
+          - listitem [ref=f10e22]:
+            - link "Billing" [ref=f10e23] [cursor=pointer]:
+              - /url: /billing
+      - generic [ref=f10e72]:
+        - generic [ref=f10e73]:
+          - generic [ref=f10e74]: MESSAGES
+          - button "Add message" [disabled]
+        - paragraph [ref=f10e75]: Coming soon
+    - generic [ref=f10e41]:
+      - banner [ref=f10e42]:
+        - list "Migas de pan" [ref=f10e43]:
+          - listitem [ref=f10e44]:
+            - link "Home" [disabled]
+        - generic [ref=f10e58]:
+          - button "Sign in" [ref=f10e59] [cursor=pointer]
+          - button "Sign up" [ref=f10e60] [cursor=pointer]
+      - main [ref=f10e46]:
+        - heading "Hello world" [level=1] [ref=f10e47]
+  - button "Open Next.js Dev Tools" [ref=f10e53] [cursor=pointer]
+  - alert [ref=f10e57]

@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+
+npm run lint
+npx tsc --noEmit
+npx prettier --check .
+npm run test

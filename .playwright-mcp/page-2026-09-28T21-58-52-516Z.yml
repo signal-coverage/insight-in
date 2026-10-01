@@ -1,0 +1,46 @@
+- generic [active] [ref=f23e1]:
+  - generic [ref=f23e2]:
+    - complementary [ref=f23e3]:
+      - generic [ref=f23e4]:
+        - generic [ref=f23e5]:
+          - generic [aria-hidden] [ref=f23e6]: I
+          - generic [ref=f23e7]: Insight In
+        - button "Collapse sidebar" [expanded] [ref=f23e8] [cursor=pointer]
+      - group [ref=f23e10]:
+        - searchbox "Search navigation" [ref=f23e11]
+        - generic [ref=f23e12]:
+          - generic "Command" [ref=f23e13]: ⌘
+          - generic [ref=f23e14]: S
+      - navigation "Main navigation" [ref=f23e15]:
+        - generic [ref=f23e16]: Main
+        - list [ref=f23e17]:
+          - listitem [ref=f23e18]:
+            - button "Overview" [ref=f23e19] [cursor=pointer]
+            - list [ref=f23e25]:
+              - listitem [ref=f23e26]:
+                - link "Project" [ref=f23e27] [cursor=pointer]:
+                  - /url: /overview/project
+              - listitem [ref=f23e28]:
+                - link "Revenue" [ref=f23e29] [cursor=pointer]:
+                  - /url: /overview/revenue
+              - listitem [ref=f23e30]:
+                - link "Insights" [ref=f23e31] [cursor=pointer]:
+                  - /url: /overview/insights
+          - listitem [ref=f23e32]:
+            - link "Billing" [ref=f23e33] [cursor=pointer]:
+              - /url: /billing
+          - listitem [ref=f23e37]:
+            - link "Calendar" [ref=f23e38] [cursor=pointer]:
+              - /url: /calendar
+          - listitem [ref=f23e42]:
+            - link "Invoices" [ref=f23e43] [cursor=pointer]:
+              - /url: /invoices
+    - banner [ref=f23e48]:
+      - list "Migas de pan" [ref=f23e49]:
+        - listitem [ref=f23e50]:
+          - link "Home" [ref=f23e51] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=f23e54]:
+          - link "Sign in" [disabled]
+  - button "Open Next.js Dev Tools" [ref=f23e62] [cursor=pointer]
+  - alert [ref=f23e66]

@@ -1,9 +1,299 @@
 @import "tailwindcss";
-@import "@heroui/styles"; 
+@import "@heroui/styles";
+@import "./themes.css";
 
+/* ---------------------------------------------------------------------------------------
+   Palettes. The light theme is "Soft Lavender" and the dark one is "Deep Sea" (both below); every
+   other theme is in themes.css. Each theme uses exactly its own five colours; every other colour
+   is a mix of them (color-mix), never a new hue. No theme adds a red, green or amber of its own
+   (a palette that has one, like Strawberry Red or Spicy Paprika, uses it as its own): state is
+   carried by icon, weight and shape as well as by colour.
+
+   The light palette is five pastels with no dark colour in it, so everything that needs
+   contrast (text, icons, strong borders) uses shades of Soft Periwinkle mixed toward black.
+   The ratios in the comments are WCAG contrast against Ghost White (the page background).
+   Soft Periwinkle and Periwinkle read blue-violet and are never a button fill; buttons are
+   the warm Peach Fuzz / Antique White.
+   ------------------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --palette-soft-periwinkle: #9381ff;
+  --palette-periwinkle: #b8b8ff;
+  --palette-ghost-white: #f8f7ff;
+  --palette-antique-white: #ffeedd;
+  --palette-peach-fuzz: #ffd8be;
+
+  /* 14.4:1: body text, icons, the destructive outline. */
+  --palette-deep-periwinkle: color-mix(
+    in oklab,
+    var(--palette-soft-periwinkle) 40%,
+    black
+  );
+  /* 6.6:1 (5.7:1 on the tertiary surface): muted text and links. */
+  --palette-mid-periwinkle: color-mix(
+    in oklab,
+    var(--palette-soft-periwinkle) 70%,
+    black
+  );
+  /* 3.8:1 on the page, at least 3:1 on every surface: the focus ring. */
+  --palette-focus-periwinkle: color-mix(
+    in oklab,
+    var(--palette-soft-periwinkle) 90%,
+    black
+  );
+  /* 4.4:1 on the page, 3.8:1 on the darkest surface: field and primary-button borders. */
+  --palette-edge-periwinkle: color-mix(
+    in oklab,
+    var(--palette-periwinkle) 55%,
+    var(--palette-deep-periwinkle)
+  );
+}
+
+/* HeroUI v3 is themed by overriding its semantic tokens. These rules are unlayered, so they
+   win over HeroUI's own `@layer base` values, and its derived tokens (hover, soft, ...)
+   recompute from them. */
+:root {
+  /* HeroUI's primitives, remapped to the palette so components that use them stay on it. */
+  --white: var(--palette-ghost-white);
+  --black: var(--palette-deep-periwinkle);
+  --snow: var(--palette-ghost-white);
+  --eclipse: var(--palette-deep-periwinkle);
+
+  --background: var(--palette-ghost-white);
+  --foreground: var(--palette-deep-periwinkle);
+
+  /* The page is cool (Ghost White) and its surfaces are warm (Antique White, then Peach Fuzz),
+     so cards, the sidebar and the table box separate from it. */
+  --surface: color-mix(
+    in oklab,
+    var(--palette-antique-white) 60%,
+    var(--palette-ghost-white)
+  );
+  --surface-foreground: var(--foreground);
+  --surface-secondary: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 40%,
+    var(--palette-ghost-white)
+  );
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 65%,
+    var(--palette-ghost-white)
+  );
+  --surface-tertiary-foreground: var(--foreground);
+
+  --overlay: color-mix(
+    in oklab,
+    var(--palette-antique-white) 25%,
+    var(--palette-ghost-white)
+  );
+  --overlay-foreground: var(--foreground);
+
+  --muted: var(--palette-mid-periwinkle);
+
+  --default: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 65%,
+    var(--palette-ghost-white)
+  );
+  --default-foreground: var(--palette-deep-periwinkle);
+
+  --field-background: var(--palette-ghost-white);
+  --field-foreground: var(--palette-deep-periwinkle);
+  --field-placeholder: var(--muted);
+  /* Fields get a real border: their fill alone is far too close to the surface behind them. */
+  --field-border-width: 1px;
+  --field-border: var(--palette-edge-periwinkle);
+
+  --border: var(--palette-periwinkle);
+  --separator: color-mix(
+    in oklab,
+    var(--palette-periwinkle) 80%,
+    var(--palette-ghost-white)
+  );
+
+  /* Accent drives checkmarks, switches, selection and the like, so it is the deep shade; the
+     primary BUTTON is Peach Fuzz and is set on .button--primary below. */
+  --accent: var(--palette-deep-periwinkle);
+  --accent-foreground: var(--palette-ghost-white);
+  --focus: var(--palette-focus-periwinkle);
+  --link: var(--palette-mid-periwinkle);
+
+  --segment: var(--palette-ghost-white);
+  --segment-foreground: var(--palette-deep-periwinkle);
+
+  /* Destructive: a deep outline on a transparent fill (see .button--danger below). */
+  --danger: var(--palette-deep-periwinkle);
+  --danger-foreground: var(--palette-ghost-white);
+  --danger-soft: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 60%,
+    var(--palette-ghost-white)
+  );
+  --danger-soft-foreground: var(--palette-deep-periwinkle);
+  --danger-soft-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 80%,
+    var(--palette-ghost-white)
+  );
+
+  /* Success and warning are quiet tinted containers, never button fills. */
+  --success: var(--palette-periwinkle);
+  --success-foreground: var(--palette-deep-periwinkle);
+  --success-soft: color-mix(
+    in oklab,
+    var(--palette-periwinkle) 35%,
+    var(--palette-ghost-white)
+  );
+  --success-soft-foreground: var(--palette-deep-periwinkle);
+  --success-soft-hover: color-mix(
+    in oklab,
+    var(--palette-periwinkle) 50%,
+    var(--palette-ghost-white)
+  );
+  --warning: var(--palette-peach-fuzz);
+  --warning-foreground: var(--palette-deep-periwinkle);
+  --warning-soft: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 55%,
+    var(--palette-ghost-white)
+  );
+  --warning-soft-foreground: var(--palette-deep-periwinkle);
+  --warning-soft-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 70%,
+    var(--palette-ghost-white)
+  );
+
+  --backdrop: color-mix(
+    in oklab,
+    var(--palette-deep-periwinkle) 55%,
+    transparent
+  );
+
+  /* Flat surfaces: no elevation shadows anywhere. */
+  --surface-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 0 0 0 transparent;
+  --field-shadow: 0 0 0 0 transparent;
+}
+
+/* Dark mode uses its own five-colour palette, "Deep Sea". Nothing from the light palette is
+   used here. Dusk Blue and Lavender Grey read as blue, so they are never a button fill. */
+:root {
+  --palette-ink-black: #0d1b2a;
+  --palette-deep-prussian: #1b263b;
+  --palette-dusk-blue: #415a77;
+  --palette-lavender-grey: #778da9;
+  --palette-alabaster-grey: #e0e1dd;
+}
+
+.dark {
+  --white: var(--palette-alabaster-grey);
+  --black: var(--palette-ink-black);
+  --snow: var(--palette-alabaster-grey);
+  --eclipse: var(--palette-ink-black);
+
+  --background: var(--palette-ink-black);
+  --foreground: var(--palette-alabaster-grey);
+
+  --surface: var(--palette-deep-prussian);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 14%,
+    var(--palette-deep-prussian)
+  );
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 26%,
+    var(--palette-deep-prussian)
+  );
+  --surface-tertiary-foreground: var(--foreground);
+
+  --overlay: var(--palette-deep-prussian);
+  --overlay-foreground: var(--foreground);
+
+  /* Lavender Grey lightened with a little Alabaster so it clears 4.5:1 on every surface. */
+  --muted: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 25%,
+    var(--palette-lavender-grey)
+  );
+
+  /* Fields (and secondary-variant controls) are inset in Ink Black; their border does the
+     separating from the surface. */
+  --default: var(--palette-ink-black);
+  --default-foreground: var(--palette-alabaster-grey);
+
+  --field-background: var(--palette-ink-black);
+  --field-foreground: var(--palette-alabaster-grey);
+  --field-border: var(--palette-lavender-grey);
+
+  --border: var(--palette-dusk-blue);
+  --separator: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 70%,
+    var(--palette-deep-prussian)
+  );
+
+  /* Primary is Alabaster Grey with an Ink Black label. */
+  --accent: var(--palette-alabaster-grey);
+  --accent-foreground: var(--palette-ink-black);
+  /* Lavender Grey keeps the focus ring different from the (Alabaster) invalid border. */
+  --focus: var(--palette-lavender-grey);
+  --link: var(--palette-alabaster-grey);
+
+  --segment: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 40%,
+    var(--palette-deep-prussian)
+  );
+  --segment-foreground: var(--palette-alabaster-grey);
+
+  /* Destructive: Alabaster outline (see .button--danger below). */
+  --danger: var(--palette-alabaster-grey);
+  --danger-foreground: var(--palette-ink-black);
+  --danger-soft: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 55%,
+    var(--palette-deep-prussian)
+  );
+  --danger-soft-foreground: var(--palette-alabaster-grey);
+  --danger-soft-hover: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 70%,
+    var(--palette-deep-prussian)
+  );
+
+  --success: var(--palette-lavender-grey);
+  --success-foreground: var(--palette-ink-black);
+  --success-soft: color-mix(
+    in oklab,
+    var(--palette-lavender-grey) 30%,
+    var(--palette-deep-prussian)
+  );
+  --success-soft-foreground: var(--palette-alabaster-grey);
+  --success-soft-hover: color-mix(
+    in oklab,
+    var(--palette-lavender-grey) 40%,
+    var(--palette-deep-prussian)
+  );
+  --warning: var(--palette-dusk-blue);
+  --warning-foreground: var(--palette-alabaster-grey);
+  --warning-soft: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 40%,
+    var(--palette-deep-prussian)
+  );
+  --warning-soft-foreground: var(--palette-alabaster-grey);
+  --warning-soft-hover: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 55%,
+    var(--palette-deep-prussian)
+  );
+
+  --backdrop: color-mix(in oklab, var(--palette-ink-black) 70%, transparent);
 }
 
 @theme inline {
@@ -13,15 +303,394 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Dark button hierarchy. Primary is the Alabaster fill. Secondary is Deep Prussian with a Dusk
+   Blue border; tertiary is transparent; the small trash buttons are an Alabaster tint; and
+   destructive is an Alabaster outline (a solid Alabaster fill would read as the primary). */
+.dark .button--secondary {
+  --button-bg: var(--palette-deep-prussian);
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 40%,
+    var(--palette-deep-prussian)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 40%,
+    var(--palette-deep-prussian)
+  );
+  --button-fg: var(--palette-alabaster-grey);
+  border: 1px solid var(--palette-dusk-blue);
+}
+
+.dark .button--tertiary {
+  --button-bg: transparent;
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 35%,
+    var(--palette-deep-prussian)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-dusk-blue) 35%,
+    var(--palette-deep-prussian)
+  );
+  --button-fg: var(--palette-alabaster-grey);
+}
+
+.dark .button--danger-soft {
+  --button-bg: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 14%,
+    var(--palette-deep-prussian)
+  );
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 22%,
+    var(--palette-deep-prussian)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 22%,
+    var(--palette-deep-prussian)
+  );
+  --button-fg: var(--palette-alabaster-grey);
+}
+
+.dark .button--danger {
+  --button-bg: transparent;
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 14%,
+    transparent
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-alabaster-grey) 14%,
+    transparent
+  );
+  --button-fg: var(--palette-alabaster-grey);
+  border: 1.5px solid var(--palette-alabaster-grey);
+}
+
+/* Light button hierarchy. Every light button is warm: the periwinkles read blue-violet and are
+   never a button fill. Primary is Peach Fuzz with a deep label (11.5:1) and a border, because the
+   fill alone is only 1.25:1 against the page; secondary is Antique White with a border; tertiary
+   is transparent; the small trash buttons are a Peach tint; and destructive is a deep outline on
+   a transparent fill, so it never reads as the primary or the secondary. Dark mode keeps HeroUI's
+   accent-based primary and overrides the rest above. */
+:root:not(
+    .dark,
+    .ocean,
+    .rustic,
+    .coastal,
+    .harmony,
+    .beach,
+    .sky,
+    .twilight,
+    .autumn,
+    .cozy,
+    .minimalist,
+    .forest
+  )
+  .button--primary {
+  --button-bg: var(--palette-peach-fuzz);
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 88%,
+    var(--palette-deep-periwinkle)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 88%,
+    var(--palette-deep-periwinkle)
+  );
+  --button-fg: var(--palette-deep-periwinkle);
+  border: 1.5px solid var(--palette-edge-periwinkle);
+}
+
+.button--secondary {
+  --button-bg: var(--palette-antique-white);
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 45%,
+    var(--palette-antique-white)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 45%,
+    var(--palette-antique-white)
+  );
+  --button-fg: var(--palette-deep-periwinkle);
+  border: 1px solid var(--palette-edge-periwinkle);
+}
+
+.button--tertiary {
+  --button-bg: transparent;
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 65%,
+    var(--palette-ghost-white)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 65%,
+    var(--palette-ghost-white)
+  );
+  --button-fg: var(--palette-deep-periwinkle);
+}
+
+.button--danger-soft {
+  --button-bg: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 55%,
+    var(--palette-antique-white)
+  );
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 80%,
+    var(--palette-antique-white)
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-peach-fuzz) 80%,
+    var(--palette-antique-white)
+  );
+  --button-fg: var(--palette-deep-periwinkle);
+}
+
+.button--danger {
+  --button-bg: transparent;
+  --button-bg-hover: color-mix(
+    in oklab,
+    var(--palette-deep-periwinkle) 12%,
+    transparent
+  );
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--palette-deep-periwinkle) 12%,
+    transparent
+  );
+  --button-fg: var(--palette-deep-periwinkle);
+  border: 1.5px solid var(--palette-deep-periwinkle);
+}
+
+/* Popovers open over drawers that share their fill, so they get a border and a slightly
+   lighter surface to stay distinguishable. */
+.select__popover,
+.dropdown__popover,
+.date-picker__popover,
+.popover {
+  border: 1px solid var(--border);
+}
+
+.dark .select__popover,
+.dark .dropdown__popover,
+.dark .popover {
+  border: 1px solid var(--palette-dusk-blue);
+  background-color: var(--surface-secondary);
+}
+
+/* Skeleton shimmer/pulse animations stop for people who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::before,
+  .skeleton::after,
+  .skeleton--pulse {
+    animation: none;
   }
+}
+
+/* An invalid field gets a heavier border in the strongest palette colour, which differs
+   from the (Dusty Grape / Lavender Grey) focus ring. */
+.input[data-invalid="true"],
+.textarea[data-invalid="true"],
+.select__trigger[data-invalid="true"],
+.input-group[data-invalid="true"],
+.date-input-group[data-invalid="true"] {
+  border: 2px solid var(--danger);
+}
+
+/* Field errors: foreground text, semibold, an icon and a tinted container. */
+.field-error[data-visible] {
+  --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='black'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z'/%3E%3C/svg%3E");
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--danger-soft);
+  color: var(--danger-soft-foreground);
+  font-weight: 600;
+}
+
+.field-error[data-visible]::before {
+  content: "";
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  mask: var(--alert-icon) center / contain no-repeat;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+}
+
+* {
+  /* Excludes Clerk's own UI (sign-in/sign-up forms, `<UserButton>`, etc.) — every Clerk
+     element carries a `cl-*` class, and that UI ships its own design system that our
+     app-wide button defaults should never override. */
+  button:not([class*="cl-"]) {
+    cursor: pointer;
+    max-width: fit-content;
+    /* Every button has the radius of the inputs (HeroUI's --field-radius), so a button beside
+       an input never looks squarer or rounder than it. The only exceptions are the sidebar's
+       round chip (below) and the date picker / calendar internals (also below). */
+    border-radius: var(--field-radius);
+    &:not(.button--icon-only) {
+      min-width: 6rem;
+    }
+
+    /* Icon-only buttons (row actions, drawer/dialog close) are always 40x40 squares. HeroUI
+       narrows them to 36px from `md` up while the height below stays 40px. */
+    &.button--icon-only,
+    &[class*="close-trigger"],
+    &.close-button {
+      width: 2.5rem;
+      min-width: 0;
+      max-width: none;
+      padding: 0;
+    }
+
+    /* A row-style button that must match its sibling <a> links' own height exactly (the
+       nav category toggle) instead of the standard control height below — opted in per
+       button, never the default. */
+    &:not(.app-button--row-height) {
+      height: 2.5rem;
+    }
+
+    /* This unlayered padding always beats a Tailwind padding utility (px-*, py-*)
+       regardless of its own specificity, so an `.app-button--full-width` button is
+       excluded here entirely instead of having its padding "reset" by another unlayered
+       rule — an override value would still out-rank Tailwind's utility the same way. */
+    &:not(.app-button--full-width) {
+      padding: 0.5rem 0.5rem;
+    }
+
+    /* A row-style button (a nav category toggle, a full-width CTA) needs to span its
+       container instead of shrinking to its content, and keep its own padding utility —
+       opted in per button, never the default, so the "sin excepción" default above still
+       holds everywhere else. Named `app-*` (not HeroUI's own `.button--full-width`) since
+       this applies to plain native <button>s too, not just HeroUI's Button component. */
+    &.app-button--full-width {
+      max-width: none;
+    }
+
+    /* A small floating chip (the sidebar collapse toggle) needs to be its own compact,
+       fully-round size instead of the standard control dimensions above — opted in per
+       button, never the default. */
+    /* The buttons inside HeroUI's DatePicker and Calendar (the field's calendar trigger, the
+       month/year heading, the previous/next arrows and every year cell) size themselves. The
+       standard action-button dimensions above would make each of them 96x40, cramping the
+       calendar header and pushing the field's icon away from its edge. `revert-layer` gives
+       back HeroUI's own values from its component layer; this rule comes after the defaults so
+       it wins at equal specificity. */
+    &:is(
+      .date-picker__trigger,
+      [class*="calendar__"],
+      [class*="calendar-year-picker__"]
+    ) {
+      min-width: revert-layer;
+      max-width: revert-layer;
+      height: revert-layer;
+      padding: revert-layer;
+      border-radius: revert-layer;
+    }
+
+    &.app-button--chip {
+      /* Explicit width: the icon-only rule above sets a 40px width, which would turn this
+         24px circle into a 40x24 pill. */
+      width: 1.5rem;
+      height: 1.5rem;
+      min-width: 0;
+      max-width: none;
+      padding: 0;
+      border-radius: 9999px;
+    }
+
+    /* Cancels HeroUI's own pressed look (`.button`'s `:active`/`[data-pressed="true"]`
+       rule sets a background-color and `transform: scale(...)`), which for a Popover /
+       Dropdown trigger specifically stays applied for as long as the menu is open, not
+       just for the instant of the click. `!important` is deliberate: HeroUI's rule lives
+       in its own `components` CSS layer, and a Tailwind utility-based override (tried
+       first) sits in the `utilities` layer, whose relative priority against `components`
+       depends on both files' `@layer` declaration order — not something worth relying
+       on. `!important` sidesteps the whole layer question. Scoped to one opt-in class;
+       never the default. */
+    &.app-button--static {
+      &:active,
+      &[data-pressed="true"] {
+        background-color: transparent !important;
+        transform: none !important;
+      }
+    }
+  }
+}
+
+/* Theme switch reveal: the new theme grows from the top-left corner as a blurred circular
+   mask (see runThemeTransition). The UA's default cross-fade is replaced, so both
+   snapshots opt out of it and only the new one animates. */
+:root {
+  --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* HeroUI's base layer sets `view-transition-name: none` on :root, which takes the whole
+     page out of every view transition — there is no `::view-transition-*(root)` to animate
+     and the theme flips instantly. This rule is unlayered, so it beats HeroUI's. */
+  view-transition-name: root;
+}
+
+::view-transition-group(root) {
+  animation-timing-function: var(--expo-out);
+}
+
+/* The circle is a radial-gradient mask whose radius is the registered length `--reveal`. The
+   soft edge is the gradient's own fall-off, 12vmax wide: narrow enough to read as a moving
+   boundary even between two themes that look alike (light and ocean), where a wide fall-off
+   just looks like a fade. The radius ends at 157vmax so the opaque part (145vmax) clears the
+   farthest corner (at most 142vmax away), and the timing is ease-in-out so the circle is seen
+   moving for the whole animation instead of racing across in its first half. An SVG mask with
+   a blur filter was used before, but it is rasterised again at every size it grows through and
+   ran at a couple of frames per second in a GPU-backed Chrome. */
+@property --reveal {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+::view-transition-new(root) {
+  mask: radial-gradient(
+      circle at top left,
+      #000 calc(var(--reveal) - 12vmax),
+      transparent var(--reveal)
+    )
+    no-repeat;
+  animation: theme-reveal 0.5s ease-in-out;
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  z-index: -1;
+}
+
+@keyframes theme-reveal {
+  from {
+    --reveal: 0px;
+  }
+
+  to {
+    --reveal: 157vmax;
+  }
 }

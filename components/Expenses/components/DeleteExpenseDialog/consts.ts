@@ -1,0 +1,6 @@
+export const DELETE_HEADING = "¿Eliminar este gasto?";
+export const DELETE_WARNING =
+  "Se eliminará de forma permanente. Esta acción no se puede deshacer.";
+export const CANCEL_LABEL = "Cancelar";
+export const CONFIRM_LABEL = "Eliminar";
+export const CONFIRM_PENDING_LABEL = "Eliminando…";

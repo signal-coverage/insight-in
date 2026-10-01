@@ -7,7 +7,11 @@ import { getLabelClassName, getLinkClassName, ICON_CLASS_NAME } from "./styles";
 import type { SidebarNavItemProps } from "./types";
 import { isActivePath } from "./utils";
 
-export function SidebarNavItem({ item, isCollapsed, forceExpanded }: SidebarNavItemProps) {
+export function SidebarNavItem({
+  item,
+  isCollapsed,
+  forceExpanded,
+}: SidebarNavItemProps) {
   const pathname = usePathname();
 
   if (item.children && item.children.length > 0) {

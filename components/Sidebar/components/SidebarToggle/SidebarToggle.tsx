@@ -19,7 +19,10 @@ export function SidebarToggle() {
     >
       {/* Points right when collapsed (click to expand) and left when expanded
           (click to collapse) — one icon, flipped, rather than swapping icons. */}
-      <ChevronRightIcon className={getIconClassName(isCollapsed)} aria-hidden="true" />
+      <ChevronRightIcon
+        className={getIconClassName(isCollapsed)}
+        aria-hidden="true"
+      />
     </Button>
   );
 }

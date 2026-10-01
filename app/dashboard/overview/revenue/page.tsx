@@ -1,5 +1,8 @@
+import { requireUserId } from "@/lib/auth/requireUserId";
 import { PlaceholderPage } from "@/components/shared/PlaceholderPage";
 
-export default function OverviewRevenuePage() {
-  return <PlaceholderPage title="Revenue" />;
+export default async function OverviewRevenuePage() {
+  await requireUserId();
+
+  return <PlaceholderPage title="Facturación" />;
 }

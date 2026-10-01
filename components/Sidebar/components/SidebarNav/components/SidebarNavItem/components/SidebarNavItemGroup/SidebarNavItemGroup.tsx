@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { getLabelClassName, ICON_CLASS_NAME } from "../../styles";
 import { isActivePath } from "../../utils";
 import { SidebarNavChildList } from "../SidebarNavChildList";
+import { HOVER_CLOSE_DELAY_MS } from "./consts";
 import {
   CHILDREN_INNER_CLASS_NAME,
   getChevronClassName,
@@ -14,11 +15,6 @@ import {
   POPOVER_CONTENT_CLASS_NAME,
 } from "./styles";
 import type { SidebarNavItemGroupProps } from "./types";
-
-// Closing is delayed slightly so moving the pointer from the trigger to the popover
-// content (which renders elsewhere in the DOM, not nested inside the trigger) doesn't
-// flicker the flyout shut in the gap between the two.
-const HOVER_CLOSE_DELAY_MS = 150;
 
 export function SidebarNavItemGroup({
   item,
@@ -31,7 +27,9 @@ export function SidebarNavItemGroup({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isExpanded = forceExpanded ?? isOpen;
   const children = item.children ?? [];
-  const isChildActive = children.some((child) => isActivePath(pathname, child.href));
+  const isChildActive = children.some((child) =>
+    isActivePath(pathname, child.href, child.exact),
+  );
   const Icon = item.icon;
 
   const cancelHoverClose = () => {
@@ -48,7 +46,10 @@ export function SidebarNavItemGroup({
 
   const closeOnHoverEnd = () => {
     cancelHoverClose();
-    closeTimer.current = setTimeout(() => setIsHoverOpen(false), HOVER_CLOSE_DELAY_MS);
+    closeTimer.current = setTimeout(
+      () => setIsHoverOpen(false),
+      HOVER_CLOSE_DELAY_MS,
+    );
   };
 
   if (isCollapsed) {
@@ -63,7 +64,11 @@ export function SidebarNavItemGroup({
             <Icon className={ICON_CLASS_NAME} aria-hidden="true" />
             <span className={getLabelClassName(isCollapsed)}>{item.label}</span>
           </Popover.Trigger>
+          {/* Non-modal on purpose: a modal popover renders a full-screen underlay that lands
+              on top of the trigger, so the browser reports the pointer as having left it and
+              the hover flyout would close and reopen in a loop. */}
           <Popover.Content
+            isNonModal
             placement="right top"
             className={POPOVER_CONTENT_CLASS_NAME}
             onMouseEnter={openOnHover}
@@ -88,11 +93,17 @@ export function SidebarNavItemGroup({
       >
         <Icon className={ICON_CLASS_NAME} aria-hidden="true" />
         <span className={getLabelClassName(isCollapsed)}>{item.label}</span>
-        <ChevronDownIcon className={getChevronClassName(isExpanded)} aria-hidden="true" />
+        <ChevronDownIcon
+          className={getChevronClassName(isExpanded)}
+          aria-hidden="true"
+        />
       </button>
       {/* Always rendered (never conditionally mounted) so the grid-rows transition can
           animate both opening and closing; `inert` keeps it out of tab order while shut. */}
-      <div className={getChildrenWrapperClassName(isExpanded)} inert={!isExpanded}>
+      <div
+        className={getChildrenWrapperClassName(isExpanded)}
+        inert={!isExpanded}
+      >
         <div className={CHILDREN_INNER_CLASS_NAME}>
           <SidebarNavChildList items={children} variant="tree" />
         </div>

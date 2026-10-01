@@ -11,4 +11,4 @@ export const getRootClassName = (isCollapsed: boolean): string =>
   `${OUTER_BASE} ${isCollapsed ? ROOT_COLLAPSED : ROOT_EXPANDED}`;
 
 export const CARD_CLASS_NAME =
-  "flex h-full flex-col gap-3 overflow-hidden rounded-b-2xl bg-background shadow-[0_8px_30px_rgb(0_0_0/0.04)] ring-1 ring-inset ring-foreground/10 pb-3 px-0 text-foreground";
+  "flex h-full flex-col gap-3 overflow-hidden rounded-b-2xl bg-background ring-1 ring-inset ring-border pb-3 px-0 text-foreground";

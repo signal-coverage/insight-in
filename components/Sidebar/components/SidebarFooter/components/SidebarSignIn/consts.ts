@@ -1,1 +1,1 @@
-export const SIGN_IN_LABEL = "Sign in";
+export const SIGN_IN_LABEL = "Iniciar sesión";

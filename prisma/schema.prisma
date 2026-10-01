@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RecurringFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+// "Listado" (planned) vs already collected (income) or paid (expense).
+enum EntryStatus {
+  PLANNED
+  SETTLED
+}
+
+model Income {
+  id          String         @id @default(cuid())
+  // Clerk user id — every record belongs to exactly one user.
+  userId      String
+  description String
+  // Minor units (e.g. cents). BigInt because Int overflows around 21M ARS with cents.
+  amount      BigInt
+  // ISO 4217 code, validated against the Dinero currency list at the boundary.
+  currency    String
+  date        DateTime       @db.Date
+  categoryId  String
+  category    IncomeCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes       String?
+  // Existing and manually added incomes default to collected; generated ones start planned.
+  status      EntryStatus    @default(SETTLED)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Set for incomes generated from a recurring template; deleting the template keeps them.
+  recurringIncomeId String?
+  recurringIncome   RecurringIncome? @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
+
+  // One generated income per template per day: makes catch-up idempotent under races.
+  // Postgres treats NULLs as distinct, so ordinary incomes are unaffected.
+  @@unique([recurringIncomeId, date])
+  @@index([userId, date(sort: Desc)])
+  @@index([categoryId])
+  @@index([recurringIncomeId])
+}
+
+// A template that generates an Income on every occurrence between startDate and endDate.
+model RecurringIncome {
+  id          String             @id @default(cuid())
+  // Clerk user id — templates are private to their owner.
+  userId      String
+  description String
+  // Minor units, like Income.amount.
+  amount      BigInt
+  currency    String
+  categoryId  String
+  category    IncomeCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes       String?
+  frequency   RecurringFrequency
+  startDate   DateTime           @db.Date
+  // null = the series never ends.
+  endDate     DateTime?          @db.Date
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  incomes     Income[]
+
+  @@index([userId])
+}
+
+model IncomeCategory {
+  id               String            @id @default(cuid())
+  // Clerk user id — categories are private to their owner.
+  userId           String
+  name             String
+  createdAt        DateTime          @default(now())
+  incomes          Income[]
+  recurringIncomes RecurringIncome[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  // Clerk user id — every record belongs to exactly one user.
+  userId      String
+  description String
+  // Minor units, like Income.amount.
+  amount      BigInt
+  currency    String
+  date        DateTime        @db.Date
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes       String?
+  status      EntryStatus     @default(SETTLED)
+  // True exactly when the expense is linked to a template (set at write time).
+  isRecurring Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Set for expenses that remember a recurring template; removing the template keeps them.
+  recurringExpenseId String?
+  recurringExpense   RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+
+  // One expense per template per day: makes the monthly wizard idempotent under races.
+  // Postgres treats NULLs as distinct, so ordinary expenses are unaffected.
+  @@unique([recurringExpenseId, date])
+  @@index([userId, date(sort: Desc)])
+  @@index([categoryId])
+  @@index([recurringExpenseId])
+}
+
+// What the user decided about a template for one month.
+enum RecurringDecision {
+  ENABLED
+  DISABLED
+}
+
+// A monthly template: once a month the user resolves it in the wizard (enable, disable or remove).
+model RecurringExpense {
+  id          String                     @id @default(cuid())
+  // Clerk user id — templates are private to their owner.
+  userId      String
+  description String
+  // Minor units, like Expense.amount.
+  amount      BigInt
+  currency    String
+  categoryId  String
+  category    ExpenseCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes       String?
+  // 1..31; a shorter month uses its last day.
+  dayOfMonth  Int
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  expenses    Expense[]
+  decisions   RecurringExpenseDecision[]
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model RecurringExpenseDecision {
+  id                 String            @id @default(cuid())
+  recurringExpenseId String
+  recurringExpense   RecurringExpense  @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
+  // "YYYY-MM".
+  month              String
+  decision           RecurringDecision
+  createdAt          DateTime          @default(now())
+
+  @@unique([recurringExpenseId, month])
+}
+
+model ExpenseCategory {
+  id                String             @id @default(cuid())
+  // Clerk user id — categories are private to their owner.
+  userId            String
+  name              String
+  createdAt         DateTime           @default(now())
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}

@@ -19,7 +19,7 @@ export function SidebarNavChildList({
   return (
     <ul className={getListClassName(variant)}>
       {items.map((child, index) => {
-        const isActive = isActivePath(pathname, child.href);
+        const isActive = isActivePath(pathname, child.href, child.exact);
         const isLast = index === items.length - 1;
 
         return (

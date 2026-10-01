@@ -1,1 +1,1 @@
-export const PLACEHOLDER_HINT = "Coming soon";
+export const PLACEHOLDER_HINT = "Próximamente";

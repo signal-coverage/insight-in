@@ -5,4 +5,5 @@ export const SECTION_LABEL_CLASS_NAME =
 
 export const LIST_CLASS_NAME = "flex flex-col gap-1";
 
-export const EMPTY_STATE_CLASS_NAME = "px-2 py-6 text-center text-sm text-muted";
+export const EMPTY_STATE_CLASS_NAME =
+  "px-2 py-6 text-center text-sm text-muted";

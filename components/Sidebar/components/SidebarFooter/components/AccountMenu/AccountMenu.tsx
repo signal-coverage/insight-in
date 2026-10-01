@@ -54,7 +54,11 @@ export function AccountMenu({ isCollapsed }: AccountMenuProps) {
           </Avatar>
         </Button>
       ) : (
-        <Button variant="ghost" className={TRIGGER_CLASS_NAME} aria-label={MENU_ARIA_LABEL}>
+        <Button
+          variant="ghost"
+          className={TRIGGER_CLASS_NAME}
+          aria-label={MENU_ARIA_LABEL}
+        >
           <Avatar size="md" className={AVATAR_CLASS_NAME} aria-hidden="true">
             <Avatar.Image src={imageUrl} alt="" />
             <Avatar.Fallback className={AVATAR_FALLBACK_CLASS_NAME}>
@@ -69,17 +73,28 @@ export function AccountMenu({ isCollapsed }: AccountMenuProps) {
         </Button>
       )}
       <Dropdown.Popover placement="right top" className={POPOVER_CLASS_NAME}>
-        <AccountMenuHeader name={name} email={email} imageUrl={imageUrl} initials={initials} />
+        <AccountMenuHeader
+          name={name}
+          email={email}
+          imageUrl={imageUrl}
+          initials={initials}
+        />
         <Separator className={SEPARATOR_CLASS_NAME} />
         <Dropdown.Menu aria-label={MENU_ARIA_LABEL} className={MENU_CLASS_NAME}>
           {ACCOUNT_MENU_ENTRIES.map((entry) => (
             <AccountMenuItem key={entry.id} entry={entry} />
           ))}
-          <AccountMenuTheme />
+          <AccountMenuTheme
+            popoverClassName={POPOVER_CLASS_NAME}
+            menuClassName={MENU_CLASS_NAME}
+          />
           <Separator className={SEPARATOR_CLASS_NAME} />
           <AccountMenuPlan />
           <Separator className={SEPARATOR_CLASS_NAME} />
-          <AccountMenuItem entry={LOGOUT_ENTRY} onAction={() => void signOut()} />
+          <AccountMenuItem
+            entry={LOGOUT_ENTRY}
+            onAction={() => void signOut()}
+          />
         </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>

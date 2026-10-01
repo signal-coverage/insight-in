@@ -8,10 +8,16 @@ import {
 } from "./styles";
 import type { SidebarNavProps } from "./types";
 
-export function SidebarNav({ items, isCollapsed, isSearchActive }: SidebarNavProps) {
+export function SidebarNav({
+  items,
+  isCollapsed,
+  isSearchActive,
+}: SidebarNavProps) {
   return (
     <nav aria-label={NAV_ARIA_LABEL} className={NAV_CLASS_NAME}>
-      {!isCollapsed && <span className={SECTION_LABEL_CLASS_NAME}>{SECTION_LABEL}</span>}
+      {!isCollapsed && (
+        <span className={SECTION_LABEL_CLASS_NAME}>{SECTION_LABEL}</span>
+      )}
       {items.length === 0 ? (
         <p className={EMPTY_STATE_CLASS_NAME}>{NO_RESULTS_LABEL}</p>
       ) : (

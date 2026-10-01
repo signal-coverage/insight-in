@@ -1,5 +1,8 @@
+import { requireUserId } from "@/lib/auth/requireUserId";
 import { PlaceholderPage } from "@/components/shared/PlaceholderPage";
 
-export default function OverviewProjectPage() {
-  return <PlaceholderPage title="Project" />;
+export default async function OverviewProjectPage() {
+  await requireUserId();
+
+  return <PlaceholderPage title="Proyecto" />;
 }

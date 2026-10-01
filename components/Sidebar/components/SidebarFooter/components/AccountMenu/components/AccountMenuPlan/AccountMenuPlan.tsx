@@ -12,7 +12,11 @@ import {
 
 export function AccountMenuPlan() {
   return (
-    <Dropdown.Item id={PLAN_ID} textValue={PLAN_NAME} className={ITEM_CLASS_NAME}>
+    <Dropdown.Item
+      id={PLAN_ID}
+      textValue={PLAN_NAME}
+      className={ITEM_CLASS_NAME}
+    >
       <div className={DETAILS_CLASS_NAME}>
         <Label className={NAME_CLASS_NAME}>{PLAN_NAME}</Label>
         <Description>{PLAN_USAGE}</Description>

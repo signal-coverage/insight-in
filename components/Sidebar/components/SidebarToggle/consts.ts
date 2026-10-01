@@ -1,2 +1,2 @@
-export const COLLAPSE_LABEL = "Collapse sidebar";
-export const EXPAND_LABEL = "Expand sidebar";
+export const COLLAPSE_LABEL = "Contraer barra lateral";
+export const EXPAND_LABEL = "Expandir barra lateral";

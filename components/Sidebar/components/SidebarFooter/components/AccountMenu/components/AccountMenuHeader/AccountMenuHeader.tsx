@@ -10,12 +10,19 @@ import {
 } from "./styles";
 import type { AccountMenuHeaderProps } from "./types";
 
-export function AccountMenuHeader({ name, email, imageUrl, initials }: AccountMenuHeaderProps) {
+export function AccountMenuHeader({
+  name,
+  email,
+  imageUrl,
+  initials,
+}: AccountMenuHeaderProps) {
   return (
     <div className={ROOT_CLASS_NAME}>
       <Avatar size="md" className={AVATAR_CLASS_NAME} aria-hidden="true">
         <Avatar.Image src={imageUrl} alt="" />
-        <Avatar.Fallback className={AVATAR_FALLBACK_CLASS_NAME}>{initials}</Avatar.Fallback>
+        <Avatar.Fallback className={AVATAR_FALLBACK_CLASS_NAME}>
+          {initials}
+        </Avatar.Fallback>
       </Avatar>
       <div className={DETAILS_CLASS_NAME}>
         <p className={NAME_CLASS_NAME}>{name}</p>

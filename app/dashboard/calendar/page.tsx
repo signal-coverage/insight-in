@@ -1,5 +1,8 @@
+import { requireUserId } from "@/lib/auth/requireUserId";
 import { PlaceholderPage } from "@/components/shared/PlaceholderPage";
 
-export default function CalendarPage() {
-  return <PlaceholderPage title="Calendar" />;
+export default async function CalendarPage() {
+  await requireUserId();
+
+  return <PlaceholderPage title="Calendario" />;
 }

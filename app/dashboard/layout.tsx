@@ -1,16 +1,25 @@
 import { Navbar } from "@/components/Navbar";
 import { Sidebar, SidebarProvider } from "@/components/Sidebar";
+import { requireUserId } from "@/lib/auth/requireUserId";
 
-export default function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
+import {
+  MAIN_COLUMN_CLASS_NAME,
+  PAGE_AREA_CLASS_NAME,
+  SHELL_CLASS_NAME,
+} from "./styles";
+
+export default async function DashboardLayout({
+  children,
+}: LayoutProps<"/dashboard">) {
+  await requireUserId();
+
   return (
     <SidebarProvider>
-      <div className="flex h-full flex-row gap-3 bg-[color-mix(in_oklab,var(--background),var(--foreground)_5%)] p-3 pt-0 text-foreground">
+      <div className={SHELL_CLASS_NAME}>
         <Sidebar />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className={MAIN_COLUMN_CLASS_NAME}>
           <Navbar />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            {children}
-          </div>
+          <div className={PAGE_AREA_CLASS_NAME}>{children}</div>
         </div>
       </div>
     </SidebarProvider>

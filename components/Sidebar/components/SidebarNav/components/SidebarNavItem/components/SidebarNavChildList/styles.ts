@@ -19,12 +19,11 @@ const TREE_LINE_AFTER_BG =
   "after:bg-[color-mix(in_srgb,var(--foreground)_20%,var(--background))]";
 
 const LIST_BASE = "flex flex-col py-1";
-const LIST_TREE = "ml-6 pr-1";
-const LIST_FLYOUT = "ml-4 min-w-40 pr-1";
+const LIST_TREE = "ml-6 pr-0";
+const LIST_FLYOUT = "ml-0 min-w-40 pr-0";
 
-export const getListClassName = (
-  variant: SidebarNavChildListVariant,
-): string => `${LIST_BASE} ${variant === "tree" ? LIST_TREE : LIST_FLYOUT}`;
+export const getListClassName = (variant: SidebarNavChildListVariant): string =>
+  `${LIST_BASE} ${variant === "tree" ? LIST_TREE : LIST_FLYOUT}`;
 
 /**
  * There is no single continuous trunk anymore. Each <li> draws its OWN trunk segment
@@ -94,8 +93,7 @@ const LINK_BASE = [
   "motion-reduce:transition-none",
 ].join(" ");
 
-const LINK_ACTIVE =
-  "bg-background font-semibold text-foreground shadow-sm [@media(prefers-color-scheme:dark)]:shadow-none";
+const LINK_ACTIVE = "bg-default font-semibold text-foreground";
 
 const LINK_INACTIVE = "text-muted hover:text-foreground";
 

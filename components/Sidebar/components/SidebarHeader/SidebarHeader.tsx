@@ -14,7 +14,9 @@ export function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
         <span className={LOGO_MARK_CLASS_NAME} aria-hidden="true">
           {LOGO_LETTER}
         </span>
-        {!isCollapsed && <span className={WORDMARK_CLASS_NAME}>{BRAND_NAME}</span>}
+        {!isCollapsed && (
+          <span className={WORDMARK_CLASS_NAME}>{BRAND_NAME}</span>
+        )}
       </div>
     </header>
   );

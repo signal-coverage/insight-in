@@ -1,5 +1,5 @@
 const BUTTON_BASE_CLASS_NAME =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-accent-foreground transition-all hover:brightness-110 active:scale-[0.98]";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent-hover motion-reduce:transition-none";
 
 export const TRIGGER_CLASS_NAME = `${BUTTON_BASE_CLASS_NAME} w-full app-button--full-width px-4`;
 

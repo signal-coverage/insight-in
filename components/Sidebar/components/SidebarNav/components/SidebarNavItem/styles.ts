@@ -4,15 +4,17 @@ const LINK_BASE =
 const LINK_EXPANDED = "gap-2 px-1.5";
 const LINK_COLLAPSED = "justify-center";
 
-// The app switches themes via `prefers-color-scheme` (see globals.css), which HeroUI's
-// `dark:` variant does not follow, so the media query is used directly.
-const LINK_ACTIVE =
-  "bg-foreground text-background shadow-md [@media(prefers-color-scheme:dark)]:bg-foreground/15 [@media(prefers-color-scheme:dark)]:text-foreground [@media(prefers-color-scheme:dark)]:shadow-none";
-const LINK_INACTIVE = "text-muted hover:bg-foreground/5 hover:text-foreground";
+// The current page uses the accent (Dusty Grape in light, Alabaster Grey in dark), like every
+// other selected state in the app.
+const LINK_ACTIVE = "bg-accent text-accent-foreground";
+const LINK_INACTIVE = "text-muted hover:bg-default hover:text-foreground";
 
 export const ICON_CLASS_NAME = "size-4 shrink-0";
 
-export const getLinkClassName = (isCollapsed: boolean, isActive: boolean): string =>
+export const getLinkClassName = (
+  isCollapsed: boolean,
+  isActive: boolean,
+): string =>
   [
     LINK_BASE,
     isCollapsed ? LINK_COLLAPSED : LINK_EXPANDED,

@@ -13,7 +13,10 @@ import {
 // putting the chevron flush against the right edge instead of hugging the label. Named
 // `app-*` — not HeroUI's own `.button--full-width` — since it applies to a plain native
 // <button>, not HeroUI's Button component.
-export const getToggleClassName = (isCollapsed: boolean, isActive: boolean): string =>
+export const getToggleClassName = (
+  isCollapsed: boolean,
+  isActive: boolean,
+): string =>
   [
     LINK_SHARED_BASE,
     // `app-button--row-height` opts out of the global `button { height: 2.5rem }` default
@@ -38,4 +41,4 @@ export const getChildrenWrapperClassName = (isExpanded: boolean): string =>
 export const CHILDREN_INNER_CLASS_NAME = "overflow-hidden";
 
 export const POPOVER_CONTENT_CLASS_NAME =
-  "rounded-2xl bg-background p-2 text-foreground ring-1 ring-inset ring-foreground/10 shadow-[0_8px_30px_rgb(0_0_0/0.08)]";
+  "rounded-2xl bg-background p-0 text-foreground ring-1 ring-inset ring-border";

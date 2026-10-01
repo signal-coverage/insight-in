@@ -22,7 +22,7 @@ export const EMAIL_CLASS_NAME = "truncate text-xs leading-4 text-muted";
 export const CHEVRON_CLASS_NAME = "size-4 shrink-0 text-muted";
 
 export const POPOVER_CLASS_NAME =
-  "min-w-64 rounded-2xl bg-background text-foreground ring-1 ring-inset ring-foreground/10 shadow-[0_8px_30px_rgb(0_0_0/0.08)]";
+  "min-w-64 rounded-2xl bg-background text-foreground ring-1 ring-inset ring-border";
 
 export const MENU_CLASS_NAME = "p-2";
 

@@ -6,7 +6,7 @@
 // card's own `overflow-hidden`. `top-5` centers it on the 64px header row (same height as
 // the logo and the navbar's breadcrumb) — not on the header's bottom border.
 export const BUTTON_CLASS_NAME =
-  "app-button--chip absolute -right-3 top-5 z-10 flex size-6 items-center justify-center rounded-full bg-background text-foreground shadow-sm ring-1 ring-inset ring-foreground/10 hover:bg-foreground/5";
+  "app-button--chip absolute -right-3 top-5 z-10 flex size-6 items-center justify-center rounded-full bg-background text-foreground ring-1 ring-inset ring-border hover:bg-default";
 
 export const getIconClassName = (isCollapsed: boolean): string =>
   `size-3.5 transition-transform duration-200 motion-reduce:transition-none ${

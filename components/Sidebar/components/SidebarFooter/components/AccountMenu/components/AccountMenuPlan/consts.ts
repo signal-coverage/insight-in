@@ -1,3 +1,3 @@
 export const PLAN_ID = "plan";
-export const PLAN_NAME = "Best Plan";
-export const PLAN_USAGE = "2M Tokens";
+export const PLAN_NAME = "Mejor plan";
+export const PLAN_USAGE = "2 M de tokens";

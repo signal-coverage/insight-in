@@ -360,3 +360,28 @@ model UserSettings {
   includeExpectedIncomes Boolean  @default(true)
   updatedAt              DateTime @updatedAt
 }
+
+// Where an item of the roadmap stands, in the order of the board's columns.
+enum BoardStatus {
+  IDEA
+  TODO
+  DONE
+  DEPLOYED
+}
+
+// A card of the roadmap board: the user's own backlog for the app, from an idea to production.
+model BoardItem {
+  id          String      @id @default(cuid())
+  // Clerk user id — the board is private to its owner.
+  userId      String
+  title       String
+  description String?
+  status      BoardStatus
+  // Order inside its column, ascending. A float so an item dropped between two neighbours takes
+  // their midpoint without renumbering the rest.
+  position    Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId, status, position])
+}

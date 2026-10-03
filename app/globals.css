@@ -762,3 +762,13 @@ body {
   --tooltip-delay: 300ms;
   --tooltip-close-delay: 0ms;
 }
+
+/* A slim scrollbar in the theme's accent over a see-through track, for panels that scroll inside
+   the page (the columns of the roadmap board). The native bar is thick and grey, and ignores the
+   theme. The gutter is reserved so the content does not shift when the bar appears. */
+.slim-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--accent) 45%, transparent)
+    transparent;
+  scrollbar-gutter: stable;
+}

@@ -1,4 +1,4 @@
-import { CreditCardIcon } from "@heroicons/react/24/outline";
+import { CreditCardIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";
 import { describe, expect, it } from "vitest";
 
 import { NAV_ITEMS } from "./consts";
@@ -18,6 +18,12 @@ describe("NAV_ITEMS", () => {
 
     expect(cards?.href).toBe("/dashboard/cards");
     expect(cards?.icon).toBe(CreditCardIcon);
+  });
+
+  it("puts the roadmap right after the cards, with a columns icon", () => {
+    expect(NAV_ITEMS[4].label).toBe("Hoja de ruta");
+    expect(NAV_ITEMS[4].href).toBe("/dashboard/roadmap");
+    expect(NAV_ITEMS[4].icon).toBe(ViewColumnsIcon);
   });
 
   it("leads to the real summary page", () => {
@@ -55,7 +61,7 @@ describe("NAV_ITEMS", () => {
   });
 
   it("keeps the other placeholders after the real pages", () => {
-    expect(NAV_ITEMS.slice(4).map((item) => item.label)).toEqual([
+    expect(NAV_ITEMS.slice(5).map((item) => item.label)).toEqual([
       "Cobros",
       "Calendario",
       "Facturas",

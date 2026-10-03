@@ -6,6 +6,7 @@
  *   Expense / Income -> categories (Restrict), templates and plans (SetNull), Card (SetNull)
  *   InstallmentPlan -> categories (Restrict), Card (SetNull)
  *   RecurringExpense / RecurringIncome -> categories (Restrict)
+ * BoardItem (the roadmap) has no foreign keys, so it can go anywhere.
  * `_prisma_migrations` is deliberately absent: the schema and its history are never touched.
  */
 export const CLEAR_ORDER = [
@@ -16,6 +17,7 @@ export const CLEAR_ORDER = [
   "RecurringExpense",
   "RecurringIncome",
   "Card",
+  "BoardItem",
   "OpeningBalance",
   "ExpenseCategory",
   "IncomeCategory",

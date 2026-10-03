@@ -10,6 +10,7 @@ const PARENTS: Record<string, string[]> = {
   RecurringExpense: ["ExpenseCategory"],
   RecurringIncome: ["IncomeCategory"],
   Card: [],
+  BoardItem: [],
   OpeningBalance: [],
   ExpenseCategory: [],
   IncomeCategory: [],

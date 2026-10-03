@@ -17,6 +17,13 @@ describe("buildCrumbs", () => {
     ]);
   });
 
+  it("names the roadmap page Hoja de ruta", () => {
+    expect(buildCrumbs("/dashboard/roadmap")).toEqual([
+      { label: "Panel", href: "/dashboard" },
+      { label: "Hoja de ruta" },
+    ]);
+  });
+
   it("names the help page Ayuda, under Panel", () => {
     expect(buildCrumbs("/dashboard/help")).toEqual([
       { label: "Panel", href: "/dashboard" },

@@ -1,6 +1,5 @@
-import { Button } from "@heroui/react";
+import { Pagination } from "@heroui/react";
 
-import { FIELD_HEIGHT_CLASS_NAME } from "@/components/Entries/styles";
 import {
   NEXT_LABEL,
   PAGINATION_ARIA_LABEL,
@@ -9,10 +8,9 @@ import {
   summaryLabel,
 } from "./consts";
 import {
-  CONTROLS_CLASS_NAME,
   PAGE_LABEL_CLASS_NAME,
   ROOT_CLASS_NAME,
-  SUMMARY_CLASS_NAME,
+  SECTION_CLASS_NAME,
 } from "./styles";
 import type { EntriesPaginationProps } from "./types";
 
@@ -27,29 +25,35 @@ export function EntriesPagination({
   const last = Math.min(page * pageSize, total);
 
   return (
-    <nav className={ROOT_CLASS_NAME} aria-label={PAGINATION_ARIA_LABEL}>
-      <p className={SUMMARY_CLASS_NAME}>{summaryLabel(first, last, total)}</p>
-      <div className={CONTROLS_CLASS_NAME}>
-        <Button
-          className={FIELD_HEIGHT_CLASS_NAME}
-          variant="tertiary"
-          isDisabled={page <= 1}
-          onPress={() => onPageChange(page - 1)}
-        >
-          {PREVIOUS_LABEL}
-        </Button>
-        <span className={PAGE_LABEL_CLASS_NAME}>
-          {pageLabel(page, totalPages)}
-        </span>
-        <Button
-          className={FIELD_HEIGHT_CLASS_NAME}
-          variant="tertiary"
-          isDisabled={page >= totalPages}
-          onPress={() => onPageChange(page + 1)}
-        >
-          {NEXT_LABEL}
-        </Button>
-      </div>
-    </nav>
+    <Pagination className={ROOT_CLASS_NAME} aria-label={PAGINATION_ARIA_LABEL}>
+      <Pagination.Summary className={SECTION_CLASS_NAME}>
+        {summaryLabel(first, last, total)}
+      </Pagination.Summary>
+      <Pagination.Content className={SECTION_CLASS_NAME}>
+        <Pagination.Item>
+          <Pagination.Previous
+            isDisabled={page <= 1}
+            onPress={() => onPageChange(page - 1)}
+          >
+            <Pagination.PreviousIcon />
+            {PREVIOUS_LABEL}
+          </Pagination.Previous>
+        </Pagination.Item>
+        <Pagination.Item>
+          <span className={PAGE_LABEL_CLASS_NAME}>
+            {pageLabel(page, totalPages)}
+          </span>
+        </Pagination.Item>
+        <Pagination.Item>
+          <Pagination.Next
+            isDisabled={page >= totalPages}
+            onPress={() => onPageChange(page + 1)}
+          >
+            {NEXT_LABEL}
+            <Pagination.NextIcon />
+          </Pagination.Next>
+        </Pagination.Item>
+      </Pagination.Content>
+    </Pagination>
   );
 }

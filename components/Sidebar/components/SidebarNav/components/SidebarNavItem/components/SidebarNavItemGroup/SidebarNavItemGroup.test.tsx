@@ -3,7 +3,9 @@ import { Squares2X2Icon } from "@heroicons/react/24/outline";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/billing" }));
+const navigation = vi.hoisted(() => ({ pathname: "/dashboard/billing" }));
+
+vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -52,6 +54,7 @@ const underlay = () => document.body.querySelector('[data-testid="underlay"]');
 const flyout = () => screen.queryByRole("dialog");
 
 beforeEach(() => {
+  navigation.pathname = "/dashboard/billing";
   vi.useFakeTimers();
 });
 
@@ -121,5 +124,66 @@ describe("SidebarNavItemGroup (collapsed hover flyout)", () => {
     });
 
     expect(flyout()).toBeNull();
+  });
+});
+
+const renderExpanded = (forceExpanded?: boolean) =>
+  render(
+    <ul>
+      <SidebarNavItemGroup
+        item={ITEM}
+        isCollapsed={false}
+        forceExpanded={forceExpanded}
+      />
+    </ul>,
+  );
+
+describe("SidebarNavItemGroup (expanded sidebar, HeroUI disclosure)", () => {
+  it("is a HeroUI disclosure whose trigger is a button", () => {
+    const { container } = renderExpanded();
+
+    expect(container.querySelector("[data-slot=disclosure]")).not.toBeNull();
+    expect(trigger()).toHaveAttribute("data-slot", "disclosure-trigger");
+    expect(trigger().tagName).toBe("BUTTON");
+  });
+
+  it("starts closed when none of its pages is the current one", () => {
+    renderExpanded();
+
+    expect(trigger()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "Project" })).toBeNull();
+  });
+
+  it("opens and closes its pages when the trigger is pressed", () => {
+    renderExpanded();
+
+    fireEvent.click(trigger());
+
+    expect(trigger()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Project" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Revenue" })).toBeInTheDocument();
+
+    fireEvent.click(trigger());
+
+    expect(trigger()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "Project" })).toBeNull();
+  });
+
+  it("starts open when one of its pages is the current one", () => {
+    navigation.pathname = "/dashboard/overview/revenue";
+    renderExpanded();
+
+    expect(trigger()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Revenue" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("stays open while a search forces every group open", () => {
+    renderExpanded(true);
+
+    expect(trigger()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Project" })).toBeInTheDocument();
   });
 });

@@ -45,4 +45,15 @@ describe("THEMES", () => {
       THEMES.length,
     );
   });
+
+  it("gives every theme five different colours to preview it with", () => {
+    for (const theme of THEMES) {
+      expect(theme.colors).toHaveLength(5);
+      expect(new Set(theme.colors).size).toBe(5);
+
+      for (const color of theme.colors) {
+        expect(color).toMatch(/^#[0-9a-f]{6}$/);
+      }
+    }
+  });
 });

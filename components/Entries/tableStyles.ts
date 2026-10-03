@@ -18,6 +18,9 @@ export const DESCRIPTION_ROW_CLASS_NAME = "flex items-center gap-1.5";
 
 export const RECURRING_ICON_CLASS_NAME = "size-4 shrink-0 text-muted";
 
+// Same footprint as the checkbox it stands in for.
+export const COVERED_ICON_CLASS_NAME = "size-5 shrink-0 text-muted";
+
 // Table cells never wrap, so a long note is cut with an ellipsis and its full text is the title.
 export const NOTES_CLASS_NAME = "block max-w-xs truncate text-muted";
 
@@ -25,11 +28,12 @@ export const NOTES_CLASS_NAME = "block max-w-xs truncate text-muted";
 export const ACTIONS_CLASS_NAME = "flex items-center justify-center gap-1";
 
 // Column widths. The status column is as wide as its title; the actions column is its two 40px
-// buttons, the 4px between them and 16px of padding on each side (116px). The actions column leads
-// the table, so the table's 16px edge inset already pads its left side; the right side gets the
-// same 16px instead of the default 8px, so the buttons sit centered.
+// buttons, the 4px between them and 16px of padding on each side (116px). The checkbox column leads
+// the table, so the actions column is no longer the one with the table's 16px edge inset: it asks for
+// its 16px on both sides, instead of the default 8px, so the buttons sit centered (with no checkbox
+// column, the edge inset gives the same 16px on the left).
 export const STATUS_COLUMN_CLASS_NAME = "w-16";
-export const ACTIONS_COLUMN_CLASS_NAME = "w-[7.25rem] pr-4";
+export const ACTIONS_COLUMN_CLASS_NAME = "w-[7.25rem] px-4";
 // A long category name is cut with an ellipsis instead of spilling into the next column.
 export const CATEGORY_COLUMN_CLASS_NAME = "w-28 overflow-hidden text-ellipsis";
 export const DATE_COLUMN_CLASS_NAME = "w-28";

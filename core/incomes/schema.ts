@@ -9,10 +9,18 @@ import {
   currencyField,
   dateField,
   descriptionField,
+  mediumField,
   notesField,
   statusField,
   toAmount,
 } from "@/core/entries/fields";
+import {
+  checkOrigin,
+  originAmountField,
+  originCurrencyField,
+  toOrigin,
+} from "@/core/entries/originFields";
+import { reimbursesExpenseIdField } from "@/core/reimbursements/fields";
 
 import { isValidIsoDate } from "./dates";
 import type { RecurrenceFrequency } from "./recurrence";
@@ -31,9 +39,20 @@ export const incomeInputSchema = z
     categoryId: categoryIdField,
     notes: notesField,
     status: statusField,
+    medium: mediumField,
+    originCurrency: originCurrencyField,
+    originAmount: originAmountField,
+    reimbursesExpenseId: reimbursesExpenseIdField,
   })
-  .superRefine(checkAmount)
-  .transform((value): IncomeInput => ({ ...value, amount: toAmount(value) }));
+  .superRefine((value, ctx) => {
+    checkAmount(value, ctx);
+    checkOrigin(value, ctx);
+  })
+  .transform((value): IncomeInput => ({
+    ...value,
+    amount: toAmount(value),
+    ...toOrigin(value),
+  }));
 
 const frequencyField = z.enum(["WEEKLY", "MONTHLY", "YEARLY"], {
   error: "Selecciona cada cuánto se repite.",
@@ -56,6 +75,7 @@ export const recurringIncomeInputSchema = z
     currency: currencyField,
     categoryId: categoryIdField,
     notes: notesField,
+    medium: mediumField,
     frequency: frequencyField,
     startDate: dateField,
     endDate: endDateField,

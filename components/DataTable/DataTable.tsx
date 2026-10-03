@@ -1,32 +1,39 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import { Table } from "@heroui/react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils/utils";
 
 import { ColumnHeader } from "./components/ColumnHeader";
+import { DataRow } from "./components/DataRow";
 import { LoadingTable } from "./components/LoadingTable";
+import { NoteRow } from "./components/NoteRow";
 import { ScrollFades } from "./components/ScrollFades";
-import { DEFAULT_LOADING_ROW_COUNT } from "./consts";
+import { SelectionCheckbox } from "./components/SelectionCheckbox";
+import { DEFAULT_LOADING_ROW_COUNT, SELECTION_COLUMN_ID } from "./consts";
 import {
+  BODY_CLASSNAME,
+  BUSY_STATUS_CLASSNAME,
   EDGE_COLUMN_PADDING_CLASSNAME,
   FOOTER_CLASSNAME,
-  ROW_INTERACTIVE_CLASSNAME,
   SCROLL_AREA_CLASSNAME,
   SCROLL_BOX_CLASSNAME,
   WRAPPER_CLASSNAME,
 } from "./styles";
 import type { DataTableProps } from "./types";
 import { useScrollFades } from "./useScrollFades";
+import {
+  isColumnSortable,
+  nextSort,
+  noteRowId,
+  rowHeaderKey,
+  selectionHeaderClassName,
+  toKeySet,
+  toSortDescriptor,
+} from "./utils";
 
 export function DataTable<T>({
+  label,
   columns,
   rows,
   rowKey,
@@ -38,6 +45,10 @@ export function DataTable<T>({
   tableClassName,
   onRowClick,
   isRowSelected,
+  selection,
+  isRowBusy,
+  busyLabel,
+  rowNote,
   sort,
   onSortChange,
   footer,
@@ -50,12 +61,17 @@ export function DataTable<T>({
     updateFades,
   } = useScrollFades(columns, rows);
 
+  const rowHeader = rowHeaderKey(columns);
+
   if (isLoading) {
     return (
       <LoadingTable
+        label={label}
         columns={columns}
+        rowHeader={rowHeader}
         rowCount={loadingRowCount}
-        label={loadingLabel}
+        loadingLabel={loadingLabel}
+        hasSelection={Boolean(selection)}
         className={className}
         tableClassName={tableClassName}
       />
@@ -66,54 +82,104 @@ export function DataTable<T>({
     return <>{emptyState}</>;
   }
 
+  const entries = rows.map((row) => {
+    const id = rowKey(row);
+
+    return { row, id, note: rowNote?.(row), isBusy: Boolean(isRowBusy?.(row)) };
+  });
+  // A row on its way out cannot be selected, and a note is never something to select, so the table
+  // keeps both out of the selection (and out of "select the whole page").
+  const selectableKeys = entries
+    .filter(({ isBusy }) => !isBusy)
+    .map(({ id }) => id);
+  const disabledKeys = entries.flatMap(({ id, note, isBusy }) => [
+    ...(isBusy ? [id] : []),
+    ...(note ? [noteRowId(id)] : []),
+  ]);
+
+  const hasBusyRow = entries.some(({ isBusy }) => isBusy);
+
   return (
-    <div className={cn(WRAPPER_CLASSNAME, className)}>
+    <Table
+      variant="secondary"
+      className={cn(WRAPPER_CLASSNAME, className)}
+      aria-busy={hasBusyRow ? true : undefined}
+    >
+      {busyLabel ? (
+        <span className={BUSY_STATUS_CLASSNAME} aria-live="polite">
+          {hasBusyRow ? busyLabel : null}
+        </span>
+      ) : null}
       <div className={SCROLL_BOX_CLASSNAME}>
-        <div
+        <Table.ScrollContainer
           ref={scrollRef}
           onScroll={updateFades}
           className={SCROLL_AREA_CLASSNAME}
         >
-          <Table className={cn(EDGE_COLUMN_PADDING_CLASSNAME, tableClassName)}>
-            <TableHeader>
-              <TableRow>
-                {columns.map((column) => (
-                  <ColumnHeader
-                    key={column.key}
-                    column={column}
-                    sort={sort}
-                    onSortChange={onSortChange}
-                  />
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  key={rowKey(row)}
-                  data-state={isRowSelected?.(row) ? "selected" : undefined}
-                  {...(onRowClick && {
-                    role: "button",
-                    tabIndex: 0,
-                    onClick: () => onRowClick(row),
-                    onKeyDown: (event: KeyboardEvent) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      onRowClick(row);
-                    },
-                    className: ROW_INTERACTIVE_CLASSNAME,
-                  })}
+          <Table.Content
+            aria-label={label}
+            className={cn(EDGE_COLUMN_PADDING_CLASSNAME, tableClassName)}
+            sortDescriptor={toSortDescriptor(sort)}
+            onSortChange={(clicked) => {
+              const next = nextSort(columns, clicked, sort);
+
+              if (next) onSortChange?.(next);
+            }}
+            selectionMode={selection ? "multiple" : undefined}
+            selectedKeys={selection?.selectedKeys}
+            onSelectionChange={(keys) =>
+              selection?.onSelectionChange(toKeySet(keys, selectableKeys))
+            }
+            disabledKeys={disabledKeys}
+          >
+            <Table.Header>
+              {selection ? (
+                <Table.Column
+                  id={SELECTION_COLUMN_ID}
+                  className={selectionHeaderClassName()}
                 >
-                  {columns.map((column) => (
-                    <TableCell key={column.key} className={column.className}>
-                      {column.cell(row)}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                  <SelectionCheckbox label={selection.selectAllLabel} />
+                </Table.Column>
+              ) : null}
+              {columns.map((column) => (
+                <ColumnHeader
+                  key={column.key}
+                  column={column}
+                  isSortable={isColumnSortable(column, onSortChange)}
+                  isRowHeader={column.key === rowHeader}
+                />
               ))}
-            </TableBody>
-          </Table>
-        </div>
+            </Table.Header>
+            <Table.Body className={BODY_CLASSNAME}>
+              {entries.flatMap(({ row, id, note, isBusy }) => [
+                <DataRow
+                  key={id}
+                  id={id}
+                  row={row}
+                  columns={columns}
+                  isSelected={
+                    Boolean(isRowSelected?.(row)) ||
+                    Boolean(selection?.selectedKeys.has(id))
+                  }
+                  onPress={onRowClick}
+                  selectionLabel={selection?.rowLabel(row)}
+                  isBusy={isBusy}
+                />,
+                ...(note
+                  ? [
+                      <NoteRow
+                        key={noteRowId(id)}
+                        id={noteRowId(id)}
+                        columnCount={columns.length + (selection ? 1 : 0)}
+                      >
+                        {note}
+                      </NoteRow>,
+                    ]
+                  : []),
+              ])}
+            </Table.Body>
+          </Table.Content>
+        </Table.ScrollContainer>
 
         <ScrollFades
           showLeft={showLeftFade}
@@ -122,7 +188,9 @@ export function DataTable<T>({
         />
       </div>
 
-      {footer ? <div className={FOOTER_CLASSNAME}>{footer}</div> : null}
-    </div>
+      {footer ? (
+        <Table.Footer className={FOOTER_CLASSNAME}>{footer}</Table.Footer>
+      ) : null}
+    </Table>
   );
 }

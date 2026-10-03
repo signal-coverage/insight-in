@@ -12,6 +12,8 @@ vi.mock("./recurringService", () => ({
   applyRecurringDecisions: mocks.applyRecurringDecisions,
 }));
 
+import { InvalidInstallmentCountError } from "@/core/installments/errors";
+
 import { InvalidRecurringAmountError } from "./errors";
 import { applyRecurringDecisionsAction } from "./recurringActions";
 
@@ -57,7 +59,65 @@ describe("applyRecurringDecisionsAction", () => {
         { recurringExpenseId: "rec_1", choice: "enable", amount: "100.5" },
         { recurringExpenseId: "rec_2", choice: "remove" },
       ],
+      [],
     );
+  });
+
+  it("applies the installment counts together with the choices, in the same call", async () => {
+    expect(
+      await applyRecurringDecisionsAction(
+        [{ recurringExpenseId: "rec_1", choice: "disable" }],
+        [
+          { planId: "plan_1", count: 2 },
+          { planId: "plan_2", count: 0 },
+        ],
+      ),
+    ).toEqual({ status: "success" });
+    expect(mocks.applyRecurringDecisions).toHaveBeenCalledTimes(1);
+    expect(mocks.applyRecurringDecisions).toHaveBeenCalledWith(
+      USER_ID,
+      "2026-10",
+      [{ recurringExpenseId: "rec_1", choice: "disable" }],
+      [
+        { planId: "plan_1", count: 2 },
+        { planId: "plan_2", count: 0 },
+      ],
+    );
+  });
+
+  it("applies installment counts alone", async () => {
+    expect(
+      await applyRecurringDecisionsAction([], [{ planId: "plan_1", count: 3 }]),
+    ).toEqual({ status: "success" });
+    expect(mocks.applyRecurringDecisions.mock.calls[0][3]).toEqual([
+      { planId: "plan_1", count: 3 },
+    ]);
+  });
+
+  it("refuses malformed installment counts without touching the service", async () => {
+    const result = await applyRecurringDecisionsAction(
+      [],
+      [{ planId: "plan_1", count: -1 }],
+    );
+
+    expect(result.status).toBe("error");
+    expect(mocks.applyRecurringDecisions).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("names the purchase whose count is not valid", async () => {
+    mocks.applyRecurringDecisions.mockRejectedValue(
+      new InvalidInstallmentCountError("Heladera"),
+    );
+
+    expect(
+      await applyRecurringDecisionsAction([], [{ planId: "plan_1", count: 9 }]),
+    ).toEqual({
+      status: "error",
+      message:
+        "«Heladera» no tiene tantas cuotas pendientes. Revisá la cantidad.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("revalidates the expenses page and the summary", async () => {
@@ -69,14 +129,40 @@ describe("applyRecurringDecisionsAction", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/overview");
   });
 
-  it("drops an amount sent with a choice that does not use it", async () => {
+  it("passes on the amount of a disabled row, which sticks to its template", async () => {
     await applyRecurringDecisionsAction([
       { recurringExpenseId: "rec_1", choice: "disable", amount: "5" },
     ]);
 
     expect(mocks.applyRecurringDecisions.mock.calls[0][2]).toEqual([
-      { recurringExpenseId: "rec_1", choice: "disable" },
+      { recurringExpenseId: "rec_1", choice: "disable", amount: "5" },
     ]);
+    expect(mocks.applyRecurringDecisions.mock.calls[0][3]).toEqual([]);
+  });
+
+  it("drops an amount sent with a removed row", async () => {
+    await applyRecurringDecisionsAction([
+      { recurringExpenseId: "rec_1", choice: "remove", amount: "5" },
+    ]);
+
+    expect(mocks.applyRecurringDecisions.mock.calls[0][2]).toEqual([
+      { recurringExpenseId: "rec_1", choice: "remove" },
+    ]);
+  });
+
+  it("names the expense when the amount of a disabled row is not valid", async () => {
+    mocks.applyRecurringDecisions.mockRejectedValue(
+      new InvalidRecurringAmountError("Gym"),
+    );
+
+    expect(
+      await applyRecurringDecisionsAction([
+        { recurringExpenseId: "rec_2", choice: "disable", amount: "abc" },
+      ]),
+    ).toEqual({
+      status: "error",
+      message: "Ingresá un monto válido para «Gym».",
+    });
   });
 
   it("refuses malformed input without touching the service", async () => {

@@ -93,11 +93,20 @@ describe("createRecurringIncomeAction", () => {
       currency: "USD",
       categoryId: "cat_1",
       notes: null,
+      medium: "DIGITAL",
       frequency: "MONTHLY",
       startDate: "2026-01-05",
       endDate: null,
     });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/incomes");
+  });
+
+  it("passes on the medium the form sends", async () => {
+    mocks.createRecurringIncome.mockResolvedValue({ id: "rec_1" });
+
+    await createRecurringIncomeAction(buildFormData({ medium: "CASH" }));
+
+    expect(mocks.createRecurringIncome.mock.calls[0][1].medium).toBe("CASH");
   });
 
   it("ignores a userId submitted in the form", async () => {

@@ -1,40 +1,40 @@
-import { TableHead } from "@/components/ui/table";
-import { cn } from "@/lib/utils/utils";
+import { ChevronUpDownIcon } from "@heroicons/react/24/outline";
+import { Table } from "@heroui/react";
 
-import { SortIcon } from "./components/SortIcon";
-import { SORT_BUTTON_CLASSNAME } from "./styles";
+import { headerClassName } from "../../utils";
+import { SORT_HEADER_CLASSNAME, UNSORTED_ICON_CLASSNAME } from "./styles";
 import type { ColumnHeaderProps } from "./types";
-import { ariaSortFor, nextSortDirection } from "./utils";
 
-// One header cell: plain text, or a sort button when the column is sortable and the table can sort.
+// One header cell: plain text, or a sortable HeroUI column (aria-sort, press to sort) when the
+// column is sortable and the table can sort.
 export function ColumnHeader<T>({
   column,
-  sort,
-  onSortChange,
+  isSortable,
+  isRowHeader,
 }: ColumnHeaderProps<T>) {
-  const className = cn(column.className, column.headerClassName);
-
-  if (!column.sortable || !onSortChange) {
-    return <TableHead className={className}>{column.header}</TableHead>;
-  }
-
-  const ariaSort = ariaSortFor(column, sort);
-
   return (
-    <TableHead className={className} aria-sort={ariaSort}>
-      <button
-        type="button"
-        className={SORT_BUTTON_CLASSNAME}
-        onClick={() =>
-          onSortChange({
-            key: column.key,
-            direction: nextSortDirection(column, ariaSort),
-          })
-        }
-      >
-        {column.header}
-        <SortIcon direction={ariaSort} />
-      </button>
-    </TableHead>
+    <Table.Column
+      id={column.key}
+      isRowHeader={isRowHeader}
+      allowsSorting={isSortable}
+      className={headerClassName(column)}
+    >
+      {isSortable
+        ? ({ sortDirection }) => (
+            <Table.SortableColumnHeader
+              sortDirection={sortDirection}
+              className={SORT_HEADER_CLASSNAME}
+            >
+              {column.header}
+              {sortDirection ? null : (
+                <ChevronUpDownIcon
+                  className={UNSORTED_ICON_CLASSNAME}
+                  aria-hidden="true"
+                />
+              )}
+            </Table.SortableColumnHeader>
+          )
+        : column.header}
+    </Table.Column>
   );
 }

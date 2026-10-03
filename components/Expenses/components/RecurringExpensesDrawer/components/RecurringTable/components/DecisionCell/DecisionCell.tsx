@@ -1,8 +1,9 @@
 import { Chip, Radio, RadioGroup } from "@heroui/react";
 
 import {
+  CHOICE_CLASS_NAMES,
   CHOICE_OPTIONS,
-  DECIDED_COLORS,
+  DECIDED_CLASS_NAMES,
   DECIDED_LABELS,
   decisionAriaLabel,
 } from "./consts";
@@ -19,7 +20,7 @@ export function DecisionCell({
 }: DecisionCellProps) {
   if (row.decision !== null) {
     return (
-      <Chip color={DECIDED_COLORS[row.decision]} variant="soft">
+      <Chip variant="soft" className={DECIDED_CLASS_NAMES[row.decision]}>
         {DECIDED_LABELS[row.decision]}
       </Chip>
     );
@@ -39,7 +40,7 @@ export function DecisionCell({
       }}
     >
       {CHOICE_OPTIONS.map(({ value, label }) => (
-        <Radio key={value} value={value}>
+        <Radio key={value} value={value} className={CHOICE_CLASS_NAMES[value]}>
           <Radio.Content>
             <Radio.Control>
               <Radio.Indicator />

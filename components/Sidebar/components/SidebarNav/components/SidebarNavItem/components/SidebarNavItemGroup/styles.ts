@@ -6,7 +6,7 @@ import {
   LINK_SHARED_INACTIVE,
 } from "../../styles";
 
-// Renders as a real <button>, sharing the exact leaf-link classes (LINK_SHARED_*) so it is
+// Renders as the disclosure trigger (a real <button>), sharing the exact leaf-link classes (LINK_SHARED_*) so it is
 // visually indistinguishable from a plain nav item — the chevron is the only addition.
 // `app-button--full-width` opts this row out of the global `button { max-width: fit-content }`
 // rule (see app/globals.css) so it spans the container edge to edge like sibling <a> links,
@@ -26,19 +26,9 @@ export const getToggleClassName = (
     isActive ? LINK_SHARED_ACTIVE : LINK_SHARED_INACTIVE,
   ].join(" ");
 
-export const getChevronClassName = (isExpanded: boolean): string =>
-  `size-3.5 shrink-0 text-muted transition-transform duration-200 motion-reduce:transition-none ${
-    isExpanded ? "rotate-180" : ""
-  }`;
-
-// CSS grid expand/collapse trick: animating `grid-template-rows` between 0fr and 1fr
-// gives a smooth height transition without measuring the content's real height in JS.
-export const getChildrenWrapperClassName = (isExpanded: boolean): string =>
-  `grid transition-[grid-template-rows] duration-200 ease-in-out motion-reduce:transition-none ${
-    isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-  }`;
-
-export const CHILDREN_INNER_CLASS_NAME = "overflow-hidden";
+// The chevron is the disclosure indicator: it rotates by itself while the panel is open
+// (`data-expanded`), so only its size and colour are set here.
+export const CHEVRON_CLASS_NAME = "size-3.5 text-muted";
 
 export const POPOVER_CONTENT_CLASS_NAME =
   "rounded-2xl bg-background p-0 text-foreground ring-1 ring-inset ring-border";

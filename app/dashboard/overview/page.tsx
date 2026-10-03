@@ -21,7 +21,10 @@ export default async function OverviewPage({
 
   // Not awaited on purpose: the database work starts here and streams in behind the page, so the
   // header is on screen at once and only the cards wait for their numbers.
-  const { summary } = loadSummaryView(userId, month);
+  const { summary, openingBalance, includeExpectedIncomes } = loadSummaryView(
+    userId,
+    month,
+  );
 
   return (
     <Summary
@@ -29,6 +32,8 @@ export default async function OverviewPage({
       currentMonth={currentMonth}
       monthLabel={formatMonth(month)}
       summary={summary}
+      openingBalance={openingBalance}
+      includeExpectedIncomes={includeExpectedIncomes}
     />
   );
 }

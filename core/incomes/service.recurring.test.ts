@@ -33,6 +33,7 @@ const input: RecurringIncomeInput = {
   currency: "USD",
   categoryId: "cat_1",
   notes: null,
+  medium: "DIGITAL",
   frequency: "MONTHLY",
   startDate: "2026-01-05",
   endDate: null,
@@ -44,6 +45,7 @@ const WRITABLE_DATA = {
   currency: "USD",
   categoryId: "cat_1",
   notes: null,
+  medium: "DIGITAL",
   frequency: "MONTHLY",
   startDate: new Date("2026-01-05T00:00:00.000Z"),
   endDate: null,
@@ -58,6 +60,7 @@ const templateRow = (patch: Record<string, unknown> = {}) => ({
   categoryId: "cat_1",
   category: { name: "Salary" },
   notes: null,
+  medium: "DIGITAL",
   frequency: "MONTHLY",
   startDate: new Date("2026-07-15T00:00:00.000Z"),
   endDate: null,
@@ -100,11 +103,22 @@ describe("listRecurringIncomes", () => {
         categoryId: "cat_1",
         categoryName: "Salary",
         notes: null,
+        medium: "DIGITAL",
         frequency: "MONTHLY",
         startDate: "2026-07-15",
         endDate: "2026-12-15",
       },
     ]);
+  });
+
+  it("carries the medium of a cash template", async () => {
+    recurringIncome.findMany.mockResolvedValue([
+      templateRow({ medium: "CASH" }),
+    ]);
+
+    const [template] = await listRecurringIncomes(USER_ID);
+
+    expect(template.medium).toBe("CASH");
   });
 });
 
@@ -258,9 +272,30 @@ describe("materializeRecurringIncomes", () => {
         date: new Date(`${date}T00:00:00.000Z`),
         recurringIncomeId: "rec_1",
         status: "PLANNED",
+        medium: "DIGITAL",
       })),
       skipDuplicates: true,
     });
+  });
+
+  it("gives every generated income the medium of its template", async () => {
+    recurringIncome.findMany.mockResolvedValue([
+      templateRow({ id: "rec_cash", medium: "CASH" }),
+      templateRow({ id: "rec_digital", medium: "DIGITAL" }),
+    ]);
+
+    await materializeRecurringIncomes(USER_ID, "2026-07-20");
+
+    const byTemplate = Object.fromEntries(
+      createdRows().map(
+        (row: { recurringIncomeId: string; medium: string }) => [
+          row.recurringIncomeId,
+          row.medium,
+        ],
+      ),
+    );
+
+    expect(byTemplate).toEqual({ rec_cash: "CASH", rec_digital: "DIGITAL" });
   });
 
   it("looks up the latest generated income per template", async () => {

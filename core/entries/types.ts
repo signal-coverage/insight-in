@@ -5,3 +5,7 @@ export interface CurrencyTotal {
   total: number;
   settled: number;
 }
+
+// What deleting several incomes or expenses at once answers: how many went away.
+export type BulkDeleteResult =
+  { status: "success"; deleted: number } | { status: "error"; message: string };

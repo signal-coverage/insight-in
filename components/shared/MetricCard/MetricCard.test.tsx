@@ -54,6 +54,39 @@ describe("MetricCard", () => {
   });
 });
 
+describe("MetricCard HeroUI card", () => {
+  it("renders its figure inside a HeroUI card within the list item", () => {
+    renderCard({ label: "Total", value: "$ 1,00", description: "Algo." });
+
+    const item = screen.getByRole("listitem");
+    const card = item.querySelector(".card");
+
+    expect(card).not.toBeNull();
+    expect(card?.parentElement).toBe(item);
+    expect(card?.querySelector(".card__header")).toHaveTextContent("Total");
+    expect(card?.querySelector(".card__content")).toHaveTextContent("$ 1,00");
+    expect(card?.querySelector(".card__content")).toHaveTextContent("Algo.");
+  });
+
+  it("puts the tone and the emphasis on the card's ring", () => {
+    renderCard({ label: "Total", value: "1", tone: "income" });
+    renderCard({ label: "Neto", value: "1", emphasis: true });
+
+    const [toned, emphasised] = screen
+      .getAllByRole("listitem")
+      .map((item) => item.querySelector(".card"));
+
+    expect(toned).toHaveClass("bg-success-soft", "ring-success");
+    expect(emphasised).toHaveClass("ring-2", "ring-accent");
+  });
+
+  it("does not add headings to the page", () => {
+    renderCard({ label: "Total", value: "1" });
+
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+  });
+});
+
 describe("MetricCard tone and description", () => {
   it.each(["income", "expense"] as const)("can carry the %s tone", (tone) => {
     renderCard({ label: "Total", value: "1", tone });

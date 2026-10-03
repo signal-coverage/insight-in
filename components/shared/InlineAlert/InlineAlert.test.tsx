@@ -27,6 +27,33 @@ describe("InlineAlert", () => {
     },
   );
 
+  it.each([
+    ["error", "alert--danger"],
+    ["success", "alert--success"],
+    ["warning", "alert--warning"],
+  ] as const)("renders %s as a HeroUI alert (%s)", (variant, modifier) => {
+    render(<InlineAlert variant={variant}>Message</InlineAlert>);
+
+    const root = screen.getByRole(variant === "error" ? "alert" : "status");
+
+    expect(root).toHaveAttribute("data-slot", "alert-root");
+    expect(root).toHaveClass("alert", modifier);
+    expect(root.querySelector("[data-slot='alert-indicator']")).not.toBeNull();
+    expect(
+      root.querySelector("[data-slot='alert-description']"),
+    ).toHaveTextContent("Message");
+  });
+
+  it("merges a caller className onto the alert", () => {
+    render(
+      <InlineAlert variant="success" className="mt-4">
+        Saved
+      </InlineAlert>,
+    );
+
+    expect(screen.getByRole("status")).toHaveClass("mt-4");
+  });
+
   it("uses a different icon per variant", () => {
     const paths = (["error", "success", "warning"] as const).map((variant) => {
       const { container, unmount } = render(

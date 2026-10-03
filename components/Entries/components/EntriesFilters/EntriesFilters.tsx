@@ -15,7 +15,6 @@ import {
   CLEAR_LABEL,
   CURRENCY_LABEL,
   FROM_LABEL,
-  PLANNED_LABEL,
   STATUS_LABEL,
   TO_LABEL,
   ALL_STATUSES_LABEL,
@@ -27,11 +26,12 @@ import {
   SELECT_FIELD_CLASS_NAME,
 } from "./styles";
 import type { EntriesFiltersProps } from "./types";
-import { buildCurrencyOptions } from "./utils";
+import { buildCurrencyOptions, statusOptions } from "./utils";
 
 export function EntriesFilters({
   ariaLabel,
   settledLabel,
+  coveredLabel,
   query,
   categories,
   currencies,
@@ -58,10 +58,7 @@ export function EntriesFilters({
       <FilterSelect
         label={STATUS_LABEL}
         allLabel={ALL_STATUSES_LABEL}
-        options={[
-          { id: "PLANNED", label: PLANNED_LABEL },
-          { id: "SETTLED", label: settledLabel },
-        ]}
+        options={statusOptions(settledLabel, coveredLabel)}
         value={query.status}
         className={SELECT_FIELD_CLASS_NAME}
         onChange={(status) =>

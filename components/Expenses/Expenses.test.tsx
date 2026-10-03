@@ -11,18 +11,30 @@ vi.mock("@/core/expenses/actions", () => ({
   createExpenseAction: vi.fn(),
   updateExpenseAction: vi.fn(),
   deleteExpenseAction: vi.fn(),
+  deleteExpensesAction: vi.fn(),
   createCategoryAction: vi.fn(),
   renameCategoryAction: vi.fn(),
   deleteCategoryAction: vi.fn(),
 }));
 vi.mock("@/core/expenses/recurringActions", () => ({
   applyRecurringDecisionsAction: vi.fn(),
+  setRecurringDecisionAction: vi.fn(),
+  removeRecurringExpenseAction: vi.fn(),
+  updateRecurringExpenseAction: vi.fn(),
+}));
+vi.mock("@/core/installments/actions", () => ({
+  createInstallmentPlanAction: vi.fn(),
 }));
 
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 
 import { Expenses } from "./Expenses";
-import type { ExpenseRow, RecurringData, RecurringRow } from "./types";
+import type {
+  ExpenseRow,
+  InstallmentPlanRow,
+  RecurringData,
+  RecurringRow,
+} from "./types";
 
 const ROW: ExpenseRow = {
   id: "exp_1",
@@ -33,14 +45,43 @@ const ROW: ExpenseRow = {
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
+  medium: "DIGITAL",
   status: "SETTLED",
   isRecurring: false,
+  installmentPlanId: null,
+  installmentNumber: null,
+  cardId: null,
+  purchaseDate: null,
+  originCurrency: null,
+  originAmount: null,
+  originAmountDecimal: null,
+  originLabel: null,
+  originTooltip: null,
+  expectedReimbursement: null,
+  reimbursementReceived: 0,
+  expectedReimbursementDecimal: null,
+  reimbursementTooltip: null,
   amountLabel: "$ 350.000,50",
   amountDecimal: "350000.50",
   dateLabel: "5 sept 2026",
 };
 
-const TODAY = "2026-09-30";
+const PLAN: InstallmentPlanRow = {
+  id: "plan_1",
+  description: "Heladera",
+  categoryName: "Hogar",
+  currency: "ARS",
+  totalCuotas: 12,
+  doneCount: 3,
+  pendingCount: 9,
+  nextAmount: 10000000,
+  defaultCount: 1,
+  nextAmountLabel: "$ 100.000,00",
+  progressLabel: "3 de 12 · quedan 9",
+};
+
+// Mid-month on purpose: the default range is the whole month, not the days up to today.
+const TODAY = "2026-09-15";
 const PAGINATION = { page: 1, totalPages: 1, total: 1, pageSize: 25 };
 const CURRENT_MONTH = {
   ...DEFAULT_ENTRIES_QUERY,
@@ -64,19 +105,28 @@ const TEMPLATE: RecurringRow = {
   categoryId: "c2",
   categoryName: "Salud",
   notes: null,
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
   dayOfMonth: 20,
   decision: null,
   amountLabel: "$ 45.000,00",
   amountDecimal: "45000.00",
   dayLabel: "Día 20",
+  originAmountDecimal: null,
+  referenceLabel: null,
 };
 
-const recurringOf = (pending: RecurringRow[]): RecurringData => ({
+const recurringOf = (
+  pending: RecurringRow[],
+  plans: InstallmentPlanRow[] = [],
+): RecurringData => ({
   month: "2026-09",
   monthLabel: "Septiembre de 2026",
   pending,
   decided: [],
   pendingCount: pending.length,
+  plans,
 });
 
 const NO_RECURRING = recurringOf([]);
@@ -94,6 +144,7 @@ const renderExpenses = (
       currencies={["ARS"]}
       table={{ rows: [ROW], pagination: PAGINATION, hasAnyExpenses: true }}
       recurring={recurring}
+      cards={[]}
     />,
   );
 
@@ -133,7 +184,7 @@ describe("Expenses page", () => {
     expect(screen.getByText("Monthly rent")).toBeInTheDocument();
   });
 
-  it("offers Add expense, Manage categories and Recurring expenses in the Actions menu, and nothing else", async () => {
+  it("offers Add expense, Manage categories, Recurring expenses, Installment purchase and the icon help in the Actions menu, and nothing else", async () => {
     renderExpenses();
 
     await openMenu();
@@ -144,7 +195,43 @@ describe("Expenses page", () => {
       "Agregar gasto",
       "Administrar categorías",
       "Gastos recurrentes",
+      "Compra en cuotas",
+      "Ayuda de íconos",
     ]);
+  });
+
+  it("takes the user to the help page from Ayuda de íconos", async () => {
+    renderExpenses();
+
+    await choose("Ayuda de íconos");
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith("/dashboard/help");
+  });
+
+  it("opens the installment planner from the Actions menu, on its first step", async () => {
+    renderExpenses();
+
+    await choose("Compra en cuotas");
+
+    expect(
+      await screen.findByRole("heading", { name: "Compra en cuotas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Paso 1 de 2 · Datos de la compra"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  });
+
+  it("opens the wizard with the purchases in installments next to the recurring expenses", async () => {
+    renderExpenses(CURRENT_MONTH, recurringOf([TEMPLATE], [PLAN]));
+
+    await choose("Gastos recurrentes");
+
+    expect(
+      await screen.findByRole("heading", { name: "Compras en cuotas" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Heladera")).toBeInTheDocument();
   });
 
   it("opens the recurring-expenses wizard for the current month from the Actions menu", async () => {
@@ -158,6 +245,23 @@ describe("Expenses page", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Aplicar" })).toBeDisabled();
+  });
+
+  it("edits a template from the wizard, with the page's categories to choose from", async () => {
+    renderExpenses(
+      CURRENT_MONTH,
+      recurringOf([{ ...TEMPLATE, categoryId: "c1" }]),
+    );
+
+    await choose("Gastos recurrentes");
+    fireEvent.click(await screen.findByRole("button", { name: "Editar Gym" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Editar gasto recurrente" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Categoría/ })).toHaveTextContent(
+      "Alquiler",
+    );
   });
 
   it("opens the expense form from Add expense", async () => {
@@ -233,6 +337,20 @@ describe("Expenses recurring notice", () => {
     expect(notice()).not.toBeInTheDocument();
   });
 
+  it("never counts the purchases in installments as unresolved", () => {
+    renderExpenses(CURRENT_MONTH, recurringOf([], [PLAN]));
+
+    expect(notice()).not.toBeInTheDocument();
+  });
+
+  it("counts only the recurring expenses when there are purchases too", () => {
+    renderExpenses(CURRENT_MONTH, recurringOf([TEMPLATE], [PLAN]));
+
+    expect(notice()).toHaveTextContent(
+      "Tenés 1 gasto recurrente sin resolver este mes.",
+    );
+  });
+
   it("is not counted by the rows that are already decided", () => {
     renderExpenses(CURRENT_MONTH, {
       ...recurringOf([]),
@@ -259,7 +377,7 @@ describe("Expenses recurring notice", () => {
     renderExpenses(CURRENT_MONTH, recurringOf([TEMPLATE]));
 
     expect(
-      notice()!.compareDocumentPosition(screen.getByRole("table")) &
+      notice()!.compareDocumentPosition(screen.getByRole("grid")) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
@@ -269,7 +387,7 @@ describe("Expenses navigation", () => {
   it("writes a sort change to the URL and goes back to page 1", () => {
     renderExpenses();
 
-    fireEvent.click(screen.getByRole("button", { name: /Descripción/ }));
+    fireEvent.click(screen.getByRole("columnheader", { name: /Descripción/ }));
 
     expect(router.push).toHaveBeenCalledWith(
       "/dashboard/expenses?sort=description",
@@ -278,6 +396,16 @@ describe("Expenses navigation", () => {
 
   it("offers Clear filters from the URL alone when the view is not the default", () => {
     renderExpenses({ ...CURRENT_MONTH, status: "PLANNED" });
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Limpiar filtros" })[0],
+    );
+
+    expect(router.push).toHaveBeenCalledWith("/dashboard/expenses");
+  });
+
+  it("treats a range that ends today as a filter, since the default reaches the end of the month", () => {
+    renderExpenses({ ...CURRENT_MONTH, to: TODAY });
 
     fireEvent.click(
       screen.getAllByRole("button", { name: "Limpiar filtros" })[0],
@@ -308,6 +436,7 @@ describe("Expenses while its data is still on the way", () => {
         currencies={never()}
         table={never()}
         recurring={never()}
+        cards={[]}
       />,
     );
 
@@ -393,6 +522,7 @@ describe("Expenses empty table", () => {
           hasAnyExpenses: false,
         }}
         recurring={NO_RECURRING}
+        cards={[]}
       />,
     );
 
@@ -421,6 +551,7 @@ describe("Expenses empty table", () => {
           hasAnyExpenses: true,
         }}
         recurring={NO_RECURRING}
+        cards={[]}
       />,
     );
 

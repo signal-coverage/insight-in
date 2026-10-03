@@ -17,12 +17,15 @@ const CATEGORIES = [
   { id: "c2", name: "Salary" },
 ];
 
+const onChange = vi.fn();
+
 const renderField = (defaultCategoryId: string | null = null) =>
   render(
     <CategoryField
       categories={CATEGORIES}
       defaultCategoryId={defaultCategoryId}
       onCreate={createCategoryAction}
+      onChange={onChange}
     />,
   );
 
@@ -44,6 +47,44 @@ const addRowButton = () => screen.queryByRole("button", { name: "Agregar" });
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+describe("CategoryField change notifications", () => {
+  it("tells the parent which category gets chosen", async () => {
+    renderField();
+
+    await pickOption("Salary");
+
+    expect(onChange).toHaveBeenCalledWith("c2");
+  });
+
+  it("does not report the action item as a category", async () => {
+    renderField("c1");
+
+    await pickOption(/agregar categoría/i);
+    await waitFor(() => expect(newCategoryInput()).toBeInTheDocument());
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("tells the parent about a category that was just created and selected", async () => {
+    createCategoryAction.mockResolvedValue({
+      status: "success",
+      category: { id: "c9", name: "Hogar" },
+    });
+    renderField();
+
+    await pickOption(/agregar categoría/i);
+    fireEvent.change(
+      await screen.findByRole("textbox", {
+        name: "Nombre de la nueva categoría",
+      }),
+      { target: { value: "Hogar" } },
+    );
+    fireEvent.click(addRowButton()!);
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("c9"));
+  });
 });
 
 describe("CategoryField add row", () => {

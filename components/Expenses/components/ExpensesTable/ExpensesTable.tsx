@@ -1,15 +1,22 @@
-import {
-  ArrowPathIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Button, Skeleton } from "@heroui/react";
 
 import { DataTable } from "@/components/DataTable";
 import type { DataTableColumn } from "@/components/DataTable";
+import { CashMarker } from "@/components/Entries/components/CashMarker";
 import { EntriesEmptyState } from "@/components/Entries/components/EntriesEmptyState";
+import { InstallmentMarker } from "@/components/Entries/components/InstallmentMarker";
+import { MarkerIcon } from "@/components/Entries/components/MarkerIcon";
 import { StatusCheckbox } from "@/components/Entries/components/StatusCheckbox";
-import { deleteLabel, editLabel } from "@/components/Entries/consts";
+import { MARKERS, ORIGIN_MARKER_ICON } from "@/components/Entries/markers";
+import { TruncatedText } from "@/components/Entries/components/TruncatedText";
+import {
+  DELETING_LABEL,
+  SELECT_ALL_LABEL,
+  deleteLabel,
+  editLabel,
+  selectLabel,
+} from "@/components/Entries/consts";
 import {
   ACTIONS_CLASS_NAME,
   ACTIONS_COLUMN_CLASS_NAME,
@@ -18,6 +25,7 @@ import {
   CENTERED_CELL_CLASS_NAME,
   CATEGORY_COLUMN_CLASS_NAME,
   CENTERED_CLASS_NAME,
+  COVERED_ICON_CLASS_NAME,
   DATE_COLUMN_CLASS_NAME,
   FIXED_TABLE_CLASS_NAME,
   DESCRIPTION_CLASS_NAME,
@@ -30,8 +38,10 @@ import {
 } from "@/components/Entries/tableStyles";
 
 import {
+  COVERED_MARKER_LABEL,
   EMPTY_COPY,
   RECURRING_MARKER_LABEL,
+  REIMBURSEMENT_MARKER_LABEL,
   markSettledLabel,
 } from "../../consts";
 import type { ExpenseRow } from "../../types";
@@ -45,6 +55,7 @@ import {
   NO_NOTES,
   NOTES_HEADER,
   STATUS_HEADER,
+  TABLE_LABEL,
 } from "./consts";
 import type { ExpensesTableProps } from "./types";
 
@@ -60,7 +71,13 @@ export function ExpensesTable({
   onEdit,
   onDelete,
   onToggleStatus,
+  selectedIds,
+  onSelectionChange,
+  deletingIds,
 }: ExpensesTableProps) {
+  // A row being deleted can be neither edited nor deleted again nor ticked.
+  const isDeleting = (row: ExpenseRow) => Boolean(deletingIds?.has(row.id));
+
   const columns: DataTableColumn<ExpenseRow>[] = [
     {
       key: "actions",
@@ -72,8 +89,9 @@ export function ExpensesTable({
           <Button
             isIconOnly
             size="sm"
-            variant="tertiary"
+            variant="secondary"
             aria-label={editLabel(row.description)}
+            isDisabled={isDeleting(row)}
             onPress={() => onEdit(row)}
           >
             <PencilSquareIcon
@@ -86,6 +104,7 @@ export function ExpensesTable({
             size="sm"
             variant="danger-soft"
             aria-label={deleteLabel(row.description)}
+            isDisabled={isDeleting(row)}
             onPress={() => onDelete(row)}
           >
             <TrashIcon className={ACTION_ICON_CLASS_NAME} aria-hidden="true" />
@@ -106,11 +125,21 @@ export function ExpensesTable({
       headerClassName: CENTERED_CLASS_NAME,
       cell: (row) => (
         <div className={CENTERED_CELL_CLASS_NAME}>
-          <StatusCheckbox
-            isSettled={row.status === "SETTLED"}
-            label={markSettledLabel(row.description)}
-            onChange={(isSettled) => onToggleStatus(row, isSettled)}
-          />
+          {row.status === "COVERED" ? (
+            // Someone else paid it: nothing to tick, so the marker stands in for the checkbox.
+            <MarkerIcon
+              icon={MARKERS.covered.icon}
+              label={COVERED_MARKER_LABEL}
+              className={COVERED_ICON_CLASS_NAME}
+            />
+          ) : (
+            <StatusCheckbox
+              isSettled={row.status === "SETTLED"}
+              label={markSettledLabel(row.description)}
+              isDisabled={isDeleting(row)}
+              onChange={(isSettled) => onToggleStatus(row, isSettled)}
+            />
+          )}
         </div>
       ),
       loadingCell: <Skeleton className="mx-auto size-5 rounded-md" />,
@@ -119,18 +148,36 @@ export function ExpensesTable({
       key: "description",
       header: DESCRIPTION_HEADER,
       sortable: true,
+      isRowHeader: true,
       cell: (row) => (
         <span className={DESCRIPTION_ROW_CLASS_NAME}>
-          <span className={DESCRIPTION_CLASS_NAME} title={row.description}>
+          <TruncatedText className={DESCRIPTION_CLASS_NAME}>
             {row.description}
-          </span>
+          </TruncatedText>
+          {row.medium === "CASH" ? <CashMarker /> : null}
+          {row.installmentPlanId !== null ? <InstallmentMarker /> : null}
           {row.isRecurring ? (
-            // Heroicons are aria-hidden by default: this one carries the meaning, so it must not be.
-            <ArrowPathIcon
-              role="img"
-              aria-hidden={false}
-              aria-label={RECURRING_MARKER_LABEL}
-              title={RECURRING_MARKER_LABEL}
+            <MarkerIcon
+              icon={MARKERS.recurring.icon}
+              label={RECURRING_MARKER_LABEL}
+              className={RECURRING_ICON_CLASS_NAME}
+            />
+          ) : null}
+          {/* It was quoted in another currency: the marker only records the reference price. */}
+          {row.originLabel !== null ? (
+            <MarkerIcon
+              icon={ORIGIN_MARKER_ICON}
+              label={row.originLabel}
+              tooltip={row.originTooltip ?? row.originLabel}
+              className={RECURRING_ICON_CLASS_NAME}
+            />
+          ) : null}
+          {/* It is expected to be paid back: the tooltip says how much is still owed. */}
+          {row.reimbursementTooltip !== null ? (
+            <MarkerIcon
+              icon={MARKERS.reimbursement.icon}
+              label={REIMBURSEMENT_MARKER_LABEL}
+              tooltip={row.reimbursementTooltip}
               className={RECURRING_ICON_CLASS_NAME}
             />
           ) : null}
@@ -169,9 +216,9 @@ export function ExpensesTable({
       header: NOTES_HEADER,
       cell: (row) =>
         row.notes ? (
-          <span className={NOTES_CLASS_NAME} title={row.notes}>
+          <TruncatedText className={NOTES_CLASS_NAME}>
             {row.notes}
-          </span>
+          </TruncatedText>
         ) : (
           <span className={NOTES_CLASS_NAME}>{NO_NOTES}</span>
         ),
@@ -181,6 +228,7 @@ export function ExpensesTable({
 
   return (
     <DataTable
+      label={TABLE_LABEL}
       className={TABLE_CLASS_NAME}
       tableClassName={FIXED_TABLE_CLASS_NAME}
       columns={columns}
@@ -190,6 +238,18 @@ export function ExpensesTable({
       loadingLabel={LOADING_LABEL}
       sort={sort}
       onSortChange={onSortChange}
+      selection={
+        onSelectionChange
+          ? {
+              selectedKeys: selectedIds ?? new Set(),
+              onSelectionChange,
+              selectAllLabel: SELECT_ALL_LABEL,
+              rowLabel: (row) => selectLabel(row.description),
+            }
+          : undefined
+      }
+      isRowBusy={deletingIds ? isDeleting : undefined}
+      busyLabel={DELETING_LABEL}
       footer={footer}
       emptyState={
         <EntriesEmptyState

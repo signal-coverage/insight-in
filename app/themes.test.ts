@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { THEME_IDS } from "@/lib/themes";
+import { THEME_IDS, THEMES } from "@/lib/themes";
 
 // Light is the base (`:root`) and dark has its own block in globals.css. Every other theme is a
 // class on <html> in themes.css: it declares its five colours and a few roles (page, ink, accent,
@@ -61,6 +61,10 @@ const tokensOf = (block: string): string[] =>
       (token) => !token.startsWith("--palette-") && !token.startsWith("--p-"),
     );
 
+// The hex colours a block declares with the given variable pattern, in lower case.
+const paletteColors = (source: string, pattern: RegExp): string[] =>
+  [...source.matchAll(pattern)].map((match) => match[1].toLowerCase());
+
 // The roles every theme must declare: those the shared rules read without a fallback.
 const REQUIRED_ROLES = [
   ...new Set(
@@ -111,6 +115,23 @@ describe("theme stylesheet", () => {
     expect(sharedMapping()).toMatch(/color-scheme:\s*var\(--t-scheme\);/);
   });
 
+  // The previews of the settings page draw each theme from lib/themes.ts, so what they show must be
+  // what the stylesheet declares: light and dark keep their palette on :root, the rest in --p-*.
+  it.each(THEMES)(
+    "previews the $id theme with colours its stylesheet really declares",
+    ({ id, colors }) => {
+      const declared =
+        id === "light" || id === "dark"
+          ? paletteColors(CSS, /^\s*--palette-[\w-]+:\s*(#[0-9a-f]{6});/gim)
+          : paletteColors(
+              themeBlock(id),
+              /^\s*--p-[\w-]+:\s*(#[0-9a-f]{6});/gim,
+            );
+
+      expect(declared).toEqual(expect.arrayContaining([...colors]));
+    },
+  );
+
   it.each(["primary", "secondary", "tertiary", "danger-soft", "danger"])(
     "gives every role theme its own %s button through the shared rules",
     (variant) => {
@@ -125,6 +146,82 @@ describe("theme stylesheet", () => {
 
     expect(match).not.toBeNull();
     expect(idsIn(match![1]).sort()).toEqual([...OTHER_THEMES].sort());
+  });
+});
+
+// Red means "this removes something" and green means "this confirms money" in every theme, so the
+// destructive buttons and the status tick read the same way whatever the palette.
+describe("red and green", () => {
+  it("makes the destructive buttons red in light and dark, from the danger token", () => {
+    for (const selector of [
+      /^\.button--danger \{/m,
+      /^\.dark \.button--danger \{/m,
+    ]) {
+      expect(blockAt(CSS, selector, "danger button")).toContain(
+        "var(--danger)",
+      );
+    }
+  });
+
+  it("makes the trash buttons a red tint with a red icon in light and dark", () => {
+    for (const selector of [
+      /^\.button--danger-soft \{/m,
+      /^\.dark \.button--danger-soft \{/m,
+    ]) {
+      const block = blockAt(CSS, selector, "danger-soft button");
+
+      expect(block).toContain("--button-fg: var(--danger);");
+      expect(block).toContain("var(--danger-soft)");
+    }
+  });
+
+  it("gives the trash buttons a red outline like the edit button's, in light, dark and every role theme", () => {
+    const blocks = [
+      blockAt(CSS, /^\.button--danger-soft \{/m, "light trash button"),
+      blockAt(CSS, /^\.dark \.button--danger-soft \{/m, "dark trash button"),
+      blockAt(
+        THEMES_CSS,
+        /^:root:is\([^)]*\)\s+\.button--danger-soft \{/m,
+        "shared trash button",
+      ),
+    ];
+
+    for (const block of blocks) {
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--(danger|t-negative)\);/,
+      );
+    }
+  });
+
+  it("makes the destructive buttons of every role theme red through the shared rules", () => {
+    const danger = blockAt(
+      THEMES_CSS,
+      /^:root:is\([^)]*\)\s+\.button--danger \{/m,
+      "shared danger button",
+    );
+
+    expect(danger).toContain("var(--t-negative)");
+  });
+
+  it("gives every theme a green, through the positive tokens", () => {
+    expect(tokensOf(themeBlock("dark"))).toContain("--positive");
+    expect(tokensOf(sharedMapping())).toContain("--positive");
+    expect(tokensOf(CSS.slice(CSS.indexOf(":root {")))).toContain("--positive");
+  });
+
+  it("colours the wizard's choices: Habilitar green, Quitar red", () => {
+    expect(
+      blockAt(CSS, /^\.choice--positive \{/m, "positive choice"),
+    ).toContain("var(--positive)");
+    expect(
+      blockAt(CSS, /^\.choice--negative \{/m, "negative choice"),
+    ).toContain("var(--danger)");
+  });
+
+  it("turns the status tick green", () => {
+    const tick = blockAt(CSS, /^\.status-checkbox \{/m, "status checkbox rule");
+
+    expect(tick).toContain("var(--positive)");
   });
 });
 

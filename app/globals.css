@@ -122,18 +122,43 @@
   --segment: var(--palette-ghost-white);
   --segment-foreground: var(--palette-deep-periwinkle);
 
-  /* Destructive: a deep outline on a transparent fill (see .button--danger below). */
-  --danger: var(--palette-deep-periwinkle);
+  /* Destructive: red (see .button--danger below), and the border and message of an invalid field.
+     Red and green are not in the palette: they are the shared signal colours (themes.css) mixed
+     toward the deep periwinkle until they pass the contrast rules (5.6:1 and 5.9:1 on the page). */
+  --danger: color-mix(
+    in oklab,
+    var(--signal-red) 85%,
+    var(--palette-deep-periwinkle)
+  );
   --danger-foreground: var(--palette-ghost-white);
   --danger-soft: color-mix(
     in oklab,
-    var(--palette-peach-fuzz) 60%,
+    var(--danger) 14%,
     var(--palette-ghost-white)
   );
   --danger-soft-foreground: var(--palette-deep-periwinkle);
   --danger-soft-hover: color-mix(
     in oklab,
-    var(--palette-peach-fuzz) 80%,
+    var(--danger) 24%,
+    var(--palette-ghost-white)
+  );
+
+  /* Confirming money (paid / collected, "Habilitar"): green. */
+  --positive: color-mix(
+    in oklab,
+    var(--signal-green) 60%,
+    var(--palette-deep-periwinkle)
+  );
+  --positive-foreground: var(--palette-ghost-white);
+  --positive-soft: color-mix(
+    in oklab,
+    var(--positive) 14%,
+    var(--palette-ghost-white)
+  );
+  --positive-soft-foreground: var(--palette-deep-periwinkle);
+  --positive-soft-hover: color-mix(
+    in oklab,
+    var(--positive) 24%,
     var(--palette-ghost-white)
   );
 
@@ -251,18 +276,43 @@
   );
   --segment-foreground: var(--palette-alabaster-grey);
 
-  /* Destructive: Alabaster outline (see .button--danger below). */
-  --danger: var(--palette-alabaster-grey);
+  /* Destructive: red (see .button--danger below), and the border and message of an invalid field.
+     Red and green are the shared signal colours (themes.css) mixed toward Alabaster Grey until
+     they pass the contrast rules (5.5:1 and 5.4:1 on the page). */
+  --danger: color-mix(
+    in oklab,
+    var(--signal-red) 70%,
+    var(--palette-alabaster-grey)
+  );
   --danger-foreground: var(--palette-ink-black);
   --danger-soft: color-mix(
     in oklab,
-    var(--palette-dusk-blue) 55%,
+    var(--danger) 18%,
     var(--palette-deep-prussian)
   );
   --danger-soft-foreground: var(--palette-alabaster-grey);
   --danger-soft-hover: color-mix(
     in oklab,
-    var(--palette-dusk-blue) 70%,
+    var(--danger) 28%,
+    var(--palette-deep-prussian)
+  );
+
+  /* Confirming money (paid / collected, "Habilitar"): green. */
+  --positive: color-mix(
+    in oklab,
+    var(--signal-green) 95%,
+    var(--palette-alabaster-grey)
+  );
+  --positive-foreground: var(--palette-ink-black);
+  --positive-soft: color-mix(
+    in oklab,
+    var(--positive) 18%,
+    var(--palette-deep-prussian)
+  );
+  --positive-soft-foreground: var(--palette-alabaster-grey);
+  --positive-soft-hover: color-mix(
+    in oklab,
+    var(--positive) 28%,
     var(--palette-deep-prussian)
   );
 
@@ -299,13 +349,18 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Green for what confirms money (see --positive in each theme). */
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-positive-soft: var(--positive-soft);
+  --color-positive-soft-foreground: var(--positive-soft-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 /* Dark button hierarchy. Primary is the Alabaster fill. Secondary is Deep Prussian with a Dusk
-   Blue border; tertiary is transparent; the small trash buttons are an Alabaster tint; and
-   destructive is an Alabaster outline (a solid Alabaster fill would read as the primary). */
+   Blue border; tertiary is transparent; and the destructive ones are red: a red tint with a red
+   icon for the small trash buttons, and a solid red for the confirm button of a delete dialog. */
 .dark .button--secondary {
   --button-bg: var(--palette-deep-prussian);
   --button-bg-hover: color-mix(
@@ -338,45 +393,33 @@
 }
 
 .dark .button--danger-soft {
-  --button-bg: color-mix(
-    in oklab,
-    var(--palette-alabaster-grey) 14%,
-    var(--palette-deep-prussian)
-  );
-  --button-bg-hover: color-mix(
-    in oklab,
-    var(--palette-alabaster-grey) 22%,
-    var(--palette-deep-prussian)
-  );
-  --button-bg-pressed: color-mix(
-    in oklab,
-    var(--palette-alabaster-grey) 22%,
-    var(--palette-deep-prussian)
-  );
-  --button-fg: var(--palette-alabaster-grey);
+  --button-bg: var(--danger-soft);
+  --button-bg-hover: var(--danger-soft-hover);
+  --button-bg-pressed: var(--danger-soft-hover);
+  --button-fg: var(--danger);
+  border: 1px solid var(--danger);
 }
 
 .dark .button--danger {
-  --button-bg: transparent;
+  --button-bg: var(--danger);
   --button-bg-hover: color-mix(
     in oklab,
-    var(--palette-alabaster-grey) 14%,
-    transparent
+    var(--danger) 88%,
+    var(--palette-alabaster-grey)
   );
   --button-bg-pressed: color-mix(
     in oklab,
-    var(--palette-alabaster-grey) 14%,
-    transparent
+    var(--danger) 88%,
+    var(--palette-alabaster-grey)
   );
-  --button-fg: var(--palette-alabaster-grey);
-  border: 1.5px solid var(--palette-alabaster-grey);
+  --button-fg: var(--danger-foreground);
+  border: 1.5px solid transparent;
 }
 
 /* Light button hierarchy. Every light button is warm: the periwinkles read blue-violet and are
    never a button fill. Primary is Peach Fuzz with a deep label (11.5:1) and a border, because the
    fill alone is only 1.25:1 against the page; secondary is Antique White with a border; tertiary
-   is transparent; the small trash buttons are a Peach tint; and destructive is a deep outline on
-   a transparent fill, so it never reads as the primary or the secondary. Dark mode keeps HeroUI's
+   is transparent; and the destructive ones are red (below). Dark mode keeps HeroUI's
    accent-based primary and overrides the rest above. */
 :root:not(
     .dark,
@@ -439,39 +482,53 @@
   --button-fg: var(--palette-deep-periwinkle);
 }
 
+/* Destructive buttons are red: the small trash buttons are a red tint with a red icon, and the
+   confirm button of a delete dialog is a solid red with a light label. */
 .button--danger-soft {
-  --button-bg: color-mix(
-    in oklab,
-    var(--palette-peach-fuzz) 55%,
-    var(--palette-antique-white)
-  );
-  --button-bg-hover: color-mix(
-    in oklab,
-    var(--palette-peach-fuzz) 80%,
-    var(--palette-antique-white)
-  );
-  --button-bg-pressed: color-mix(
-    in oklab,
-    var(--palette-peach-fuzz) 80%,
-    var(--palette-antique-white)
-  );
-  --button-fg: var(--palette-deep-periwinkle);
+  --button-bg: var(--danger-soft);
+  --button-bg-hover: var(--danger-soft-hover);
+  --button-bg-pressed: var(--danger-soft-hover);
+  --button-fg: var(--danger);
+  /* The same outline as the edit button beside it, in red. */
+  border: 1px solid var(--danger);
 }
 
 .button--danger {
-  --button-bg: transparent;
+  --button-bg: var(--danger);
   --button-bg-hover: color-mix(
     in oklab,
-    var(--palette-deep-periwinkle) 12%,
-    transparent
+    var(--danger) 88%,
+    var(--palette-deep-periwinkle)
   );
   --button-bg-pressed: color-mix(
     in oklab,
-    var(--palette-deep-periwinkle) 12%,
-    transparent
+    var(--danger) 88%,
+    var(--palette-deep-periwinkle)
   );
-  --button-fg: var(--palette-deep-periwinkle);
-  border: 1.5px solid var(--palette-deep-periwinkle);
+  --button-fg: var(--danger-foreground);
+  border: 1.5px solid transparent;
+}
+
+/* The status tick of a row (collected / paid) is green, the colour of money that was confirmed. The
+   checkbox draws its checked state with the accent colour, so inside it the accent is the green. */
+.status-checkbox {
+  --accent: var(--positive);
+  --accent-hover: var(--positive);
+  --accent-foreground: var(--positive-foreground);
+}
+
+/* The choices of the recurring-expenses wizard: Habilitar is green and Quitar is red, as the
+   radio's own accent colour, so the one that is picked shows what it does. */
+.choice--positive {
+  --accent: var(--positive);
+  --accent-hover: var(--positive);
+  --accent-foreground: var(--positive-foreground);
+}
+
+.choice--negative {
+  --accent: var(--danger);
+  --accent-hover: var(--danger);
+  --accent-foreground: var(--danger-foreground);
 }
 
 /* Popovers open over drawers that share their fill, so they get a border and a slightly
@@ -597,10 +654,14 @@ body {
        calendar header and pushing the field's icon away from its edge. `revert-layer` gives
        back HeroUI's own values from its component layer; this rule comes after the defaults so
        it wins at equal specificity. */
+    /* The plus and minus of a number field are the same case: at 6rem each they overflow the
+       field and the plus is cut off. */
     &:is(
       .date-picker__trigger,
       [class*="calendar__"],
-      [class*="calendar-year-picker__"]
+      [class*="calendar-year-picker__"],
+      .number-field__increment-button,
+      .number-field__decrement-button
     ) {
       min-width: revert-layer;
       max-width: revert-layer;
@@ -693,4 +754,11 @@ body {
   to {
     --reveal: 157vmax;
   }
+}
+
+/* Tooltips open after 300 ms instead of HeroUI's 1500 ms: the icons next to a description are the
+   only explanation of what they mean, so waiting a second and a half for it reads as broken. */
+:root {
+  --tooltip-delay: 300ms;
+  --tooltip-close-delay: 0ms;
 }

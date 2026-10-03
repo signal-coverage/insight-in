@@ -52,7 +52,10 @@ export const countPending = (items: readonly RecurringExpenseItem[]): number =>
 // Turns what the user chose into what has to be written. Anything that is not one of the user's
 // templates (the caller only passes those), anything already decided for the month and any repeat
 // of a template is ignored, which is what makes applying the same choices twice harmless. An
-// amount only matters when enabling, and then it must be valid in the template's currency.
+// amount matters when enabling or disabling, and then it must be valid in the template's currency;
+// when it differs from the stored one the template is updated, so it sticks for the next months
+// (the client never says "changed": it is decided here, comparing minor units). Removing ignores
+// the amount, since the template is deleted.
 export const planDecisions = ({
   templates,
   requested,
@@ -64,7 +67,12 @@ export const planDecisions = ({
 }): RecurringPlan => {
   const byId = new Map(templates.map((template) => [template.id, template]));
   const seen = new Set<string>();
-  const plan: RecurringPlan = { enable: [], disable: [], remove: [] };
+  const plan: RecurringPlan = {
+    enable: [],
+    disable: [],
+    remove: [],
+    amountUpdates: [],
+  };
 
   for (const { recurringExpenseId, choice, amount } of requested) {
     const template = byId.get(recurringExpenseId);
@@ -75,20 +83,28 @@ export const planDecisions = ({
 
     seen.add(template.id);
 
+    if (choice === "remove") {
+      plan.remove.push(template.id);
+
+      continue;
+    }
+
+    const minorUnits =
+      amount === undefined
+        ? template.amount
+        : toMinorUnits(amount, template.currency);
+
+    if (minorUnits === null || minorUnits <= 0) {
+      throw new InvalidRecurringAmountError(template.description);
+    }
+
+    if (minorUnits !== template.amount) {
+      plan.amountUpdates.push({ templateId: template.id, amount: minorUnits });
+    }
+
     if (choice === "disable") {
       plan.disable.push(template.id);
-    } else if (choice === "remove") {
-      plan.remove.push(template.id);
     } else {
-      const minorUnits =
-        amount === undefined
-          ? template.amount
-          : toMinorUnits(amount, template.currency);
-
-      if (minorUnits === null || minorUnits <= 0) {
-        throw new InvalidRecurringAmountError(template.description);
-      }
-
       plan.enable.push({
         templateId: template.id,
         date: dateInMonth(month, template.dayOfMonth),

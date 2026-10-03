@@ -20,6 +20,9 @@ const item = (
   categoryId: "cat_1",
   categoryName: "Alquiler",
   notes: null,
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
   dayOfMonth: 5,
   decision: null,
   ...patch,
@@ -108,10 +111,11 @@ describe("planDecisions", () => {
       enable: [{ templateId: "rec_1", date: "2026-10-05", amount: 35000050 }],
       disable: [],
       remove: [],
+      amountUpdates: [],
     });
   });
 
-  it("enables with the amount given for this month, in the currency of the template", () => {
+  it("enables with the amount given, in the currency of the template", () => {
     const { enable } = plan(
       [item({ currency: "USD" })],
       [{ recurringExpenseId: "rec_1", choice: "enable", amount: "120.5" }],
@@ -151,34 +155,54 @@ describe("planDecisions", () => {
     ).toThrow(InvalidRecurringAmountError);
   });
 
-  it("does not look at the amount of a template that is disabled or removed", () => {
+  it("rejects an invalid amount of a disabled template too, naming it", () => {
+    for (const amount of ["abc", "0", "-5", "1.234"]) {
+      expect(() =>
+        plan(
+          [item({ description: "Gym" })],
+          [{ recurringExpenseId: "rec_1", choice: "disable", amount }],
+        ),
+      ).toThrow(InvalidRecurringAmountError);
+    }
+  });
+
+  it("does not look at the amount of a template that is removed", () => {
     expect(
       plan(
-        [item({ id: "a" }), item({ id: "b" })],
-        [
-          { recurringExpenseId: "a", choice: "disable", amount: "abc" },
-          { recurringExpenseId: "b", choice: "remove", amount: "abc" },
-        ],
+        [item({ id: "b" })],
+        [{ recurringExpenseId: "b", choice: "remove", amount: "abc" }],
       ),
-    ).toEqual({ enable: [], disable: ["a"], remove: ["b"] });
+    ).toEqual({
+      enable: [],
+      disable: [],
+      remove: ["b"],
+      amountUpdates: [],
+    });
   });
 
   it("ignores ids that are not among the user's templates", () => {
     expect(
       plan([item()], [{ recurringExpenseId: "other", choice: "remove" }]),
-    ).toEqual({ enable: [], disable: [], remove: [] });
+    ).toEqual({ enable: [], disable: [], remove: [], amountUpdates: [] });
   });
 
-  it("ignores templates that already have a decision for the month", () => {
+  it("ignores templates that already have a decision for the month, amount included", () => {
     expect(
       plan(
         [item({ id: "a", decision: "ENABLED" }), item({ id: "b" })],
         [
           { recurringExpenseId: "a", choice: "remove" },
+          { recurringExpenseId: "a", choice: "enable", amount: "abc" },
           { recurringExpenseId: "b", choice: "disable" },
         ],
       ),
-    ).toEqual({ enable: [], disable: ["b"], remove: [] });
+    ).toEqual({ enable: [], disable: ["b"], remove: [], amountUpdates: [] });
+    expect(
+      plan(
+        [item({ id: "a", decision: "DISABLED" })],
+        [{ recurringExpenseId: "a", choice: "disable", amount: "999" }],
+      ).amountUpdates,
+    ).toEqual([]);
   });
 
   it("keeps only the first choice for a template that is listed twice", () => {
@@ -190,7 +214,12 @@ describe("planDecisions", () => {
           { recurringExpenseId: "rec_1", choice: "remove" },
         ],
       ),
-    ).toEqual({ enable: [], disable: ["rec_1"], remove: [] });
+    ).toEqual({
+      enable: [],
+      disable: ["rec_1"],
+      remove: [],
+      amountUpdates: [],
+    });
   });
 
   it("leaves templates without a choice untouched", () => {
@@ -199,6 +228,95 @@ describe("planDecisions", () => {
         [item({ id: "a" }), item({ id: "b" })],
         [{ recurringExpenseId: "a", choice: "disable" }],
       ),
-    ).toEqual({ enable: [], disable: ["a"], remove: [] });
+    ).toEqual({ enable: [], disable: ["a"], remove: [], amountUpdates: [] });
+  });
+
+  describe("an amount that differs from the template's", () => {
+    it("is kept on the template when enabling, and used for the month's expense", () => {
+      expect(
+        plan(
+          [item({ currency: "USD", amount: 4500 })],
+          [{ recurringExpenseId: "rec_1", choice: "enable", amount: "52.5" }],
+        ),
+      ).toEqual({
+        enable: [{ templateId: "rec_1", date: "2026-10-05", amount: 5250 }],
+        disable: [],
+        remove: [],
+        amountUpdates: [{ templateId: "rec_1", amount: 5250 }],
+      });
+    });
+
+    it("is kept on the template when disabling, with no expense created", () => {
+      expect(
+        plan(
+          [item({ currency: "USD", amount: 4500 })],
+          [{ recurringExpenseId: "rec_1", choice: "disable", amount: "52.5" }],
+        ),
+      ).toEqual({
+        enable: [],
+        disable: ["rec_1"],
+        remove: [],
+        amountUpdates: [{ templateId: "rec_1", amount: 5250 }],
+      });
+    });
+
+    it("is ignored when removing, since the template is deleted", () => {
+      expect(
+        plan(
+          [item({ amount: 4500 })],
+          [{ recurringExpenseId: "rec_1", choice: "remove", amount: "52.5" }],
+        ).amountUpdates,
+      ).toEqual([]);
+    });
+  });
+
+  describe("an amount equal to the template's", () => {
+    it.each(["enable", "disable"] as const)(
+      "writes nothing extra when %s",
+      (choice) => {
+        expect(
+          plan(
+            [item({ currency: "ARS", amount: 35000050 })],
+            [{ recurringExpenseId: "rec_1", choice, amount: "350000.50" }],
+          ).amountUpdates,
+        ).toEqual([]);
+      },
+    );
+
+    it("compares minor units, not text", () => {
+      expect(
+        plan(
+          [item({ currency: "ARS", amount: 10000 })],
+          [{ recurringExpenseId: "rec_1", choice: "disable", amount: "100" }],
+        ).amountUpdates,
+      ).toEqual([]);
+    });
+  });
+
+  it("writes nothing extra when no amount comes with a disabled template", () => {
+    expect(
+      plan([item()], [{ recurringExpenseId: "rec_1", choice: "disable" }])
+        .amountUpdates,
+    ).toEqual([]);
+  });
+
+  it("collects one update per changed template, in request order", () => {
+    expect(
+      plan(
+        [
+          item({ id: "a", amount: 100 }),
+          item({ id: "b", amount: 200 }),
+          item({ id: "c", amount: 300 }),
+        ],
+        [
+          { recurringExpenseId: "b", choice: "disable", amount: "5" },
+          { recurringExpenseId: "a", choice: "enable", amount: "2" },
+          { recurringExpenseId: "c", choice: "enable", amount: "3" },
+        ],
+      ).amountUpdates,
+    ).toEqual([
+      { templateId: "b", amount: 500 },
+      { templateId: "a", amount: 200 },
+    ]);
   });
 });

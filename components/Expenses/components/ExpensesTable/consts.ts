@@ -1,3 +1,4 @@
+export const TABLE_LABEL = "Gastos";
 export const LOADING_LABEL = "Cargando gastos";
 
 export const STATUS_HEADER = "Estado";

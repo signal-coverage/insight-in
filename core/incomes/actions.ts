@@ -10,13 +10,16 @@ import {
   runAuthenticated as runScoped,
 } from "@/core/entries/actionHelpers";
 import type { ActionFailure } from "@/core/entries/actionHelpers";
-import { isEntryStatus } from "@/core/entries/status";
+import { BULK_INVALID_MESSAGE, bulkIdsSchema } from "@/core/entries/bulk";
+import { isMoneyStatus } from "@/core/entries/status";
 import type { EntryStatus } from "@/core/entries/status";
+import type { BulkDeleteResult } from "@/core/entries/types";
 
 import {
   CATEGORY_NOT_FOUND_MESSAGE,
   categoryInUseMessage,
   INCOME_FORM_FIELDS,
+  INCOMES_NOT_FOUND_MESSAGE,
   INCOMES_PATH,
   INVALID_FORM_MESSAGE,
   LAST_CATEGORY_MESSAGE,
@@ -43,6 +46,7 @@ import {
   createRecurringIncome,
   deleteCategory,
   deleteIncome,
+  deleteIncomes,
   deleteRecurringIncome,
   renameCategory,
   setIncomeStatus,
@@ -129,7 +133,8 @@ export async function setIncomeStatusAction(
   status: EntryStatus,
 ): Promise<IncomeActionResult> {
   return runAuthenticated(async (userId) => {
-    if (!isEntryStatus(status)) {
+    // An income is never "covered by someone else": only the two money statuses are valid.
+    if (!isMoneyStatus(status)) {
       return failure(INVALID_FORM_MESSAGE);
     }
 
@@ -143,6 +148,30 @@ export async function deleteIncomeAction(
   return runAuthenticated(async (userId) =>
     finish(await deleteIncome(userId, id)),
   );
+}
+
+// Deletes the selected incomes of the table in one go. Only the user's own are deleted; the result
+// says how many were.
+export async function deleteIncomesAction(
+  ids: string[],
+): Promise<BulkDeleteResult> {
+  return runAuthenticated<BulkDeleteResult>(async (userId) => {
+    const parsed = bulkIdsSchema.safeParse(ids);
+
+    if (!parsed.success) {
+      return failure(BULK_INVALID_MESSAGE);
+    }
+
+    const deleted = await deleteIncomes(userId, parsed.data);
+
+    if (deleted === 0) {
+      return failure(INCOMES_NOT_FOUND_MESSAGE);
+    }
+
+    revalidatePath(INCOMES_PATH);
+
+    return { status: "success", deleted };
+  });
 }
 
 // Takes the bare name (not FormData): the inline "add category" row lives inside the
@@ -177,7 +206,13 @@ const toCategoryManagementFailure = (
   }
 
   if (error instanceof CategoryInUseError) {
-    return failure(categoryInUseMessage(error.count, error.recurringCount));
+    return failure(
+      categoryInUseMessage(
+        error.count,
+        error.recurringCount,
+        error.installmentCount,
+      ),
+    );
   }
 
   if (error instanceof LastCategoryError) {

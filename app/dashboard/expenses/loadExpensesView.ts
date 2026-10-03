@@ -1,5 +1,9 @@
 import { toTotalRows } from "@/components/Entries/utils";
-import { toExpenseRows, toRecurringData } from "@/components/Expenses/utils";
+import {
+  toCardOptions,
+  toExpenseRows,
+  toRecurringData,
+} from "@/components/Expenses/utils";
 import type { EntriesQuery } from "@/core/entries/query";
 import { loadExpensesPageData } from "@/core/expenses/pageData";
 
@@ -24,11 +28,12 @@ export const loadExpensesView = (userId: string, query: EntriesQuery) => {
     ),
     currencies: data.then(({ currencies }) => currencies),
     recurring: data.then(({ recurring }) => toRecurringData(recurring)),
-    table: data.then(({ page, currencies }) => {
+    cards: data.then(({ cards }) => toCardOptions(cards)),
+    table: data.then(({ page, planProgress, currencies }) => {
       const { rows, ...pagination } = page;
 
       return {
-        rows: toExpenseRows(rows),
+        rows: toExpenseRows(rows, planProgress),
         pagination,
         // With no expense in any currency, an empty table means "nothing yet", not "no matches".
         hasAnyExpenses: currencies.length > 0,

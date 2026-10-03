@@ -32,7 +32,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
         icon: Squares2X2Icon,
       },
       {
-        label: "Análisis",
+        label: "Conversiones",
         href: "/dashboard/overview/insights",
         icon: Squares2X2Icon,
       },
@@ -40,6 +40,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   { label: "Ingresos", href: "/dashboard/incomes", icon: BanknotesIcon },
   { label: "Gastos", href: "/dashboard/expenses", icon: ReceiptPercentIcon },
+  { label: "Tarjetas", href: "/dashboard/cards", icon: CreditCardIcon },
   { label: "Cobros", href: "/dashboard/billing", icon: CreditCardIcon },
   { label: "Calendario", href: "/dashboard/calendar", icon: CalendarDaysIcon },
   { label: "Facturas", href: "/dashboard/invoices", icon: DocumentTextIcon },

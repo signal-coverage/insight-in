@@ -1,6 +1,6 @@
 import type { EntryCategory } from "@/components/Entries/types";
 
-import type { FormTarget } from "../../types";
+import type { CardOption, FormTarget } from "../../types";
 
 export interface ExpenseFormDrawerProps {
   isOpen: boolean;
@@ -8,9 +8,11 @@ export interface ExpenseFormDrawerProps {
   onClose: () => void;
   target: FormTarget;
   categories: readonly EntryCategory[];
+  // The user's cards, to pay an expense with one of them.
+  cards: readonly CardOption[];
 }
 
 export type ExpenseFormContentProps = Pick<
   ExpenseFormDrawerProps,
-  "onClose" | "target" | "categories"
+  "onClose" | "target" | "categories" | "cards"
 >;

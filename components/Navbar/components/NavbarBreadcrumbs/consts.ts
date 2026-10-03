@@ -6,11 +6,15 @@ export const HOME_HREF = "/dashboard";
 export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   incomes: "Ingresos",
   expenses: "Gastos",
+  cards: "Tarjetas",
   overview: "Resumen",
   project: "Proyecto",
   revenue: "Facturación",
-  insights: "Análisis",
+  insights: "Conversiones",
   billing: "Cobros",
   calendar: "Calendario",
   invoices: "Facturas",
+  help: "Ayuda",
+  account: "Cuenta",
+  settings: "Configuración",
 };

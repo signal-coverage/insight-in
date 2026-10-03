@@ -89,6 +89,36 @@ describe("MonthSelector", () => {
     expect(router.push).toHaveBeenCalledWith("/dashboard/overview");
   });
 
+  describe("on another page", () => {
+    const renderOn = (path: string) =>
+      render(
+        <MonthSelector
+          month="2026-08"
+          label="Agosto de 2026"
+          currentMonth="2026-09"
+          basePath={path}
+        />,
+      );
+
+    it("keeps the month in that page's address", () => {
+      renderOn("/dashboard/overview/insights");
+
+      press("Mes anterior");
+
+      expect(router.push).toHaveBeenCalledWith(
+        "/dashboard/overview/insights?month=2026-07",
+      );
+    });
+
+    it("goes back to the bare address of that page", () => {
+      renderOn("/dashboard/overview/insights");
+
+      press("Mes actual");
+
+      expect(router.push).toHaveBeenCalledWith("/dashboard/overview/insights");
+    });
+  });
+
   describe("the way back to the month in course", () => {
     it("is offered while another month is shown", () => {
       renderSelector("2026-03", "2026-09");
@@ -106,12 +136,16 @@ describe("MonthSelector", () => {
       expect(router.push).toHaveBeenCalledWith("/dashboard/overview");
     });
 
-    it("is not offered while the month in course is shown, since there is nowhere to go back to", () => {
+    it("is there but disabled while the month in course is shown, since there is nowhere to go back to and the selector keeps its width", () => {
       renderSelector("2026-09", "2026-09");
 
-      expect(
-        screen.queryByRole("button", { name: "Mes actual" }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Mes actual" })).toBeDisabled();
+    });
+
+    it("is enabled while another month is shown", () => {
+      renderSelector("2026-03", "2026-09");
+
+      expect(screen.getByRole("button", { name: "Mes actual" })).toBeEnabled();
     });
   });
 });

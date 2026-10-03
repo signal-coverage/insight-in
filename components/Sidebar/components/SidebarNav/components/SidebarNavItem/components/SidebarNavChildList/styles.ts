@@ -95,7 +95,8 @@ const LINK_BASE = [
 
 const LINK_ACTIVE = "bg-default font-semibold text-foreground";
 
-const LINK_INACTIVE = "text-muted hover:text-foreground";
+// `font-normal` keeps the weight the child links always had; HeroUI's link defaults to medium.
+const LINK_INACTIVE = "font-normal text-muted hover:text-foreground";
 
 export const getChildLinkClassName = (isActive: boolean): string =>
   `${LINK_BASE} ${isActive ? LINK_ACTIVE : LINK_INACTIVE}`;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { SUPPORTED_CURRENCY_CODES } from "./consts";
 import {
+  currencyExponent,
   formatMoney,
   minorUnitsToNumber,
   toDecimalString,
@@ -67,6 +68,19 @@ describe("toMinorUnits", () => {
 
   it("rejects an unsupported currency", () => {
     expect(toMinorUnits("10", "ZZZ")).toBeNull();
+  });
+});
+
+describe("currencyExponent", () => {
+  it("is the number of minor-unit decimals of the currency", () => {
+    expect(currencyExponent("USD")).toBe(2);
+    expect(currencyExponent("JPY")).toBe(0);
+    expect(currencyExponent("KWD")).toBe(3);
+  });
+
+  it("is null for an unsupported currency", () => {
+    expect(currencyExponent("ZZZ")).toBeNull();
+    expect(currencyExponent("USDC")).toBeNull();
   });
 });
 

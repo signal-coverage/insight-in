@@ -45,3 +45,7 @@ export const formatIncomeDate = (
     dateStyle: "medium",
     timeZone: "UTC",
   }).format(isoDateToDate(isoDate));
+
+// "12/09": the day and the month of a calendar date, for places too small for the year.
+export const formatShortDate = (isoDate: string): string =>
+  `${isoDate.slice(8, 10)}/${isoDate.slice(5, 7)}`;

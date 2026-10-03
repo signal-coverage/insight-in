@@ -10,6 +10,7 @@ export function IncomeFormDrawer({
   onClose,
   target,
   categories,
+  reimbursables,
 }: IncomeFormDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -19,6 +20,7 @@ export function IncomeFormDrawer({
             key={target.key}
             target={target}
             categories={categories}
+            reimbursables={reimbursables}
             onClose={onClose}
           />
         </Drawer.Dialog>

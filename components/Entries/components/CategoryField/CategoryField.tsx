@@ -47,6 +47,7 @@ export function CategoryField({
   categories,
   defaultCategoryId,
   onCreate,
+  onChange,
 }: CategoryFieldProps) {
   const [created, setCreated] = useState<EntryCategory[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -84,6 +85,10 @@ export function CategoryField({
 
     setSelectedId(typeof value === "string" ? value : null);
     closeAddRow();
+
+    if (typeof value === "string") {
+      onChange?.(value);
+    }
   };
 
   const handleAdd = () => {
@@ -101,6 +106,7 @@ export function CategoryField({
         if (requestId === activeRequestRef.current) {
           setSelectedId(result.category.id);
           closeAddRow();
+          onChange?.(result.category.id);
         }
 
         return;

@@ -17,6 +17,8 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
 
+import { CoveredNotAllowedError } from "@/core/entries/errors";
+
 import { CategoryNotFoundError, DuplicateCategoryError } from "./errors";
 import {
   createCategory,
@@ -40,6 +42,10 @@ const input: IncomeInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
+  reimbursesExpenseId: null,
 };
 
 const row = {
@@ -53,6 +59,10 @@ const row = {
   category: { name: "Salary" },
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
+  reimbursesExpenseId: null,
   recurringIncomeId: null,
   createdAt: new Date("2026-09-02T10:00:00.000Z"),
   updatedAt: new Date("2026-09-02T10:00:00.000Z"),
@@ -66,6 +76,10 @@ const WRITABLE_DATA = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
+  reimbursesExpenseId: null,
 };
 
 beforeEach(() => {
@@ -92,7 +106,10 @@ describe("createIncome", () => {
 
     expect(income.create).toHaveBeenCalledWith({
       data: { userId: USER_ID, ...WRITABLE_DATA },
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        reimbursesExpense: { select: { description: true } },
+      },
     });
   });
 
@@ -102,6 +119,22 @@ describe("createIncome", () => {
     await createIncome(USER_ID, { ...input, status: "PLANNED" });
 
     expect(income.create.mock.calls[0][0].data.status).toBe("PLANNED");
+  });
+
+  it("stores the medium it is given", async () => {
+    income.create.mockResolvedValue({ ...row, medium: "CASH" });
+
+    await createIncome(USER_ID, { ...input, medium: "CASH" });
+
+    expect(income.create.mock.calls[0][0].data.medium).toBe("CASH");
+  });
+
+  it("returns the medium of the stored income", async () => {
+    income.create.mockResolvedValue({ ...row, medium: "CASH" });
+
+    await expect(createIncome(USER_ID, input)).resolves.toMatchObject({
+      medium: "CASH",
+    });
   });
 
   it("returns the created income as a plain object", async () => {
@@ -206,6 +239,29 @@ describe("updateIncome", () => {
 
     expect(call.where.userId).toBe(USER_ID);
     expect(call.data).not.toHaveProperty("userId");
+  });
+});
+
+describe("COVERED", () => {
+  it("is rejected when creating an income, writing nothing", async () => {
+    await expect(
+      createIncome(USER_ID, { ...input, status: "COVERED" }),
+    ).rejects.toBeInstanceOf(CoveredNotAllowedError);
+    expect(income.create).not.toHaveBeenCalled();
+  });
+
+  it("is rejected when updating an income, writing nothing", async () => {
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, status: "COVERED" }),
+    ).rejects.toBeInstanceOf(CoveredNotAllowedError);
+    expect(income.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("is rejected when flipping the status of an income, writing nothing", async () => {
+    await expect(
+      setIncomeStatus(USER_ID, "inc_1", "COVERED"),
+    ).rejects.toBeInstanceOf(CoveredNotAllowedError);
+    expect(income.updateMany).not.toHaveBeenCalled();
   });
 });
 

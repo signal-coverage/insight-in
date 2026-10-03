@@ -20,6 +20,12 @@ const db = vi.hoisted(() => ({
   recurringExpenseDecision: {
     create: vi.fn(),
   },
+  installmentPlan: {
+    count: vi.fn(),
+  },
+  card: {
+    findFirst: vi.fn(),
+  },
   expenseCategory: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
@@ -33,6 +39,10 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
 
+import {
+  CardCurrencyMismatchError,
+  CardNotFoundError,
+} from "@/core/cards/errors";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 import type { EntriesQuery } from "@/core/entries/query";
 import {
@@ -58,8 +68,14 @@ import {
 } from "./service";
 import type { ExpenseInput } from "./types";
 
-const { expense, expenseCategory, recurringExpense, recurringExpenseDecision } =
-  db;
+const {
+  card,
+  expense,
+  expenseCategory,
+  installmentPlan,
+  recurringExpense,
+  recurringExpenseDecision,
+} = db;
 
 const USER_ID = "user_123";
 const INCLUDE = { category: { select: { name: true } } };
@@ -77,10 +93,43 @@ const input: ExpenseInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
   isRecurring: false,
+  cardId: null,
+  originCurrency: null,
+  originAmount: null,
+  expectedReimbursement: null,
 };
 
 const recurringInput: ExpenseInput = { ...input, isRecurring: true };
+
+// Closes on the 25th and is paid on the 5th: a purchase made on 2026-09-05 is in the statement that
+// closes on 2026-09-25, which is paid on 2026-10-05.
+const cardRow = (patch: Record<string, unknown> = {}) => ({
+  id: "card_1",
+  userId: USER_ID,
+  last4: "1234",
+  brand: "VISA",
+  closingDay: 25,
+  dueDay: 5,
+  currency: "ARS",
+  limitMode: "MONTHLY",
+  limitAmount: BigInt(30000000),
+  createdAt: new Date("2026-09-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-09-01T00:00:00.000Z"),
+  ...patch,
+});
+
+const cardInput: ExpenseInput = { ...input, cardId: "card_1" };
+
+// What an expense outside any card writes on update, so a card that was removed is cleared.
+const NO_CARD = { cardId: null, purchaseDate: null };
+
+// What a purchase on the card above writes.
+const CARD_DATA = {
+  cardId: "card_1",
+  purchaseDate: new Date("2026-09-05T00:00:00.000Z"),
+};
 
 const row = {
   id: "exp_1",
@@ -93,8 +142,14 @@ const row = {
   category: { name: "Alquiler" },
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
   isRecurring: false,
+  originCurrency: null,
+  originAmount: null,
+  expectedReimbursement: null,
   recurringExpenseId: null,
+  cardId: null,
+  purchaseDate: null,
   createdAt: new Date("2026-09-06T10:00:00.000Z"),
   updatedAt: new Date("2026-09-06T10:00:00.000Z"),
 };
@@ -107,6 +162,10 @@ const WRITABLE_DATA = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
+  expectedReimbursement: null,
 };
 
 const TEMPLATE_DATA = {
@@ -115,6 +174,9 @@ const TEMPLATE_DATA = {
   currency: "ARS",
   categoryId: "cat_1",
   notes: null,
+  medium: "DIGITAL",
+  originCurrency: null,
+  originAmount: null,
   dayOfMonth: 5,
 };
 
@@ -159,7 +221,116 @@ describe("createExpense", () => {
       ...input,
       id: "exp_1",
       categoryName: "Alquiler",
+      purchaseDate: null,
+      reimbursementReceived: 0,
     });
+  });
+
+  describe("with a card", () => {
+    beforeEach(() => {
+      card.findFirst.mockResolvedValue(cardRow());
+      expense.create.mockResolvedValue({
+        ...row,
+        cardId: "card_1",
+        date: new Date("2026-10-05T00:00:00.000Z"),
+        purchaseDate: new Date("2026-09-05T00:00:00.000Z"),
+      });
+    });
+
+    it("looks the card up among the user's own", async () => {
+      await createExpense(USER_ID, cardInput);
+
+      expect(card.findFirst).toHaveBeenCalledWith({
+        where: { id: "card_1", userId: USER_ID },
+      });
+    });
+
+    it("dates the expense on the charge date of the card's cycle and keeps the purchase day apart", async () => {
+      await createExpense(USER_ID, cardInput);
+
+      expect(expense.create).toHaveBeenCalledWith({
+        data: {
+          userId: USER_ID,
+          ...WRITABLE_DATA,
+          date: new Date("2026-10-05T00:00:00.000Z"),
+          ...CARD_DATA,
+          isRecurring: false,
+        },
+        include: INCLUDE,
+      });
+    });
+
+    it("moves the charge to the next statement when the purchase is after the closing day", async () => {
+      await createExpense(USER_ID, { ...cardInput, date: "2026-09-26" });
+
+      expect(expense.create.mock.calls[0][0].data).toMatchObject({
+        date: new Date("2026-11-05T00:00:00.000Z"),
+        purchaseDate: new Date("2026-09-26T00:00:00.000Z"),
+      });
+    });
+
+    it("returns the expense with the charge date, the card and the purchase day", async () => {
+      await expect(createExpense(USER_ID, cardInput)).resolves.toMatchObject({
+        date: "2026-10-05",
+        cardId: "card_1",
+        purchaseDate: "2026-09-05",
+      });
+    });
+
+    it("rejects a card that is not the user's without writing", async () => {
+      card.findFirst.mockResolvedValue(null);
+
+      await expect(createExpense(USER_ID, cardInput)).rejects.toBeInstanceOf(
+        CardNotFoundError,
+      );
+      expect(expense.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a card in another currency than the expense without writing", async () => {
+      card.findFirst.mockResolvedValue(cardRow({ currency: "USD" }));
+
+      await expect(createExpense(USER_ID, cardInput)).rejects.toBeInstanceOf(
+        CardCurrencyMismatchError,
+      );
+      expect(expense.create).not.toHaveBeenCalled();
+    });
+
+    it("takes the template of a recurring expense from the charge date, which is the date the expense has", async () => {
+      recurringExpense.create.mockResolvedValue({ id: "rec_1" });
+      recurringExpenseDecision.create.mockResolvedValue({});
+
+      await createExpense(USER_ID, { ...cardInput, isRecurring: true });
+
+      expect(recurringExpense.create.mock.calls[0][0].data.dayOfMonth).toBe(5);
+      expect(recurringExpenseDecision.create).toHaveBeenCalledWith({
+        data: {
+          recurringExpenseId: "rec_1",
+          month: "2026-10",
+          decision: "ENABLED",
+        },
+      });
+    });
+  });
+
+  it("never looks a card up for an expense without one, and writes no card", async () => {
+    expense.create.mockResolvedValue(row);
+
+    await createExpense(USER_ID, input);
+
+    expect(card.findFirst).not.toHaveBeenCalled();
+    expect(expense.create.mock.calls[0][0].data).not.toHaveProperty("cardId");
+    expect(expense.create.mock.calls[0][0].data).not.toHaveProperty(
+      "purchaseDate",
+    );
+  });
+
+  it("stores the medium it is given and returns it", async () => {
+    expense.create.mockResolvedValue({ ...row, medium: "CASH" });
+
+    const created = await createExpense(USER_ID, { ...input, medium: "CASH" });
+
+    expect(expense.create.mock.calls[0][0].data.medium).toBe("CASH");
+    expect(created.medium).toBe("CASH");
   });
 
   it("rejects a category the user does not own without writing", async () => {
@@ -168,6 +339,57 @@ describe("createExpense", () => {
     await expect(createExpense(USER_ID, input)).rejects.toBeInstanceOf(
       CategoryNotFoundError,
     );
+    expect(expense.create).not.toHaveBeenCalled();
+  });
+
+  it("stores COVERED: any expense may be paid by someone else", async () => {
+    expense.create.mockResolvedValue({ ...row, status: "COVERED" });
+
+    await expect(
+      createExpense(USER_ID, { ...input, status: "COVERED" }),
+    ).resolves.toMatchObject({ status: "COVERED" });
+    expect(expense.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        ...WRITABLE_DATA,
+        status: "COVERED",
+        isRecurring: false,
+      },
+      include: INCLUDE,
+    });
+  });
+
+  it("stores COVERED for a recurring expense too, with its template", async () => {
+    recurringExpense.create.mockResolvedValue({ id: "rec_1" });
+    recurringExpenseDecision.create.mockResolvedValue({});
+    expense.create.mockResolvedValue({
+      ...row,
+      status: "COVERED",
+      isRecurring: true,
+      recurringExpenseId: "rec_1",
+    });
+
+    await expect(
+      createExpense(USER_ID, { ...recurringInput, status: "COVERED" }),
+    ).resolves.toMatchObject({ status: "COVERED", isRecurring: true });
+    expect(expense.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        ...WRITABLE_DATA,
+        status: "COVERED",
+        isRecurring: true,
+        recurringExpenseId: "rec_1",
+      },
+      include: INCLUDE,
+    });
+  });
+
+  it("still verifies the category belongs to the user when the expense is covered", async () => {
+    expenseCategory.findFirst.mockResolvedValue(null);
+
+    await expect(
+      createExpense(USER_ID, { ...input, status: "COVERED" }),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
     expect(expense.create).not.toHaveBeenCalled();
   });
 
@@ -198,6 +420,12 @@ describe("createExpense", () => {
       expect(recurringExpense.create).toHaveBeenCalledWith({
         data: { userId: USER_ID, ...TEMPLATE_DATA },
       });
+    });
+
+    it("gives the template the medium of the expense", async () => {
+      await createExpense(USER_ID, { ...recurringInput, medium: "CASH" });
+
+      expect(recurringExpense.create.mock.calls[0][0].data.medium).toBe("CASH");
     });
 
     it("links the expense to the template and keeps the flag in step with the link", async () => {
@@ -250,8 +478,16 @@ describe("createExpense", () => {
 });
 
 describe("updateExpense", () => {
-  const found = (recurringExpenseId: string | null) =>
-    expense.findFirst.mockResolvedValue({ recurringExpenseId });
+  const found = (
+    recurringExpenseId: string | null,
+    installmentPlanId: string | null = null,
+  ) =>
+    expense.findFirst.mockResolvedValue({
+      recurringExpenseId,
+      installmentPlanId,
+      currency: "ARS",
+      expectedReimbursement: null,
+    });
 
   it("looks the record up scoped to the user", async () => {
     found(null);
@@ -261,7 +497,190 @@ describe("updateExpense", () => {
 
     expect(expense.findFirst).toHaveBeenCalledWith({
       where: { id: "exp_1", userId: USER_ID },
-      select: { recurringExpenseId: true },
+      select: {
+        recurringExpenseId: true,
+        installmentPlanId: true,
+        currency: true,
+        expectedReimbursement: true,
+      },
+    });
+  });
+
+  describe("an installment of a plan", () => {
+    it("may be marked as covered by someone else", async () => {
+      found(null, "plan_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
+      ).resolves.toBe(true);
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_1", userId: USER_ID },
+        data: { ...WRITABLE_DATA, status: "COVERED", isRecurring: false },
+      });
+    });
+
+    it("never becomes recurring, even when the form sends the switch on", async () => {
+      found(null, "plan_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await updateExpense(USER_ID, "exp_1", recurringInput);
+
+      expect(db.$transaction).not.toHaveBeenCalled();
+      expect(recurringExpense.create).not.toHaveBeenCalled();
+      expect(expense.updateMany.mock.calls[0][0].data).toMatchObject({
+        isRecurring: false,
+      });
+    });
+
+    it("ignores a card sent with the form: it keeps the card of its plan and its own date", async () => {
+      found(null, "plan_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await updateExpense(USER_ID, "exp_1", cardInput);
+
+      const { data } = expense.updateMany.mock.calls[0][0];
+
+      expect(card.findFirst).not.toHaveBeenCalled();
+      expect(data).not.toHaveProperty("cardId");
+      expect(data).not.toHaveProperty("purchaseDate");
+      expect(data.date).toEqual(new Date("2026-09-05T00:00:00.000Z"));
+    });
+
+    it("never has its link to the plan or its number written by an edit", async () => {
+      found(null, "plan_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await updateExpense(USER_ID, "exp_1", input);
+
+      const { data } = expense.updateMany.mock.calls[0][0];
+
+      expect(data).not.toHaveProperty("installmentPlanId");
+      expect(data).not.toHaveProperty("installmentNumber");
+    });
+  });
+
+  describe("an expense outside a plan", () => {
+    it("may be marked as covered by someone else", async () => {
+      found(null);
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
+      ).resolves.toBe(true);
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_1", userId: USER_ID },
+        data: {
+          ...WRITABLE_DATA,
+          ...NO_CARD,
+          status: "COVERED",
+          isRecurring: false,
+        },
+      });
+    });
+
+    describe("with a card", () => {
+      beforeEach(() => {
+        found(null);
+        expense.updateMany.mockResolvedValue({ count: 1 });
+        card.findFirst.mockResolvedValue(cardRow());
+      });
+
+      it("recomputes the charge date from the card, whatever the client says, and stores the purchase day", async () => {
+        await expect(updateExpense(USER_ID, "exp_1", cardInput)).resolves.toBe(
+          true,
+        );
+
+        expect(card.findFirst).toHaveBeenCalledWith({
+          where: { id: "card_1", userId: USER_ID },
+        });
+        expect(expense.updateMany).toHaveBeenCalledWith({
+          where: { id: "exp_1", userId: USER_ID },
+          data: {
+            ...WRITABLE_DATA,
+            date: new Date("2026-10-05T00:00:00.000Z"),
+            ...CARD_DATA,
+            isRecurring: false,
+          },
+        });
+      });
+
+      it("rejects a card that is not the user's without writing", async () => {
+        card.findFirst.mockResolvedValue(null);
+
+        await expect(
+          updateExpense(USER_ID, "exp_1", cardInput),
+        ).rejects.toBeInstanceOf(CardNotFoundError);
+        expect(expense.updateMany).not.toHaveBeenCalled();
+      });
+
+      it("rejects a card in another currency without writing", async () => {
+        card.findFirst.mockResolvedValue(cardRow({ currency: "USD" }));
+
+        await expect(
+          updateExpense(USER_ID, "exp_1", cardInput),
+        ).rejects.toBeInstanceOf(CardCurrencyMismatchError);
+        expect(expense.updateMany).not.toHaveBeenCalled();
+      });
+
+      it("clears the card and the purchase day when the card is taken off", async () => {
+        await updateExpense(USER_ID, "exp_1", input);
+
+        expect(card.findFirst).not.toHaveBeenCalled();
+        expect(expense.updateMany.mock.calls[0][0].data).toMatchObject(NO_CARD);
+      });
+    });
+
+    it("may be covered while it becomes recurring, in the same transaction", async () => {
+      found(null);
+      recurringExpense.create.mockResolvedValue({ id: "rec_1" });
+      recurringExpenseDecision.create.mockResolvedValue({});
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", {
+          ...recurringInput,
+          status: "COVERED",
+        }),
+      ).resolves.toBe(true);
+      expect(db.$transaction).toHaveBeenCalledTimes(1);
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_1", userId: USER_ID },
+        data: {
+          ...WRITABLE_DATA,
+          ...NO_CARD,
+          status: "COVERED",
+          isRecurring: true,
+          recurringExpenseId: "rec_1",
+        },
+      });
+    });
+
+    it("may be covered when it already belongs to a recurring template", async () => {
+      found("rec_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
+      ).resolves.toBe(true);
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_1", userId: USER_ID },
+        data: {
+          ...WRITABLE_DATA,
+          ...NO_CARD,
+          status: "COVERED",
+          isRecurring: true,
+        },
+      });
+    });
+
+    it("is still looked up scoped to the user: another user's expense stays untouched", async () => {
+      expense.findFirst.mockResolvedValue(null);
+
+      await expect(
+        updateExpense(USER_ID, "exp_9", { ...input, status: "COVERED" }),
+      ).resolves.toBe(false);
+      expect(expense.updateMany).not.toHaveBeenCalled();
     });
   });
 
@@ -272,7 +691,7 @@ describe("updateExpense", () => {
     await expect(updateExpense(USER_ID, "exp_1", input)).resolves.toBe(true);
     expect(expense.updateMany).toHaveBeenCalledWith({
       where: { id: "exp_1", userId: USER_ID },
-      data: { ...WRITABLE_DATA, isRecurring: false },
+      data: { ...WRITABLE_DATA, ...NO_CARD, isRecurring: false },
     });
   });
 
@@ -310,6 +729,7 @@ describe("updateExpense", () => {
         where: { id: "exp_1", userId: USER_ID },
         data: {
           ...WRITABLE_DATA,
+          ...NO_CARD,
           isRecurring: true,
           recurringExpenseId: "rec_1",
         },
@@ -396,7 +816,7 @@ describe("updateExpense", () => {
       ).resolves.toBe(true);
       expect(expense.updateMany).toHaveBeenCalledWith({
         where: { id: "exp_1", userId: USER_ID },
-        data: { ...WRITABLE_DATA, isRecurring: true },
+        data: { ...WRITABLE_DATA, ...NO_CARD, isRecurring: true },
       });
     });
   });
@@ -421,6 +841,40 @@ describe("setExpenseStatus", () => {
     await expect(setExpenseStatus(USER_ID, "exp_9", "SETTLED")).resolves.toBe(
       false,
     );
+  });
+
+  describe("COVERED", () => {
+    it("is set on any expense, scoped to the user, whether or not it belongs to a plan", async () => {
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(setExpenseStatus(USER_ID, "exp_1", "COVERED")).resolves.toBe(
+        true,
+      );
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_1", userId: USER_ID },
+        data: { status: "COVERED" },
+      });
+    });
+
+    it("needs no look-up of the expense first", async () => {
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await setExpenseStatus(USER_ID, "exp_1", "COVERED");
+
+      expect(expense.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("returns false when the record is not the user's", async () => {
+      expense.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(setExpenseStatus(USER_ID, "exp_9", "COVERED")).resolves.toBe(
+        false,
+      );
+      expect(expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp_9", userId: USER_ID },
+        data: { status: "COVERED" },
+      });
+    });
   });
 });
 
@@ -469,6 +923,38 @@ describe("listExpenses", () => {
     );
   });
 
+  it("carries the plan and the number of an installment", async () => {
+    expense.count.mockResolvedValue(1);
+    expense.findMany.mockResolvedValue([
+      {
+        ...row,
+        status: "COVERED",
+        installmentPlanId: "plan_1",
+        installmentNumber: 3,
+      },
+    ]);
+
+    const { rows } = await listExpenses(USER_ID, query());
+
+    expect(rows[0]).toMatchObject({
+      status: "COVERED",
+      installmentPlanId: "plan_1",
+      installmentNumber: 3,
+    });
+  });
+
+  it("filters by COVERED like by any other status", async () => {
+    expense.count.mockResolvedValue(0);
+    expense.findMany.mockResolvedValue([]);
+
+    await listExpenses(USER_ID, query({ status: "COVERED" }));
+
+    expect(expense.findMany.mock.calls[0][0].where).toEqual({
+      userId: USER_ID,
+      status: "COVERED",
+    });
+  });
+
   it("applies the status filter", async () => {
     expense.count.mockResolvedValue(0);
     expense.findMany.mockResolvedValue([]);
@@ -510,6 +996,20 @@ describe("listExpenseTotals", () => {
       where: { userId: USER_ID, categoryId: "cat_1" },
       _sum: { amount: true },
     });
+  });
+});
+
+describe("listExpenseTotals with covered installments", () => {
+  it("leaves the covered ones out of the total, the paid and the pending parts", async () => {
+    expense.groupBy.mockResolvedValue([
+      { currency: "ARS", status: "SETTLED", _sum: { amount: BigInt(100000) } },
+      { currency: "ARS", status: "PLANNED", _sum: { amount: BigInt(50000) } },
+      { currency: "ARS", status: "COVERED", _sum: { amount: BigInt(70000) } },
+    ]);
+
+    await expect(listExpenseTotals(USER_ID)).resolves.toEqual([
+      { currency: "ARS", total: 150000, settled: 100000 },
+    ]);
   });
 });
 
@@ -672,9 +1172,29 @@ describe("renameCategory", () => {
 });
 
 describe("deleteCategory", () => {
-  const owned = (expenses: number, recurringExpenses = 0) => ({
+  const owned = (
+    expenses: number,
+    recurringExpenses = 0,
+    installmentPlans = 0,
+  ) => ({
     id: "c1",
-    _count: { expenses, recurringExpenses },
+    _count: { expenses, recurringExpenses, installmentPlans },
+  });
+
+  it("blocks a category that only an installment plan uses, and reports it", async () => {
+    expenseCategory.findFirst.mockResolvedValue(owned(0, 0, 1));
+
+    const error = await deleteCategory(USER_ID, "c1").catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(CategoryInUseError);
+    expect(error).toMatchObject({
+      count: 0,
+      recurringCount: 0,
+      installmentCount: 1,
+    });
+    expect(expenseCategory.deleteMany).not.toHaveBeenCalled();
   });
 
   it("deletes an unused category when it is not the last one", async () => {
@@ -736,12 +1256,17 @@ describe("deleteCategory", () => {
     expenseCategory.deleteMany.mockRejectedValue({ code: "P2003" });
     expense.count.mockResolvedValue(1);
     recurringExpense.count.mockResolvedValue(2);
+    installmentPlan.count.mockResolvedValue(3);
 
     const error = await deleteCategory(USER_ID, "c1").catch(
       (caught: unknown) => caught,
     );
 
     expect(error).toBeInstanceOf(CategoryInUseError);
-    expect(error).toMatchObject({ count: 1, recurringCount: 2 });
+    expect(error).toMatchObject({
+      count: 1,
+      recurringCount: 2,
+      installmentCount: 3,
+    });
   });
 });

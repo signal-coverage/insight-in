@@ -9,7 +9,8 @@ import {
 import { isValidIsoDate } from "@/core/incomes/dates";
 import { toMinorUnits } from "@/core/incomes/money";
 
-import { DEFAULT_ENTRY_STATUS, ENTRY_STATUSES } from "./status";
+import { DEFAULT_PAYMENT_MEDIUM, PAYMENT_MEDIUMS } from "./medium";
+import { DEFAULT_ENTRY_STATUS, ENTRY_STATUSES, MONEY_STATUSES } from "./status";
 
 // Field definitions shared by incomes and expenses (and their recurring templates).
 const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
@@ -54,9 +55,19 @@ export const dateField = z
   .string({ error: "La fecha es obligatoria." })
   .refine(isValidIsoDate, "Ingresa una fecha válida.");
 
+// Incomes: COVERED is not an option, since nothing else ever pays an income.
 export const statusField = z
+  .enum(MONEY_STATUSES, { error: "Selecciona un estado válido." })
+  .default(DEFAULT_ENTRY_STATUS);
+
+// Expenses may also arrive as COVERED: someone else paid it and it never moves the user's money.
+export const expenseStatusField = z
   .enum(ENTRY_STATUSES, { error: "Selecciona un estado válido." })
   .default(DEFAULT_ENTRY_STATUS);
+
+export const mediumField = z
+  .enum(PAYMENT_MEDIUMS, { error: "Selecciona un medio válido." })
+  .default(DEFAULT_PAYMENT_MEDIUM);
 
 export type IssueContext = {
   addIssue: (issue: {

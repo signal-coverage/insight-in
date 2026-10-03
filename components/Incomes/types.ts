@@ -2,19 +2,35 @@ import type { Source } from "@/components/shared/Await";
 import type { EntriesQuery } from "@/core/entries/query";
 import type {
   CategoryWithCount,
+  InstallmentPlanRow,
+  OriginStrings,
   PaginationInfo,
   TotalRow,
 } from "@/components/Entries/types";
 import type { Income, RecurringIncome } from "@/core/incomes/types";
+import type { PlanProgress } from "@/core/installments/types";
 
 export type { PaginationInfo, TotalRow };
 
 // An income plus the strings the UI needs, formatted on the server so the client never
 // has to re-derive money or date presentation.
-export interface IncomeRow extends Income {
+export interface IncomeRow extends Income, OriginStrings {
   amountLabel: string;
   amountDecimal: string;
   dateLabel: string;
+  // What the marker's tooltip says ("Devolución de: Dentista"); null when the income pays no expense back.
+  reimbursementTooltip: string | null;
+  // For an installment: how many entries its plan has and how many are already collected. Absent otherwise.
+  planProgress?: PlanProgress;
+}
+
+// An expense the income form offers to link the income to, with the words it is offered with.
+export interface ReimbursableOption {
+  id: string;
+  // The currency of the expense: it is only offered to an income in the same one.
+  currency: string;
+  // "Dentista · 12/09 · faltan $ 4.000,00".
+  label: string;
 }
 
 // What the table needs, which all arrives together: the page of rows, the paging the server
@@ -40,6 +56,26 @@ export interface IncomesProps {
   currencies: Source<string[]>;
   table: Source<IncomesTableData>;
   recurring: Source<RecurringRow[]>;
+  // The loans repaid to the user in installments, for the current month.
+  repayments: Source<RepaymentData>;
+  // The expenses an income can pay back, for the income form.
+  reimbursables: Source<ReimbursableOption[]>;
+}
+
+// What the repayment planner opens with: the key remounts it on every opening, and the date is where
+// the first installment's date starts (today, Argentine time).
+export interface RepaymentPlannerTarget {
+  key: number;
+  defaultDate: string;
+}
+
+// The loans repaid to the user in installments, for the month being resolved: the ones with
+// installments still to collect, with what the month already holds of each.
+export interface RepaymentData {
+  month: string;
+  // "Octubre de 2026".
+  monthLabel: string;
+  plans: InstallmentPlanRow[];
 }
 
 // What the form modal is currently showing. The key remounts the form so every opening

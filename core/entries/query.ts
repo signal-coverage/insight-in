@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { SUPPORTED_CURRENCY_CODES } from "@/core/incomes/consts";
-import { firstOfMonthIso, isValidIsoDate } from "@/core/incomes/dates";
+import { isValidIsoDate } from "@/core/incomes/dates";
+import { monthOf, monthRange } from "@/core/summary/month";
 
 import { ENTRY_STATUSES } from "./status";
 import type { EntryStatus } from "./status";
@@ -80,17 +81,14 @@ const sortSchema = z.enum(ENTRY_SORT_KEYS).catch("date");
 
 const directionSchema = z.enum(["asc", "desc"]).nullable().catch(null);
 
-// The range the list opens with: the first of today's month up to today.
-export const defaultDateRange = (
-  today: string,
-): { from: string; to: string } => ({
-  from: firstOfMonthIso(today),
-  to: today,
-});
+// The range the list opens with: the whole month of today, from its first to its last day, so
+// what is dated later in the month (installments, planned entries) shows up too.
+export const defaultDateRange = (today: string): { from: string; to: string } =>
+  monthRange(monthOf(today));
 
 export interface ParseOptions {
   // The user's calendar date. When given and the URL says nothing about dates, the list shows
-  // the current month up to today instead of everything.
+  // the whole current month instead of everything.
   today?: string;
 }
 

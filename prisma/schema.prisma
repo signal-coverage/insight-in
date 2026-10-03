@@ -13,40 +13,73 @@ enum RecurringFrequency {
   YEARLY
 }
 
-// "Listado" (planned) vs already collected (income) or paid (expense).
+// "Listado" (planned) vs already collected (income) or paid (expense). COVERED is for expenses
+// that belong to an installment plan only: someone else paid that installment, so it counts as
+// done inside its plan but never moves the user's money.
 enum EntryStatus {
   PLANNED
   SETTLED
+  COVERED
+}
+
+// Where the money moved: an account (digital) or physical cash (the wallet). The two keep
+// separate balances.
+enum PaymentMedium {
+  DIGITAL
+  CASH
 }
 
 model Income {
-  id          String         @id @default(cuid())
+  id             String         @id @default(cuid())
   // Clerk user id — every record belongs to exactly one user.
-  userId      String
-  description String
+  userId         String
+  description    String
   // Minor units (e.g. cents). BigInt because Int overflows around 21M ARS with cents.
-  amount      BigInt
+  amount         BigInt
   // ISO 4217 code, validated against the Dinero currency list at the boundary.
-  currency    String
-  date        DateTime       @db.Date
-  categoryId  String
-  category    IncomeCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  notes       String?
+  currency       String
+  date           DateTime       @db.Date
+  categoryId     String
+  category       IncomeCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes          String?
   // Existing and manually added incomes default to collected; generated ones start planned.
-  status      EntryStatus    @default(SETTLED)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  status         EntryStatus    @default(SETTLED)
+  medium         PaymentMedium  @default(DIGITAL)
+  // Where the net `amount` came from, kept only as a reference (the implied rate, later statistics):
+  // a crypto code (USDC, USDT, DAI) or an ISO code, and the amount in that currency's minor units
+  // (6 decimals for crypto). Both are set or both are null (a CHECK constraint of the migration
+  // enforces it); no total ever reads them.
+  originCurrency String?
+  originAmount   BigInt?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // The expense this income pays back (a health-insurance refund, a loan to a friend). Several
+  // incomes may point at the same expense (partial repayments). The service checks that the expense
+  // is the user's, in the same currency and expects a reimbursement; deleting the expense keeps the
+  // income, now without a link.
+  reimbursesExpenseId String?
+  reimbursesExpense   Expense? @relation("ExpenseReimbursements", fields: [reimbursesExpenseId], references: [id], onDelete: SetNull)
 
   // Set for incomes generated from a recurring template; deleting the template keeps them.
   recurringIncomeId String?
   recurringIncome   RecurringIncome? @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
 
+  // Set for the installments of a loan repaid in cuotas (an income plan); deleting the plan keeps them.
+  installmentPlanId String?
+  installmentPlan   InstallmentPlan? @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  // 1..totalCuotas. It is the installment's identity: fixed for life, it never renumbers.
+  installmentNumber Int?
+
   // One generated income per template per day: makes catch-up idempotent under races.
   // Postgres treats NULLs as distinct, so ordinary incomes are unaffected.
   @@unique([recurringIncomeId, date])
+  @@unique([installmentPlanId, installmentNumber])
   @@index([userId, date(sort: Desc)])
   @@index([categoryId])
   @@index([recurringIncomeId])
+  @@index([installmentPlanId])
+  @@index([reimbursesExpenseId])
 }
 
 // A template that generates an Income on every occurrence between startDate and endDate.
@@ -61,6 +94,7 @@ model RecurringIncome {
   categoryId  String
   category    IncomeCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   notes       String?
+  medium      PaymentMedium      @default(DIGITAL)
   frequency   RecurringFrequency
   startDate   DateTime           @db.Date
   // null = the series never ends.
@@ -80,39 +114,162 @@ model IncomeCategory {
   createdAt        DateTime          @default(now())
   incomes          Income[]
   recurringIncomes RecurringIncome[]
+  installmentPlans InstallmentPlan[]
 
   @@unique([userId, name])
   @@index([userId])
 }
 
 model Expense {
-  id          String          @id @default(cuid())
+  id                    String          @id @default(cuid())
   // Clerk user id — every record belongs to exactly one user.
-  userId      String
-  description String
+  userId                String
+  description           String
   // Minor units, like Income.amount.
-  amount      BigInt
-  currency    String
-  date        DateTime        @db.Date
-  categoryId  String
-  category    ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  notes       String?
-  status      EntryStatus     @default(SETTLED)
+  amount                BigInt
+  currency              String
+  date                  DateTime        @db.Date
+  categoryId            String
+  category              ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes                 String?
+  status                EntryStatus     @default(SETTLED)
+  medium                PaymentMedium   @default(DIGITAL)
   // True exactly when the expense is linked to a template (set at write time).
-  isRecurring Boolean         @default(false)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  isRecurring           Boolean         @default(false)
+  // The price the expense was quoted in when it really cost another currency (a 20 USD subscription
+  // that left the user's money as 35.000 ARS): a crypto code or an ISO code, and the amount in that
+  // currency's minor units. It is only a reference (the implied rate): `amount` + `currency` stay
+  // what left the user's money and the only thing any total counts. Both are set or both are null
+  // (a CHECK constraint of the migration enforces it).
+  originCurrency        String?
+  originAmount          BigInt?
+  // What the user expects to be paid back for this expense (minor units, in the expense's currency),
+  // or null when nothing is expected. Positive when set (a CHECK constraint of the migration enforces
+  // it). The incomes that point at the expense through `reimbursesExpenseId` are what was received.
+  expectedReimbursement BigInt?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // The incomes that pay this expense back, whatever their status.
+  reimbursements Income[] @relation("ExpenseReimbursements")
 
   // Set for expenses that remember a recurring template; removing the template keeps them.
   recurringExpenseId String?
   recurringExpense   RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
 
+  // Set for the installments of a purchase paid in cuotas; deleting the plan keeps them.
+  installmentPlanId String?
+  installmentPlan   InstallmentPlan? @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  // 1..totalCuotas. It is the installment's identity: fixed for life, it never renumbers.
+  installmentNumber Int?
+
+  // The card the expense was charged to (a purchase in one payment, or an installment of a plan paid
+  // with a card). Deleting a card keeps its expenses, now without one.
+  cardId       String?
+  card         Card?     @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  // The day the purchase was made, when it was paid with a card. `date` stays the day the card
+  // statement is paid (the charge), which is what the monthly summary counts. Null for an installment:
+  // its plan keeps the purchase day.
+  purchaseDate DateTime? @db.Date
+
   // One expense per template per day: makes the monthly wizard idempotent under races.
   // Postgres treats NULLs as distinct, so ordinary expenses are unaffected.
   @@unique([recurringExpenseId, date])
+  @@unique([installmentPlanId, installmentNumber])
   @@index([userId, date(sort: Desc)])
   @@index([categoryId])
   @@index([recurringExpenseId])
+  @@index([installmentPlanId])
+  @@index([cardId])
+}
+
+// Which way the money of a plan goes: a purchase the user pays in installments (an expense plan) or a
+// loan that somebody repays to the user in installments (an income plan).
+enum InstallmentKind {
+  EXPENSE
+  INCOME
+}
+
+// Money paid (a purchase in "cuotas") or collected (a loan repaid in cuotas) in installments. Every
+// installment is created at once as a normal planned expense or income, one per month, so the future
+// months already show them. Exactly one of the two categories is set, according to `kind` (a CHECK
+// constraint of the migration enforces it); an income plan never has a card.
+model InstallmentPlan {
+  id               String           @id @default(cuid())
+  // Clerk user id — plans are private to their owner.
+  userId           String
+  kind             InstallmentKind  @default(EXPENSE)
+  // The product (or what is being repaid); each installment is described as "<description> (n/N)".
+  description      String
+  totalCuotas      Int
+  // Minor units, like Expense.amount. The installments always add up to exactly this.
+  totalAmount      BigInt
+  currency         String
+  medium           PaymentMedium    @default(DIGITAL)
+  // The category of an expense plan; null for an income plan.
+  categoryId       String?
+  category         ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  // The category of an income plan; null for an expense plan.
+  incomeCategoryId String?
+  incomeCategory   IncomeCategory?  @relation(fields: [incomeCategoryId], references: [id], onDelete: Restrict)
+  notes            String?
+  // 1..31, taken from the first installment's date; a shorter month uses its last day.
+  dayOfMonth       Int
+  // The card the purchase was made with. Deleting a card keeps its plans, now without one.
+  cardId           String?
+  card             Card?            @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  // The day the purchase was made, which the card's billing cycle turns into the first installment.
+  purchaseDate     DateTime?        @db.Date
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  expenses         Expense[]
+  incomes          Income[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([incomeCategoryId])
+  @@index([cardId])
+}
+
+enum CardBrand {
+  VISA
+  MASTERCARD
+  OTHER
+}
+
+// MONTHLY: the most the user wants to pay in a month on the card. TOTAL: the most the user wants
+// to have committed in pending installments on the card. A card has exactly one mode.
+enum CardLimitMode {
+  MONTHLY
+  TOTAL
+}
+
+// A credit card, only as a reference: no sensitive data is stored, just the last 4 digits, the
+// brand (illustrative), when its statement closes and is paid, and a spending cap.
+model Card {
+  id          String            @id @default(cuid())
+  // Clerk user id — cards are private to their owner.
+  userId      String
+  // Exactly 4 digits.
+  last4       String
+  brand       CardBrand
+  // 1..31: the day the statement closes; a shorter month uses its last day.
+  closingDay  Int
+  // 1..31: the day the statement is paid; a shorter month uses its last day.
+  dueDay      Int
+  // ISO 4217 code of the cap.
+  currency    String
+  limitMode   CardLimitMode
+  // Minor units, like Expense.amount. The cap the user wants to respect: the real limit of the
+  // card or something lower.
+  limitAmount BigInt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  plans       InstallmentPlan[]
+  expenses    Expense[]
+
+  @@unique([userId, last4, brand])
+  @@index([userId])
 }
 
 // What the user decided about a template for one month.
@@ -123,22 +280,28 @@ enum RecurringDecision {
 
 // A monthly template: once a month the user resolves it in the wizard (enable, disable or remove).
 model RecurringExpense {
-  id          String                     @id @default(cuid())
+  id             String                     @id @default(cuid())
   // Clerk user id — templates are private to their owner.
-  userId      String
-  description String
+  userId         String
+  description    String
   // Minor units, like Expense.amount.
-  amount      BigInt
-  currency    String
-  categoryId  String
-  category    ExpenseCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  notes       String?
+  amount         BigInt
+  currency       String
+  categoryId     String
+  category       ExpenseCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  notes          String?
+  medium         PaymentMedium              @default(DIGITAL)
+  // The reference price the template remembers (20 USD for a subscription that costs 35.000 ARS),
+  // copied onto every expense it creates. Both are set or both are null (a CHECK constraint of the
+  // migration enforces it).
+  originCurrency String?
+  originAmount   BigInt?
   // 1..31; a shorter month uses its last day.
-  dayOfMonth  Int
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
-  expenses    Expense[]
-  decisions   RecurringExpenseDecision[]
+  dayOfMonth     Int
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  expenses       Expense[]
+  decisions      RecurringExpenseDecision[]
 
   @@index([userId])
   @@index([categoryId])
@@ -156,6 +319,24 @@ model RecurringExpenseDecision {
   @@unique([recurringExpenseId, month])
 }
 
+// The money the user held at the START of `month`, per currency and medium. Every row of a user
+// shares the same month. Earlier months do not count and later ones accumulate on top of it.
+model OpeningBalance {
+  id        String        @id @default(cuid())
+  // Clerk user id — balances are private to their owner.
+  userId    String
+  currency  String
+  medium    PaymentMedium
+  // Minor units, like Income.amount.
+  amount    BigInt
+  // "YYYY-MM".
+  month     String
+  updatedAt DateTime      @updatedAt
+
+  @@unique([userId, currency, medium])
+  @@index([userId])
+}
+
 model ExpenseCategory {
   id                String             @id @default(cuid())
   // Clerk user id — categories are private to their owner.
@@ -164,7 +345,18 @@ model ExpenseCategory {
   createdAt         DateTime           @default(now())
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
+  installmentPlans  InstallmentPlan[]
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+// Per-user preferences. One row per user, created the first time they change a setting; a user
+// without a row gets the defaults.
+model UserSettings {
+  // Clerk user id.
+  userId                 String   @id
+  // Whether incomes still to collect count towards the target remainder.
+  includeExpectedIncomes Boolean  @default(true)
+  updatedAt              DateTime @updatedAt
 }

@@ -6,7 +6,8 @@ import { HEADING_CLASS_NAME, ROOT_CLASS_NAME } from "./styles";
 import type { CurrencySectionProps } from "./types";
 import { rowLabel, sectionLabel, valueFor } from "./utils";
 
-// Everything about one currency in the month: incomes, expenses, and the two remainders they leave.
+// Everything about one currency in the month: incomes, expenses, the remainders they leave and the
+// balances in hand.
 // Currencies are never added together, so each one has a section of its own.
 export function CurrencySection({ row }: CurrencySectionProps) {
   const { currency } = row;
@@ -29,7 +30,7 @@ export function CurrencySection({ row }: CurrencySectionProps) {
               label={card.label}
               value={valueFor(row, spec, card)}
               description={card.description}
-              emphasis={spec.emphasis}
+              emphasis={card.emphasis ?? spec.emphasis}
               tone={spec.tone === "balance" ? undefined : spec.tone}
             />
           ))}

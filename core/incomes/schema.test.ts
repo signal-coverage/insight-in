@@ -34,7 +34,25 @@ describe("incomeInputSchema", () => {
       categoryId: "cat_1",
       notes: "Paid by wire transfer",
       status: "SETTLED",
+      medium: "DIGITAL",
+      originCurrency: null,
+      originAmount: null,
+      reimbursesExpenseId: null,
     });
+  });
+
+  it("defaults the medium to digital and accepts cash", () => {
+    expect(incomeInputSchema.safeParse(validInput).data?.medium).toBe(
+      "DIGITAL",
+    );
+    expect(
+      incomeInputSchema.safeParse({ ...validInput, medium: "CASH" }).data
+        ?.medium,
+    ).toBe("CASH");
+  });
+
+  it("rejects an unknown medium", () => {
+    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
   });
 
   it("defaults the status to settled and accepts planned", () => {
@@ -49,6 +67,12 @@ describe("incomeInputSchema", () => {
 
   it("rejects an unknown status", () => {
     expect(errorPaths({ ...validInput, status: "DONE" })).toEqual(["status"]);
+  });
+
+  it("rejects COVERED: an income never uses it", () => {
+    expect(errorPaths({ ...validInput, status: "COVERED" })).toEqual([
+      "status",
+    ]);
   });
 
   it("trims text fields", () => {

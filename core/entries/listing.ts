@@ -52,14 +52,16 @@ interface StatusGroup {
   _sum: { amount: bigint | null };
 }
 
-// Turns the database's (currency, status) sums into one row per currency.
+// Turns the database's (currency, status) sums into one row per currency. A covered entry (an
+// installment someone else paid) never moved the user's money, so it is neither part of the total
+// nor settled nor pending.
 export const foldCurrencyTotals = (
   groups: readonly StatusGroup[],
 ): CurrencyTotal[] => {
   const byCurrency = new Map<string, CurrencyTotal>();
 
   for (const group of groups) {
-    if (group._sum.amount === null) {
+    if (group._sum.amount === null || group.status === "COVERED") {
       continue;
     }
 

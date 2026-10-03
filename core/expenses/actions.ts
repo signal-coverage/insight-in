@@ -10,9 +10,11 @@ import {
   runAuthenticated as runScoped,
 } from "@/core/entries/actionHelpers";
 import type { ActionFailure } from "@/core/entries/actionHelpers";
+import { BULK_INVALID_MESSAGE, bulkIdsSchema } from "@/core/entries/bulk";
 import { categoryIdSchema, categoryInputSchema } from "@/core/entries/fields";
 import { isEntryStatus } from "@/core/entries/status";
 import type { EntryStatus } from "@/core/entries/status";
+import type { BulkDeleteResult } from "@/core/entries/types";
 import {
   CATEGORY_NOT_FOUND_MESSAGE,
   INVALID_FORM_MESSAGE,
@@ -27,6 +29,7 @@ import {
 import {
   EXPENSE_FORM_FIELDS,
   EXPENSE_NOT_FOUND_MESSAGE,
+  EXPENSES_NOT_FOUND_MESSAGE,
   EXPENSES_PATH,
   expenseCategoryInUseMessage,
 } from "./consts";
@@ -36,6 +39,7 @@ import {
   createExpense,
   deleteCategory,
   deleteExpense,
+  deleteExpenses,
   renameCategory,
   setExpenseStatus,
   updateExpense,
@@ -135,6 +139,30 @@ export async function deleteExpenseAction(
   );
 }
 
+// Deletes the selected expenses of the table in one go. Only the user's own are deleted; the result
+// says how many were.
+export async function deleteExpensesAction(
+  ids: string[],
+): Promise<BulkDeleteResult> {
+  return runAuthenticated<BulkDeleteResult>(async (userId) => {
+    const parsed = bulkIdsSchema.safeParse(ids);
+
+    if (!parsed.success) {
+      return failure(BULK_INVALID_MESSAGE);
+    }
+
+    const deleted = await deleteExpenses(userId, parsed.data);
+
+    if (deleted === 0) {
+      return failure(EXPENSES_NOT_FOUND_MESSAGE);
+    }
+
+    revalidatePath(EXPENSES_PATH);
+
+    return { status: "success", deleted };
+  });
+}
+
 // Takes the bare name (not FormData): the inline "add category" row lives inside the expense
 // form, so it cannot be a form of its own.
 export async function createCategoryAction(
@@ -168,7 +196,11 @@ const toCategoryManagementFailure = (
 
   if (error instanceof CategoryInUseError) {
     return failure(
-      expenseCategoryInUseMessage(error.count, error.recurringCount),
+      expenseCategoryInUseMessage(
+        error.count,
+        error.recurringCount,
+        error.installmentCount,
+      ),
     );
   }
 

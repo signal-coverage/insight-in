@@ -16,13 +16,15 @@ export class DuplicateCategoryError extends Error {
 }
 
 export class CategoryInUseError extends Error {
-  // How many incomes and how many recurring incomes still use the category.
+  // How many entries (incomes or expenses), recurring templates and installment plans still use
+  // the category.
   constructor(
     readonly count: number,
     readonly recurringCount = 0,
+    readonly installmentCount = 0,
   ) {
     super(
-      `Category is used by ${count} income(s) and ${recurringCount} recurring income(s)`,
+      `Category is used by ${count} entr(ies), ${recurringCount} recurring template(s) and ${installmentCount} installment plan(s)`,
     );
     this.name = "CategoryInUseError";
   }

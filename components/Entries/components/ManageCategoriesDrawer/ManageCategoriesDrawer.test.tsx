@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -333,5 +334,21 @@ describe("delete", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
+  });
+});
+
+describe("category names", () => {
+  it("show the whole name in a tooltip on keyboard focus, instead of a title", () => {
+    renderDrawer();
+
+    const name = screen.getAllByTestId("category-name")[2];
+
+    expect(name).not.toHaveAttribute("title");
+    expect(name).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    act(() => name.focus());
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Salary");
   });
 });

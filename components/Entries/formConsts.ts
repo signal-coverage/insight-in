@@ -11,3 +11,4 @@ export const CURRENCY_PLACEHOLDER = "Selecciona una moneda";
 export const DATE_LABEL = "Fecha";
 export const NOTES_LABEL = "Notas (opcional)";
 export const NOTES_PLACEHOLDER = "Cualquier dato que valga la pena recordar";
+export const PURCHASE_DATE_LABEL = "Fecha de la compra";

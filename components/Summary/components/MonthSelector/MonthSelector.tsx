@@ -18,13 +18,16 @@ export function MonthSelector({
   month,
   label,
   currentMonth,
+  basePath,
 }: MonthSelectorProps) {
   const router = useRouter();
   // The navigation is a transition so that the page stays usable while the next month loads.
   const [, startNavigation] = useTransition();
 
   const goTo = (target: string) =>
-    startNavigation(() => router.push(monthHref(target, currentMonth)));
+    startNavigation(() =>
+      router.push(monthHref(target, currentMonth, basePath)),
+    );
 
   return (
     <nav aria-label={NAV_LABEL} className={ROOT_CLASS_NAME}>
@@ -47,11 +50,13 @@ export function MonthSelector({
       >
         <ChevronRightIcon className={ICON_CLASS_NAME} aria-hidden="true" />
       </Button>
-      {month === currentMonth ? null : (
-        <Button variant="tertiary" onPress={() => goTo(currentMonth)}>
-          {CURRENT_LABEL}
-        </Button>
-      )}
+      <Button
+        variant="tertiary"
+        onPress={() => goTo(currentMonth)}
+        isDisabled={month === currentMonth}
+      >
+        {CURRENT_LABEL}
+      </Button>
     </nav>
   );
 }

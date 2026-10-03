@@ -1,11 +1,11 @@
-import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+import type { InlineAlertVariant } from "./types";
 
-export const ICONS = {
-  error: ExclamationCircleIcon,
-  success: CheckCircleIcon,
-  warning: ExclamationTriangleIcon,
-} as const;
+// Our variants map to HeroUI's alert statuses. Each status brings its own distinct icon.
+export const STATUSES = {
+  error: "danger",
+  success: "success",
+  warning: "warning",
+} as const satisfies Record<
+  InlineAlertVariant,
+  "danger" | "success" | "warning"
+>;

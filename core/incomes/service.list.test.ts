@@ -14,7 +14,10 @@ const { income } = db;
 
 const USER_ID = "user_123";
 
-const INCLUDE = { category: { select: { name: true } } };
+const INCLUDE = {
+  category: { select: { name: true } },
+  reimbursesExpense: { select: { description: true } },
+};
 
 const query = (patch: Partial<EntriesQuery> = {}): EntriesQuery => ({
   ...DEFAULT_ENTRIES_QUERY,
@@ -31,6 +34,9 @@ const row = {
   categoryId: "cat_1",
   category: { name: "Salary" },
   notes: null,
+  originCurrency: null,
+  originAmount: null,
+  reimbursesExpenseId: null,
   recurringIncomeId: "rec_1",
   createdAt: new Date("2026-09-02T10:00:00.000Z"),
   updatedAt: new Date("2026-09-02T10:00:00.000Z"),
@@ -70,6 +76,10 @@ describe("listIncomes", () => {
           categoryId: "cat_1",
           categoryName: "Salary",
           notes: null,
+          originCurrency: null,
+          originAmount: null,
+          reimbursesExpenseId: null,
+          reimbursesExpenseDescription: null,
           recurringIncomeId: "rec_1",
         },
       ],
@@ -77,6 +87,24 @@ describe("listIncomes", () => {
       page: 1,
       pageSize: 25,
       totalPages: 1,
+    });
+  });
+
+  it("says which plan an installment of a loan repaid in cuotas belongs to, and its number", async () => {
+    income.findMany.mockResolvedValue([
+      { ...row, installmentPlanId: "plan_1", installmentNumber: 3 },
+      { ...row, id: "inc_2", installmentPlanId: null, installmentNumber: null },
+    ]);
+
+    const { rows } = await listIncomes(USER_ID, query());
+
+    expect(rows[0]).toMatchObject({
+      installmentPlanId: "plan_1",
+      installmentNumber: 3,
+    });
+    expect(rows[1]).toMatchObject({
+      installmentPlanId: null,
+      installmentNumber: null,
     });
   });
 

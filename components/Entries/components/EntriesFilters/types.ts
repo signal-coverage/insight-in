@@ -8,13 +8,16 @@ export interface EntriesFiltersProps {
   // What "settled" is called on this side of the budget: "Cobrado" for incomes, "Pagado" for
   // expenses. The other status is always "Listado".
   settledLabel: string;
+  // What "covered" is called ("Cubierta"). Only expenses can be covered, so a side that cannot
+  // leaves it out and the status filter has no such option.
+  coveredLabel?: string;
   query: EntriesQuery;
   // The select options, or promises of them while they load. The date pickers need only the
   // URL, so they render and work at once; only the two selects wait for these.
   categories: Source<readonly EntryCategory[]>;
   currencies: Source<readonly string[]>;
   // Whether the view differs from the default state. The parent decides because it knows what
-  // "default" is (the current month up to today); the bar only shows the button accordingly.
+  // "default" is (the whole current month); the bar only shows the button accordingly.
   canClear: boolean;
   onChange: (patch: Partial<EntriesQuery>) => void;
   onClear: () => void;

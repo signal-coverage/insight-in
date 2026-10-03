@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { IncomeRow } from "../../types";
@@ -15,10 +15,21 @@ const ROW: IncomeRow = {
   categoryName: "Salary",
   notes: "Paid by wire transfer",
   recurringIncomeId: null,
+  installmentPlanId: null,
+  installmentNumber: null,
   status: "SETTLED",
+  medium: "DIGITAL",
   amountLabel: "$2,500.00",
   amountDecimal: "2500.00",
   dateLabel: "1 sept 2026",
+  originCurrency: null,
+  originAmount: null,
+  originAmountDecimal: null,
+  originLabel: null,
+  originTooltip: null,
+  reimbursesExpenseId: null,
+  reimbursesExpenseDescription: null,
+  reimbursementTooltip: null,
 };
 
 const NO_NOTES: IncomeRow = {
@@ -74,7 +85,7 @@ describe("IncomesTable columns", () => {
     renderTable();
 
     bodyRows().forEach((row) => {
-      const firstCell = within(row).getAllByRole("cell")[0];
+      const firstCell = within(row).getAllByRole("gridcell")[0];
 
       expect(
         within(firstCell).getByRole("button", { name: /^Editar / }),
@@ -103,8 +114,8 @@ describe("IncomesTable notes", () => {
     renderTable();
 
     const [withNotes] = bodyRows();
-    const cells = within(withNotes).getAllByRole("cell");
-    const descriptionCell = cells[2];
+    const cells = within(withNotes).getAllByRole("gridcell");
+    const descriptionCell = within(withNotes).getByRole("rowheader");
     const notesCell = cells[cells.length - 1];
 
     expect(notesCell).toHaveTextContent("Paid by wire transfer");
@@ -116,22 +127,29 @@ describe("IncomesTable notes", () => {
     renderTable();
 
     const [, withoutNotes] = bodyRows();
-    const cells = within(withoutNotes).getAllByRole("cell");
+    const cells = within(withoutNotes).getAllByRole("gridcell");
 
     expect(cells[cells.length - 1]).toHaveTextContent("—");
   });
 
-  it("keeps long notes on one line and readable in full on hover", () => {
+  it("keeps long notes on one line and readable in full in a tooltip", () => {
     const long =
       "A very long note that would otherwise push the whole table wider than the screen";
 
     renderTable([{ ...ROW, notes: long }]);
 
-    const cells = within(bodyRows()[0]).getAllByRole("cell");
+    const cells = within(bodyRows()[0]).getAllByRole("gridcell");
     const text = within(cells[cells.length - 1]).getByText(long);
 
-    expect(text).toHaveAttribute("title", long);
+    expect(text).not.toHaveAttribute("title");
+    expect(text).toHaveAttribute("tabindex", "0");
     expect(text.className).toContain("truncate");
+
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    act(() => screen.getByRole("grid").focus());
+    act(() => text.focus());
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(long);
   });
 });
 
@@ -245,11 +263,156 @@ describe("IncomesTable recurring marker", () => {
   });
 });
 
+describe("IncomesTable repayment marker", () => {
+  it("marks the installments of a loan repaid in cuotas, next to their description", () => {
+    renderTable([
+      { ...ROW, installmentPlanId: "plan_1", installmentNumber: 2 },
+    ]);
+
+    const marker = screen.getByRole("img", { name: "Devolución en cuotas" });
+
+    expect(marker.tagName.toLowerCase()).toBe("svg");
+    expect(marker.parentElement).toHaveTextContent("Monthly salary");
+  });
+
+  it("wears no credit card: that is for the purchases of the expenses", () => {
+    renderTable([
+      { ...ROW, installmentPlanId: "plan_1", installmentNumber: 2 },
+    ]);
+
+    expect(
+      screen.queryByRole("img", { name: "Compra en cuotas" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows no marker for an ordinary income", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Devolución en cuotas" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("can show it next to the cash marker", () => {
+    renderTable([
+      {
+        ...ROW,
+        medium: "CASH",
+        installmentPlanId: "plan_1",
+        installmentNumber: 1,
+      },
+    ]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Devolución en cuotas" }),
+    ).toBeInTheDocument();
+  });
+
+  it("gives it a tooltip with its own text", () => {
+    renderTable([
+      { ...ROW, installmentPlanId: "plan_1", installmentNumber: 1 },
+    ]);
+
+    focusWithKeyboard(
+      screen.getByRole("img", { name: "Devolución en cuotas" }),
+    );
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Devolución en cuotas",
+    );
+  });
+});
+
+const FROM_USDC: IncomeRow = {
+  ...ROW,
+  amount: 120000000,
+  currency: "ARS",
+  amountLabel: "$ 1.200.000,00",
+  originCurrency: "USDC",
+  originAmount: 1000000000,
+  originAmountDecimal: "1000.00",
+  originLabel: "Viene de 1.000 USDC",
+  originTooltip: "Viene de 1.000,00 USDC · cotización 1.200,00",
+};
+
+describe("IncomesTable origin marker", () => {
+  it("marks an income that came from another currency, next to its description", () => {
+    renderTable([FROM_USDC]);
+
+    const marker = screen.getByRole("img", { name: "Viene de 1.000 USDC" });
+
+    expect(marker.tagName.toLowerCase()).toBe("svg");
+    expect(marker.parentElement).toHaveTextContent("Monthly salary");
+  });
+
+  it("says the exact amount and the implied rate in its tooltip", () => {
+    renderTable([FROM_USDC]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Viene de 1.000 USDC" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Viene de 1.000,00 USDC · cotización 1.200,00",
+    );
+  });
+
+  it("shows no marker for an income without an origin", () => {
+    renderTable();
+
+    expect(screen.queryByRole("img", { name: /^Viene de/ })).toBeNull();
+  });
+
+  it("keeps the net amount as the only amount of the row, in its own column", () => {
+    renderTable([FROM_USDC]);
+
+    const cells = within(bodyRows()[0]).getAllByRole("gridcell");
+
+    expect(cells[cells.length - 2]).toHaveTextContent("$ 1.200.000,00");
+    expect(cells[cells.length - 2]).not.toHaveTextContent("USDC");
+  });
+
+  it("can show it next to the other markers", () => {
+    renderTable([{ ...FROM_USDC, medium: "CASH", recurringIncomeId: "rec_1" }]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Viene de 1.000 USDC" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("IncomesTable cash marker", () => {
+  it("marks the incomes that arrived as cash, next to their description", () => {
+    renderTable([{ ...ROW, medium: "CASH" }]);
+
+    const marker = screen.getByRole("img", { name: "Efectivo" });
+
+    expect(marker.querySelector("title")).toBeNull();
+    expect(marker.parentElement).toHaveTextContent("Monthly salary");
+  });
+
+  it("shows no marker for digital incomes", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Efectivo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("can show both markers on a recurring cash income", () => {
+    renderTable([{ ...ROW, medium: "CASH", recurringIncomeId: "rec_1" }]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
+  });
+});
+
 describe("IncomesTable column widths", () => {
   it("uses a fixed layout, so a column's width never depends on what is inside it", () => {
     renderTable();
 
-    expect(screen.getByRole("table")).toHaveClass(
+    expect(screen.getByRole("grid")).toHaveClass(
       "table-fixed",
       "min-w-[48rem]",
     );
@@ -268,11 +431,11 @@ describe("IncomesTable column widths", () => {
   it("keeps the Actions column as wide as its two buttons, with the title centered and the same padding on both sides", () => {
     renderTable();
 
-    // The first column already has the table's 16px edge inset on its left; the right matches it.
+    // 16px on each side: the checkbox column leads the table, so the edge inset is not this column's.
     expect(screen.getByRole("columnheader", { name: "Acciones" })).toHaveClass(
       "w-[7.25rem]",
       "text-center",
-      "pr-4",
+      "px-4",
     );
   });
 
@@ -302,7 +465,7 @@ describe("IncomesTable status column", () => {
     renderTable();
 
     bodyRows().forEach((row) => {
-      const statusCell = within(row).getAllByRole("cell")[1];
+      const statusCell = within(row).getAllByRole("gridcell")[1];
 
       expect(statusCell.firstElementChild).toHaveClass(
         "flex",
@@ -340,5 +503,105 @@ describe("IncomesTable status column", () => {
       { ...ROW, status: "PLANNED" },
       true,
     );
+  });
+});
+
+// A keyboard user tabs into the table first, then on to what is in its cells.
+const focusWithKeyboard = (element: HTMLElement) => {
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  act(() => screen.getByRole("grid").focus());
+  act(() => element.focus());
+};
+
+describe("IncomesTable as a HeroUI table", () => {
+  it("is named after what it lists and reads the description as the row's title", () => {
+    renderTable();
+
+    expect(screen.getByRole("grid", { name: "Ingresos" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("rowheader").map((cell) => cell.textContent),
+    ).toEqual(["Monthly salary", "Side gig"]);
+  });
+
+  it("makes the Description, Category and Date headers sortable, and no other", () => {
+    renderTable();
+
+    const sortable = screen
+      .getAllByRole("columnheader")
+      .filter((header) => header.hasAttribute("data-allows-sorting"))
+      .map((header) => header.textContent?.trim());
+
+    expect(sortable).toEqual(["Descripción", "Categoría", "Fecha"]);
+  });
+});
+
+describe("IncomesTable tooltips", () => {
+  it("shows the whole description as a tooltip on keyboard focus, instead of a title", () => {
+    renderTable();
+
+    const description = screen.getByText("Monthly salary");
+
+    expect(description).not.toHaveAttribute("title");
+    expect(description).toHaveAttribute("tabindex", "0");
+
+    focusWithKeyboard(description);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Monthly salary");
+  });
+
+  it("gives the recurring marker a tooltip with its own text", () => {
+    renderTable([{ ...ROW, recurringIncomeId: "rec_1" }]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Recurrente" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Recurrente");
+  });
+
+  it("gives the cash marker a tooltip with its own text", () => {
+    renderTable([{ ...ROW, medium: "CASH" }]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Efectivo" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Efectivo");
+  });
+});
+
+describe("IncomesTable reimbursement marker", () => {
+  const PAYS_BACK: IncomeRow = {
+    ...ROW,
+    id: "inc_3",
+    description: "Reintegro obra social",
+    reimbursesExpenseId: "exp_1",
+    reimbursesExpenseDescription: "Dentista",
+    reimbursementTooltip: "Devolución de: Dentista",
+  };
+
+  it("marks an income that pays an expense back, next to its description", () => {
+    renderTable([PAYS_BACK]);
+
+    const marker = screen.getByRole("img", { name: "Devolución de un gasto" });
+
+    expect(marker.tagName.toLowerCase()).toBe("svg");
+    expect(marker.parentElement).toHaveTextContent("Reintegro obra social");
+  });
+
+  it("names the expense it pays back in its tooltip", () => {
+    renderTable([PAYS_BACK]);
+
+    focusWithKeyboard(
+      screen.getByRole("img", { name: "Devolución de un gasto" }),
+    );
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Devolución de: Dentista",
+    );
+  });
+
+  it("shows no marker for an income that pays nothing back", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Devolución de un gasto" }),
+    ).toBeNull();
   });
 });

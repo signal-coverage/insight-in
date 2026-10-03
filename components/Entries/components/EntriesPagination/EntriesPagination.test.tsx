@@ -38,6 +38,75 @@ describe("EntriesPagination", () => {
     expect(screen.getByText("Mostrando 1-1 de 1")).toBeInTheDocument();
   });
 
+  it("is a HeroUI pagination: a labelled nav with its summary and its previous, page and next items", () => {
+    renderPagination({ page: 2, totalPages: 4, total: 83 });
+
+    const nav = screen.getByRole("navigation", { name: "Paginación" });
+
+    expect(nav).toHaveAttribute("data-slot", "pagination");
+    expect(
+      nav.querySelector('[data-slot="pagination-summary"]'),
+    ).toHaveTextContent("Mostrando 26-50 de 83");
+    expect(nav.querySelectorAll('[data-slot="pagination-item"]')).toHaveLength(
+      3,
+    );
+    expect(
+      nav.querySelector('[data-slot="pagination-previous"]'),
+    ).toHaveTextContent("Anterior");
+    expect(
+      nav.querySelector('[data-slot="pagination-next"]'),
+    ).toHaveTextContent("Siguiente");
+  });
+
+  it("keeps both buttons enabled on a middle page", () => {
+    renderPagination({ page: 2, totalPages: 4, total: 83 });
+
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeEnabled();
+  });
+
+  it("disables only Previous on the first page and only Next on the last", () => {
+    const { unmount } = render(
+      <EntriesPagination
+        page={1}
+        totalPages={4}
+        total={83}
+        pageSize={25}
+        onPageChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeEnabled();
+
+    unmount();
+    render(
+      <EntriesPagination
+        page={4}
+        totalPages={4}
+        total={83}
+        pageSize={25}
+        onPageChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Siguiente" })).toBeDisabled();
+  });
+
+  it("does not change the page from a disabled button", () => {
+    const { onPageChange } = renderPagination({
+      page: 1,
+      totalPages: 1,
+      total: 10,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Anterior" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(onPageChange).not.toHaveBeenCalled();
+  });
+
   it("disables Previous on the first page and Next on the last", () => {
     renderPagination({ page: 1, totalPages: 1, total: 10 });
 

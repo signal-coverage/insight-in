@@ -199,6 +199,36 @@ describe("deleteCategoryAction", () => {
     });
   });
 
+  it("explains that loans repaid in installments still use the category", async () => {
+    mocks.deleteCategory.mockRejectedValue(new CategoryInUseError(0, 0, 2));
+
+    expect(await deleteCategoryAction("c1")).toEqual({
+      status: "error",
+      message:
+        "2 devoluciones en cuotas todavía usan esta categoría. Muévelas o elimínalas primero.",
+    });
+  });
+
+  it("uses the singular form for a single loan repaid in installments", async () => {
+    mocks.deleteCategory.mockRejectedValue(new CategoryInUseError(0, 0, 1));
+
+    expect(await deleteCategoryAction("c1")).toEqual({
+      status: "error",
+      message:
+        "1 devolución en cuotas todavía usa esta categoría. Muévela o elimínala primero.",
+    });
+  });
+
+  it("mentions incomes and loans repaid in installments together", async () => {
+    mocks.deleteCategory.mockRejectedValue(new CategoryInUseError(5, 0, 1));
+
+    expect(await deleteCategoryAction("c1")).toEqual({
+      status: "error",
+      message:
+        "5 ingresos y 1 devolución en cuotas todavía usan esta categoría. Muévelos o elimínalos primero.",
+    });
+  });
+
   it("refuses to delete the last category", async () => {
     mocks.deleteCategory.mockRejectedValue(new LastCategoryError());
 

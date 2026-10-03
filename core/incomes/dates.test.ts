@@ -4,6 +4,7 @@ import {
   dateToIsoDate,
   firstOfMonthIso,
   formatIncomeDate,
+  formatShortDate,
   isoDateToDate,
   isValidIsoDate,
   todayIso,
@@ -82,5 +83,12 @@ describe("formatIncomeDate", () => {
 
   it("honours a custom locale", () => {
     expect(formatIncomeDate("2026-09-01", "de-DE")).toBe("01.09.2026");
+  });
+});
+
+describe("formatShortDate", () => {
+  it("writes the day and the month, day first, with two digits each", () => {
+    expect(formatShortDate("2026-09-12")).toBe("12/09");
+    expect(formatShortDate("2026-01-05")).toBe("05/01");
   });
 });

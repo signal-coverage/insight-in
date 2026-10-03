@@ -1,6 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 
 import {
+  CARD_CURRENCY_MISMATCH_MESSAGE,
+  CARD_NOT_FOUND_MESSAGE,
+} from "@/core/cards/consts";
+import {
+  CardCurrencyMismatchError,
+  CardNotFoundError,
+} from "@/core/cards/errors";
+import {
+  COVERED_NOT_ALLOWED_MESSAGE,
   DUPLICATE_CATEGORY_MESSAGE,
   GENERIC_ERROR_MESSAGE,
   INVALID_CATEGORY_MESSAGE,
@@ -11,6 +20,22 @@ import {
   CategoryNotFoundError,
   DuplicateCategoryError,
 } from "@/core/incomes/errors";
+import {
+  EXPENSE_CURRENCY_LOCKED_MESSAGE,
+  REIMBURSED_EXPENSE_NOT_FOUND_MESSAGE,
+  REIMBURSEMENT_CURRENCY_MISMATCH_MESSAGE,
+  REIMBURSEMENT_LOCKED_MESSAGE,
+  REIMBURSEMENT_NOT_EXPECTED_MESSAGE,
+} from "@/core/reimbursements/consts";
+import {
+  ExpenseCurrencyLockedError,
+  ReimbursedExpenseNotFoundError,
+  ReimbursementCurrencyMismatchError,
+  ReimbursementLockedError,
+  ReimbursementNotExpectedError,
+} from "@/core/reimbursements/errors";
+
+import { CoveredNotAllowedError } from "./errors";
 
 // Plumbing shared by the incomes and expenses server actions. It is not a "use server" module:
 // nothing here is callable from the browser.
@@ -54,6 +79,51 @@ const toKnownFailure = (error: unknown): ActionFailure | undefined => {
 
   if (error instanceof DuplicateCategoryError) {
     return fieldFailure({ name: [DUPLICATE_CATEGORY_MESSAGE] });
+  }
+
+  if (error instanceof CoveredNotAllowedError) {
+    return fieldFailure({ status: [COVERED_NOT_ALLOWED_MESSAGE] });
+  }
+
+  // The card of an expense or a purchase in installments: a card that is not the user's or that is in
+  // another currency than the purchase.
+  if (error instanceof CardNotFoundError) {
+    return fieldFailure({ cardId: [CARD_NOT_FOUND_MESSAGE] });
+  }
+
+  if (error instanceof CardCurrencyMismatchError) {
+    return fieldFailure({ cardId: [CARD_CURRENCY_MISMATCH_MESSAGE] });
+  }
+
+  // The expense an income pays back: one that is not the user's, that expects nothing or that is in
+  // another currency.
+  if (error instanceof ReimbursedExpenseNotFoundError) {
+    return fieldFailure({
+      reimbursesExpenseId: [REIMBURSED_EXPENSE_NOT_FOUND_MESSAGE],
+    });
+  }
+
+  if (error instanceof ReimbursementNotExpectedError) {
+    return fieldFailure({
+      reimbursesExpenseId: [REIMBURSEMENT_NOT_EXPECTED_MESSAGE],
+    });
+  }
+
+  if (error instanceof ReimbursementCurrencyMismatchError) {
+    return fieldFailure({
+      reimbursesExpenseId: [REIMBURSEMENT_CURRENCY_MISMATCH_MESSAGE],
+    });
+  }
+
+  // An expense with incomes linked to it keeps its currency and its expected reimbursement.
+  if (error instanceof ExpenseCurrencyLockedError) {
+    return fieldFailure({ currency: [EXPENSE_CURRENCY_LOCKED_MESSAGE] });
+  }
+
+  if (error instanceof ReimbursementLockedError) {
+    return fieldFailure({
+      expectedReimbursement: [REIMBURSEMENT_LOCKED_MESSAGE],
+    });
   }
 
   return undefined;

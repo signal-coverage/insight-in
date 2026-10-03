@@ -1,0 +1,1 @@
+export { ThemeSwatches } from "./ThemeSwatches";

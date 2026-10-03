@@ -1,5 +1,6 @@
 import { Checkbox } from "@heroui/react";
 
+import { ROOT_CLASS_NAME } from "./consts";
 import type { StatusCheckboxProps } from "./types";
 
 // The first cell of every row: ticked once the entry has been collected or paid. It has no
@@ -12,6 +13,7 @@ export function StatusCheckbox({
 }: StatusCheckboxProps) {
   return (
     <Checkbox
+      className={ROOT_CLASS_NAME}
       aria-label={label}
       isSelected={isSettled}
       isDisabled={isDisabled}

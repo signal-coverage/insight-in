@@ -1,6 +1,7 @@
 import { esES } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import "remixicon/fonts/remixicon.css";
 import { LocatorSetup } from "@/components/locator-setup";
 import { CLERK_APPEARANCE } from "@/lib/clerk-appearance";
 import { geistMono, geistSans } from "./fonts";

@@ -26,6 +26,7 @@ const RECURRING: RecurringRow = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: "Paid on the 5th",
+  medium: "DIGITAL",
   frequency: "WEEKLY",
   startDate: "2026-01-05",
   endDate: "2026-12-05",
@@ -94,6 +95,42 @@ describe("create mode", () => {
     });
 
     expect(button.querySelector("svg")).not.toBeNull();
+  });
+});
+
+describe("medium field", () => {
+  it("offers Digital and Efectivo, with Digital chosen for a new template", () => {
+    renderForm(null);
+
+    expect(screen.getByRole("radiogroup", { name: "Medio" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
+    expect(formValue("medium")).toBe("DIGITAL");
+  });
+
+  it("keeps the stored medium of the template being edited", () => {
+    renderForm({ ...RECURRING, medium: "CASH" });
+
+    expect(screen.getByRole("radio", { name: "Efectivo" })).toBeChecked();
+    expect(formValue("medium")).toBe("CASH");
+  });
+
+  it("sends the chosen medium with the rest of the form", async () => {
+    actions.updateRecurringIncomeAction.mockResolvedValue({
+      status: "success",
+    });
+    renderForm(RECURRING);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
+    submit();
+
+    await waitFor(() =>
+      expect(actions.updateRecurringIncomeAction).toHaveBeenCalledTimes(1),
+    );
+
+    const formData = actions.updateRecurringIncomeAction.mock
+      .calls[0][1] as FormData;
+
+    expect(formData.get("medium")).toBe("CASH");
   });
 });
 

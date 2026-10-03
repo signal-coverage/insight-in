@@ -1,4 +1,5 @@
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { TruncatedText } from "@/components/Entries/components/TruncatedText";
 import { InlineAlert } from "@/components/shared/InlineAlert";
 import { PendingButton } from "@/components/shared/PendingButton";
 import { Button, FieldError, Input, TextField } from "@heroui/react";
@@ -136,20 +137,16 @@ export function CategoryRow({
       ) : (
         <div className={VIEW_ROW_CLASS_NAME}>
           <div className={SUMMARY_CLASS_NAME}>
-            <span
-              className={NAME_CLASS_NAME}
-              data-testid="category-name"
-              title={category.name}
-            >
+            <TruncatedText className={NAME_CLASS_NAME} testId="category-name">
               {category.name}
-            </span>
+            </TruncatedText>
             <span className={COUNT_CLASS_NAME}>{countLabel}</span>
           </div>
           <div className={ACTIONS_CLASS_NAME}>
             <Button
               isIconOnly
               size="sm"
-              variant="tertiary"
+              variant="secondary"
               aria-label={renameLabel(category.name)}
               onPress={startEditing}
             >

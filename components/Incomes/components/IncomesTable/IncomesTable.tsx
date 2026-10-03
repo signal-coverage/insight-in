@@ -1,13 +1,19 @@
-import {
-  ArrowPathIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Button, Skeleton } from "@heroui/react";
 
 import { DataTable } from "@/components/DataTable";
+import { CashMarker } from "@/components/Entries/components/CashMarker";
+import { MarkerIcon } from "@/components/Entries/components/MarkerIcon";
 import { StatusCheckbox } from "@/components/Entries/components/StatusCheckbox";
-import { deleteLabel, editLabel } from "@/components/Entries/consts";
+import { MARKERS, ORIGIN_MARKER_ICON } from "@/components/Entries/markers";
+import { TruncatedText } from "@/components/Entries/components/TruncatedText";
+import {
+  DELETING_LABEL,
+  SELECT_ALL_LABEL,
+  deleteLabel,
+  editLabel,
+  selectLabel,
+} from "@/components/Entries/consts";
 import type { DataTableColumn } from "@/components/DataTable";
 
 import { EMPTY_COPY, markSettledLabel } from "../../consts";
@@ -23,7 +29,10 @@ import {
   NO_NOTES,
   NOTES_HEADER,
   RECURRING_MARKER_LABEL,
+  REIMBURSES_MARKER_LABEL,
+  REPAYMENT_MARKER_LABEL,
   STATUS_HEADER,
+  TABLE_LABEL,
 } from "./consts";
 import {
   ACTIONS_CLASS_NAME,
@@ -57,7 +66,13 @@ export function IncomesTable({
   onEdit,
   onDelete,
   onToggleStatus,
+  selectedIds,
+  onSelectionChange,
+  deletingIds,
 }: IncomesTableProps) {
+  // A row being deleted can be neither edited nor deleted again nor ticked.
+  const isDeleting = (row: IncomeRow) => Boolean(deletingIds?.has(row.id));
+
   const columns: DataTableColumn<IncomeRow>[] = [
     {
       key: "actions",
@@ -69,8 +84,9 @@ export function IncomesTable({
           <Button
             isIconOnly
             size="sm"
-            variant="tertiary"
+            variant="secondary"
             aria-label={editLabel(row.description)}
+            isDisabled={isDeleting(row)}
             onPress={() => onEdit(row)}
           >
             <PencilSquareIcon
@@ -83,6 +99,7 @@ export function IncomesTable({
             size="sm"
             variant="danger-soft"
             aria-label={deleteLabel(row.description)}
+            isDisabled={isDeleting(row)}
             onPress={() => onDelete(row)}
           >
             <TrashIcon className={ACTION_ICON_CLASS_NAME} aria-hidden="true" />
@@ -106,6 +123,7 @@ export function IncomesTable({
           <StatusCheckbox
             isSettled={row.status === "SETTLED"}
             label={markSettledLabel(row.description)}
+            isDisabled={isDeleting(row)}
             onChange={(isSettled) => onToggleStatus(row, isSettled)}
           />
         </div>
@@ -116,18 +134,44 @@ export function IncomesTable({
       key: "description",
       header: DESCRIPTION_HEADER,
       sortable: true,
+      isRowHeader: true,
       cell: (row) => (
         <span className={DESCRIPTION_ROW_CLASS_NAME}>
-          <span className={DESCRIPTION_CLASS_NAME} title={row.description}>
+          <TruncatedText className={DESCRIPTION_CLASS_NAME}>
             {row.description}
-          </span>
+          </TruncatedText>
+          {row.medium === "CASH" ? <CashMarker /> : null}
           {row.recurringIncomeId ? (
-            // Heroicons are aria-hidden by default: this one carries the meaning, so it must not be.
-            <ArrowPathIcon
-              role="img"
-              aria-hidden={false}
-              aria-label={RECURRING_MARKER_LABEL}
-              title={RECURRING_MARKER_LABEL}
+            <MarkerIcon
+              icon={MARKERS.recurring.icon}
+              label={RECURRING_MARKER_LABEL}
+              className={RECURRING_ICON_CLASS_NAME}
+            />
+          ) : null}
+          {/* An installment of a loan repaid to the user: a returning arrow, not the credit card of
+              the purchases in installments. */}
+          {row.installmentPlanId !== null ? (
+            <MarkerIcon
+              icon={MARKERS.repayment.icon}
+              label={REPAYMENT_MARKER_LABEL}
+              className={RECURRING_ICON_CLASS_NAME}
+            />
+          ) : null}
+          {/* The net amount came from another currency: the marker only records where from. */}
+          {row.originLabel !== null ? (
+            <MarkerIcon
+              icon={ORIGIN_MARKER_ICON}
+              label={row.originLabel}
+              tooltip={row.originTooltip ?? row.originLabel}
+              className={RECURRING_ICON_CLASS_NAME}
+            />
+          ) : null}
+          {/* It pays an expense back: the tooltip names that expense. */}
+          {row.reimbursementTooltip !== null ? (
+            <MarkerIcon
+              icon={MARKERS.reimburses.icon}
+              label={REIMBURSES_MARKER_LABEL}
+              tooltip={row.reimbursementTooltip}
               className={RECURRING_ICON_CLASS_NAME}
             />
           ) : null}
@@ -166,9 +210,9 @@ export function IncomesTable({
       header: NOTES_HEADER,
       cell: (row) =>
         row.notes ? (
-          <span className={NOTES_CLASS_NAME} title={row.notes}>
+          <TruncatedText className={NOTES_CLASS_NAME}>
             {row.notes}
-          </span>
+          </TruncatedText>
         ) : (
           <span className={NOTES_CLASS_NAME}>{NO_NOTES}</span>
         ),
@@ -178,6 +222,7 @@ export function IncomesTable({
 
   return (
     <DataTable
+      label={TABLE_LABEL}
       className={TABLE_CLASS_NAME}
       tableClassName={FIXED_TABLE_CLASS_NAME}
       columns={columns}
@@ -187,6 +232,18 @@ export function IncomesTable({
       loadingLabel={LOADING_LABEL}
       sort={sort}
       onSortChange={onSortChange}
+      selection={
+        onSelectionChange
+          ? {
+              selectedKeys: selectedIds ?? new Set(),
+              onSelectionChange,
+              selectAllLabel: SELECT_ALL_LABEL,
+              rowLabel: (row) => selectLabel(row.description),
+            }
+          : undefined
+      }
+      isRowBusy={deletingIds ? isDeleting : undefined}
+      busyLabel={DELETING_LABEL}
       footer={footer}
       emptyState={
         <EntriesEmptyState

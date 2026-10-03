@@ -312,6 +312,57 @@ describe("EntriesFilters status filter", () => {
     );
   });
 
+  it("offers no 'covered' option unless it is given a word for it", async () => {
+    renderFilters();
+
+    fireEvent.keyDown(statusTrigger(), { key: "ArrowDown" });
+    await screen.findByRole("option", { name: "Listado" });
+
+    expect(
+      screen.queryByRole("option", { name: "Cubierta" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers the covered status, and reports it, when it is given a word for it", async () => {
+    const onChange = vi.fn();
+
+    render(
+      <EntriesFilters
+        {...COPY}
+        coveredLabel="Cubierta"
+        query={DEFAULT_ENTRIES_QUERY}
+        categories={CATEGORIES}
+        currencies={["ARS"]}
+        canClear={false}
+        onChange={onChange}
+        onClear={() => {}}
+      />,
+    );
+
+    await pick(statusTrigger(), "Cubierta");
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith({ status: "COVERED" }),
+    );
+  });
+
+  it("reflects an active covered status", () => {
+    render(
+      <EntriesFilters
+        {...COPY}
+        coveredLabel="Cubierta"
+        query={{ ...DEFAULT_ENTRIES_QUERY, status: "COVERED" }}
+        categories={CATEGORIES}
+        currencies={["ARS"]}
+        canClear
+        onChange={() => {}}
+        onClear={() => {}}
+      />,
+    );
+
+    expect(statusTrigger()).toHaveTextContent("Cubierta");
+  });
+
   it("reports choosing all statuses as clearing the filter", async () => {
     const { onChange } = renderFilters({ status: "PLANNED" });
 

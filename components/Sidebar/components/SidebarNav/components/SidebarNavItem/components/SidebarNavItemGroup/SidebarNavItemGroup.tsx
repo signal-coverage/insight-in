@@ -1,5 +1,5 @@
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { Popover } from "@heroui/react";
+import { Disclosure, Popover } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -8,9 +8,7 @@ import { isActivePath } from "../../utils";
 import { SidebarNavChildList } from "../SidebarNavChildList";
 import { HOVER_CLOSE_DELAY_MS } from "./consts";
 import {
-  CHILDREN_INNER_CLASS_NAME,
-  getChevronClassName,
-  getChildrenWrapperClassName,
+  CHEVRON_CLASS_NAME,
   getToggleClassName,
   POPOVER_CONTENT_CLASS_NAME,
 } from "./styles";
@@ -22,14 +20,15 @@ export function SidebarNavItemGroup({
   forceExpanded,
 }: SidebarNavItemGroupProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isHoverOpen, setIsHoverOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isExpanded = forceExpanded ?? isOpen;
   const children = item.children ?? [];
   const isChildActive = children.some((child) =>
     isActivePath(pathname, child.href, child.exact),
   );
+  // A group opens on its own when the page being shown lives inside it.
+  const [isOpen, setIsOpen] = useState(isChildActive);
+  const [isHoverOpen, setIsHoverOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isExpanded = forceExpanded ?? isOpen;
   const Icon = item.icon;
 
   const cancelHoverClose = () => {
@@ -85,29 +84,24 @@ export function SidebarNavItemGroup({
 
   return (
     <li>
-      <button
-        type="button"
-        className={getToggleClassName(isCollapsed, isChildActive)}
-        aria-expanded={isExpanded}
-        onClick={() => setIsOpen((previous) => !previous)}
-      >
-        <Icon className={ICON_CLASS_NAME} aria-hidden="true" />
-        <span className={getLabelClassName(isCollapsed)}>{item.label}</span>
-        <ChevronDownIcon
-          className={getChevronClassName(isExpanded)}
-          aria-hidden="true"
-        />
-      </button>
-      {/* Always rendered (never conditionally mounted) so the grid-rows transition can
-          animate both opening and closing; `inert` keeps it out of tab order while shut. */}
-      <div
-        className={getChildrenWrapperClassName(isExpanded)}
-        inert={!isExpanded}
-      >
-        <div className={CHILDREN_INNER_CLASS_NAME}>
+      <Disclosure isExpanded={isExpanded} onExpandedChange={setIsOpen}>
+        {/* No Disclosure.Heading: it would add a heading to the sidebar's outline. */}
+        <Disclosure.Trigger
+          className={getToggleClassName(isCollapsed, isChildActive)}
+        >
+          <Icon className={ICON_CLASS_NAME} aria-hidden="true" />
+          <span className={getLabelClassName(isCollapsed)}>{item.label}</span>
+          <Disclosure.Indicator className={CHEVRON_CLASS_NAME}>
+            <ChevronDownIcon aria-hidden="true" />
+          </Disclosure.Indicator>
+        </Disclosure.Trigger>
+        {/* The panel stays mounted so the height transition can animate both opening and
+            closing; Disclosure hides it from the accessibility tree and the tab order while
+            shut. */}
+        <Disclosure.Content>
           <SidebarNavChildList items={children} variant="tree" />
-        </div>
-      </div>
+        </Disclosure.Content>
+      </Disclosure>
     </li>
   );
 }

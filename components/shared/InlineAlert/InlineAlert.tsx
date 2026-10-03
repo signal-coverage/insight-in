@@ -1,8 +1,12 @@
+import { Alert } from "@heroui/react";
+
 import { cn } from "@/lib/utils/utils";
 
-import { ICONS } from "./consts";
+import { STATUSES } from "./consts";
 import {
-  ICON_CLASS_NAME,
+  CONTENT_CLASS_NAME,
+  DESCRIPTION_CLASS_NAME,
+  INDICATOR_CLASS_NAME,
   ROOT_CLASS_NAME,
   VARIANT_CLASS_NAMES,
 } from "./styles";
@@ -14,15 +18,18 @@ export function InlineAlert({
   children,
   className,
 }: InlineAlertProps) {
-  const Icon = ICONS[variant];
-
   return (
-    <div
+    <Alert
       role={variant === "error" ? "alert" : "status"}
+      status={STATUSES[variant]}
       className={cn(ROOT_CLASS_NAME, VARIANT_CLASS_NAMES[variant], className)}
     >
-      <Icon className={ICON_CLASS_NAME} aria-hidden="true" />
-      <span>{children}</span>
-    </div>
+      <Alert.Indicator className={INDICATOR_CLASS_NAME} />
+      <Alert.Content className={CONTENT_CLASS_NAME}>
+        <Alert.Description className={DESCRIPTION_CLASS_NAME}>
+          {children}
+        </Alert.Description>
+      </Alert.Content>
+    </Alert>
   );
 }

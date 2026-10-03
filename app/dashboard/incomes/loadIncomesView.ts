@@ -1,5 +1,10 @@
 import { toTotalRows } from "@/components/Entries/utils";
-import { toIncomeRows, toRecurringRows } from "@/components/Incomes/utils";
+import {
+  toIncomeRows,
+  toReimbursableOptions,
+  toRecurringRows,
+  toRepaymentData,
+} from "@/components/Incomes/utils";
 import { loadIncomesPageData } from "@/core/incomes/pageData";
 import type { EntriesQuery } from "@/core/entries/query";
 
@@ -27,16 +32,21 @@ export const loadIncomesView = (
       })),
     ),
     currencies: data.then(({ currencies }) => currencies),
-    table: data.then(({ page, currencies }) => {
+    table: data.then(({ page, planProgress, currencies }) => {
       const { rows, ...pagination } = page;
 
       return {
-        rows: toIncomeRows(rows),
+        rows: toIncomeRows(rows, planProgress),
         pagination,
         // With no income in any currency, an empty table means "nothing yet", not "no matches".
         hasAnyIncomes: currencies.length > 0,
       };
     }),
     recurring: data.then(({ recurring }) => toRecurringRows(recurring, today)),
+    repayments: data.then(({ repayments }) => toRepaymentData(repayments)),
+    // The expenses an income can pay back, for the income form.
+    reimbursables: data.then(({ reimbursables }) =>
+      toReimbursableOptions(reimbursables),
+    ),
   };
 };

@@ -10,23 +10,54 @@ import {
   withQueryChange,
 } from "./query";
 
-const TODAY = "2026-09-30";
+// Mid-month on purpose: the default range must reach the end of the month, not stop at today.
+const TODAY = "2026-09-15";
 const IN_DEFAULT_RANGE = {
   ...DEFAULT_ENTRIES_QUERY,
   from: "2026-09-01",
-  to: TODAY,
+  to: "2026-09-30",
 };
 
 describe("defaultDateRange", () => {
-  it("is the first of today's month up to today", () => {
-    expect(defaultDateRange("2026-09-30")).toEqual({
+  it.each([
+    {
+      label: "a 30-day month",
+      today: "2026-09-15",
       from: "2026-09-01",
       to: "2026-09-30",
-    });
-    expect(defaultDateRange("2026-10-01")).toEqual({
+    },
+    {
+      label: "a 31-day month",
+      today: "2026-10-02",
       from: "2026-10-01",
-      to: "2026-10-01",
-    });
+      to: "2026-10-31",
+    },
+    {
+      label: "February in a leap year",
+      today: "2028-02-10",
+      from: "2028-02-01",
+      to: "2028-02-29",
+    },
+    {
+      label: "February in a non-leap year",
+      today: "2026-02-10",
+      from: "2026-02-01",
+      to: "2026-02-28",
+    },
+    {
+      label: "the last day of the month",
+      today: "2026-09-30",
+      from: "2026-09-01",
+      to: "2026-09-30",
+    },
+    {
+      label: "the first day of the month",
+      today: "2026-12-01",
+      from: "2026-12-01",
+      to: "2026-12-31",
+    },
+  ])("is the whole month of today for $label", ({ today, from, to }) => {
+    expect(defaultDateRange(today)).toEqual({ from, to });
   });
 });
 
@@ -71,6 +102,16 @@ describe("hasActiveFilters relative to the default state", () => {
   it("treats last month's default range as active once the month rolls over", () => {
     expect(hasActiveFilters(IN_DEFAULT_RANGE, "2026-10-01")).toBe(true);
   });
+
+  it("counts an end date of today as active, since the default now reaches the end of the month", () => {
+    expect(hasActiveFilters({ ...IN_DEFAULT_RANGE, to: TODAY }, TODAY)).toBe(
+      true,
+    );
+  });
+
+  it("stays false on the last day of the month with the whole-month range", () => {
+    expect(hasActiveFilters(IN_DEFAULT_RANGE, "2026-09-30")).toBe(false);
+  });
 });
 
 describe("clearFilters back to the default state", () => {
@@ -85,7 +126,7 @@ describe("clearFilters back to the default state", () => {
     direction: "desc" as const,
   };
 
-  it("restores the current month up to today and drops category and currency", () => {
+  it("restores the whole current month and drops category and currency", () => {
     expect(clearFilters(messy, TODAY)).toEqual({
       page: 1,
       from: "2026-09-01",
@@ -110,11 +151,43 @@ describe("clearFilters back to the default state", () => {
   it("leaves the result with no active filters", () => {
     expect(hasActiveFilters(clearFilters(messy, TODAY), TODAY)).toBe(false);
   });
+
+  it("returns to the whole month, not to today, from a range that ends today", () => {
+    expect(
+      clearFilters({ ...messy, from: "2026-09-01", to: TODAY }, TODAY),
+    ).toMatchObject({ from: "2026-09-01", to: "2026-09-30" });
+  });
+
+  it("follows the length of the month", () => {
+    expect(clearFilters(messy, "2028-02-10")).toMatchObject({
+      from: "2028-02-01",
+      to: "2028-02-29",
+    });
+  });
 });
 
 describe("serializeEntriesQuery for the default state", () => {
   it("writes a clean URL when the dates are the default range", () => {
     expect(serializeEntriesQuery(IN_DEFAULT_RANGE, TODAY)).toBe("");
+  });
+
+  it("omits the whole-month range but writes a range that ends today", () => {
+    expect(
+      serializeEntriesQuery({ ...IN_DEFAULT_RANGE, to: TODAY }, TODAY),
+    ).toBe("?from=2026-09-01&to=2026-09-15");
+  });
+
+  it("omits the whole-month range in months of other lengths", () => {
+    const february = {
+      ...DEFAULT_ENTRIES_QUERY,
+      from: "2028-02-01",
+      to: "2028-02-29",
+    };
+
+    expect(serializeEntriesQuery(february, "2028-02-10")).toBe("");
+    expect(serializeEntriesQuery(february, "2026-02-10")).toBe(
+      "?from=2028-02-01&to=2028-02-29",
+    );
   });
 
   it("keeps other params without adding dates while the range is the default", () => {
@@ -257,9 +330,9 @@ describe("parseEntriesQuery", () => {
 });
 
 describe("parseEntriesQuery with a date range default", () => {
-  const today = "2026-09-30";
+  const today = "2026-09-15";
 
-  it("defaults to the current month up to today when the URL has no date params", () => {
+  it("defaults to the whole current month when the URL has no date params", () => {
     expect(parseEntriesQuery({}, { today })).toMatchObject({
       from: "2026-09-01",
       to: "2026-09-30",
@@ -317,10 +390,36 @@ describe("parseEntriesQuery with a date range default", () => {
     expect(parseEntriesQuery({})).toEqual(DEFAULT_ENTRIES_QUERY);
   });
 
+  it.each([
+    { label: "a 30-day month", today: "2026-09-15", to: "2026-09-30" },
+    { label: "a 31-day month", today: "2026-10-01", to: "2026-10-31" },
+    { label: "a leap February", today: "2028-02-10", to: "2028-02-29" },
+    { label: "a non-leap February", today: "2026-02-10", to: "2026-02-28" },
+    {
+      label: "the last day of the month",
+      today: "2026-10-31",
+      to: "2026-10-31",
+    },
+  ])("covers the whole month for $label", ({ today: day, to }) => {
+    expect(parseEntriesQuery({}, { today: day })).toMatchObject({
+      from: `${day.slice(0, 7)}-01`,
+      to,
+    });
+  });
+
+  it("lets an explicit end date of today win over the default", () => {
+    expect(
+      parseEntriesQuery({ from: "2026-09-01", to: today }, { today }),
+    ).toMatchObject({
+      from: "2026-09-01",
+      to: today,
+    });
+  });
+
   it("follows the given day across a month boundary", () => {
     expect(parseEntriesQuery({}, { today: "2026-10-01" })).toMatchObject({
       from: "2026-10-01",
-      to: "2026-10-01",
+      to: "2026-10-31",
     });
   });
 });
@@ -490,12 +589,18 @@ describe("the status filter", () => {
     expect(parseEntriesQuery({}).status).toBeNull();
   });
 
-  it.each(["PLANNED", "SETTLED"] as const)(
+  it.each(["PLANNED", "SETTLED", "COVERED"] as const)(
     "reads %s from the URL",
     (status) => {
       expect(parseEntriesQuery({ status }).status).toBe(status);
     },
   );
+
+  it("writes COVERED to the URL like any other status", () => {
+    expect(
+      serializeEntriesQuery({ ...DEFAULT_ENTRIES_QUERY, status: "COVERED" }),
+    ).toBe("?from=&to=&status=COVERED");
+  });
 
   it.each(["settled", "DONE", "", "PLANNED,SETTLED"])(
     "ignores the invalid value %j",

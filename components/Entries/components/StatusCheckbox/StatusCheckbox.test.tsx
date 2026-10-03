@@ -53,6 +53,18 @@ describe("StatusCheckbox", () => {
     expect(onChange).toHaveBeenCalledWith(false);
   });
 
+  it("carries the class that turns its tick green, the colour of money that was collected or paid", () => {
+    const { container } = render(
+      <StatusCheckbox
+        isSettled
+        label="Marcar Sueldo como cobrado"
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".status-checkbox")).not.toBeNull();
+  });
+
   it("is disabled while a change is being saved, so it cannot be toggled twice", () => {
     renderBox(false, vi.fn(), true);
 

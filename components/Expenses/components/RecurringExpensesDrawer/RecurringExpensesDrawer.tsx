@@ -10,6 +10,7 @@ export function RecurringExpensesDrawer({
   onClose,
   sessionKey,
   data,
+  categories,
 }: RecurringExpensesDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -18,6 +19,7 @@ export function RecurringExpensesDrawer({
           <RecurringExpensesContent
             key={sessionKey}
             data={data}
+            categories={categories}
             onClose={onClose}
           />
         </Drawer.Dialog>

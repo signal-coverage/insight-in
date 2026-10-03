@@ -1,4 +1,5 @@
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { TruncatedText } from "@/components/Entries/components/TruncatedText";
 import { InlineAlert } from "@/components/shared/InlineAlert";
 import { Button } from "@heroui/react";
 
@@ -27,9 +28,9 @@ export function RecurringRowItem({
       <div className={VIEW_ROW_CLASS_NAME}>
         <div className={SUMMARY_CLASS_NAME}>
           <div className={TITLE_ROW_CLASS_NAME}>
-            <span className={NAME_CLASS_NAME} title={item.description}>
+            <TruncatedText className={NAME_CLASS_NAME}>
               {item.description}
-            </span>
+            </TruncatedText>
             <span className={AMOUNT_CLASS_NAME}>{item.amountLabel}</span>
           </div>
           <span className={META_CLASS_NAME}>
@@ -44,7 +45,7 @@ export function RecurringRowItem({
           <Button
             isIconOnly
             size="sm"
-            variant="tertiary"
+            variant="secondary"
             aria-label={editLabel(item.description)}
             onPress={() => onEdit(item)}
           >

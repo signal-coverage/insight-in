@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -24,6 +25,7 @@ const ROWS: RecurringRow[] = [
     categoryId: "c1",
     categoryName: "Salary",
     notes: null,
+    medium: "DIGITAL",
     frequency: "MONTHLY",
     startDate: "2026-01-05",
     endDate: null,
@@ -41,6 +43,7 @@ const ROWS: RecurringRow[] = [
     categoryId: "c2",
     categoryName: "Other",
     notes: null,
+    medium: "DIGITAL",
     frequency: "WEEKLY",
     startDate: "2026-01-01",
     endDate: "2026-06-01",
@@ -190,5 +193,21 @@ describe("delete", () => {
       ),
     ).toBe(message);
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+});
+
+describe("template names", () => {
+  it("show the whole description in a tooltip on keyboard focus, instead of a title", () => {
+    renderDrawer();
+
+    const name = screen.getByText("Monthly salary");
+
+    expect(name).not.toHaveAttribute("title");
+    expect(name).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    act(() => name.focus());
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Monthly salary");
   });
 });

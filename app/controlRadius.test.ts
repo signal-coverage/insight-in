@@ -56,6 +56,19 @@ describe("control radius", () => {
     );
   });
 
+  it("leaves the plus and minus buttons of a number field at the size HeroUI gives them, since the 6rem minimum of an action button would push the plus out of the field", () => {
+    const rule = buttonRule();
+    const stepper = rule.indexOf(".number-field__increment-button");
+
+    expect(stepper).toBeGreaterThan(-1);
+    expect(rule).toContain(".number-field__decrement-button");
+
+    const block = blockFrom(rule, stepper);
+
+    expect(block).toMatch(/min-width:\s*revert-layer;/);
+    expect(block).toMatch(/max-width:\s*revert-layer;/);
+  });
+
   it("has no per-button opt-in to the field radius left, since that is now the default", () => {
     expect(CSS).not.toContain("app-button--field");
   });

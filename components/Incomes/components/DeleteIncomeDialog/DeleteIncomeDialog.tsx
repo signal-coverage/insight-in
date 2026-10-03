@@ -8,6 +8,8 @@ export function DeleteIncomeDialog({
   isOpen,
   onOpenChange,
   onClose,
+  onDeleting,
+  onDeletingPlan,
   income,
 }: DeleteIncomeDialogProps) {
   return (
@@ -18,6 +20,8 @@ export function DeleteIncomeDialog({
             key={income?.id}
             income={income}
             onClose={onClose}
+            onDeleting={onDeleting}
+            onDeletingPlan={onDeletingPlan}
           />
         </AlertDialog.Dialog>
       </AlertDialog.Container>

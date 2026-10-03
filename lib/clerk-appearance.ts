@@ -21,3 +21,19 @@ export const CLERK_APPEARANCE = {
     colorModalBackdrop: "var(--backdrop)",
   },
 };
+
+// What the account page adds for <UserProfile />. The profile always draws itself as a raised card
+// (a fixed width, a shadow and a border of its own), which the `elevation` option does not turn
+// off, so it is the element styles that make it a plain block of the page: as wide as the page
+// area, with the app's own border and no shadow. The colours already come from CLERK_APPEARANCE.
+export const USER_PROFILE_APPEARANCE = {
+  elements: {
+    rootBox: { width: "100%" },
+    cardBox: {
+      width: "100%",
+      maxWidth: "100%",
+      boxShadow: "none",
+      border: "1px solid var(--border)",
+    },
+  },
+};

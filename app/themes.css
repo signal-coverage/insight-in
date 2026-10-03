@@ -16,7 +16,12 @@
    - every label on its own fill (accent, primary button, cool, warm) 4.5:1 or more, and
      3:1 or more on hover;
    - the warm colour is also a ring around expense cards, so 3:1 or more on the page.
-   Roles are mixes (color-mix) of the theme's own colours, never a new hue.
+   Roles are mixes (color-mix) of the theme's own colours, never a new hue, with ONE exception:
+   the negative (red) and positive (green) roles. Destructive actions must read as red and
+   confirmations of money as green in every theme, so both come from two shared signal colours
+   (--signal-red, --signal-green, below) mixed toward the theme's ink until they pass the
+   contrast rules, which makes them sit in the theme's tones. A palette that has its own red or
+   green (Flag Red, Strawberry Red, Forest Green) uses it as the base instead.
 
    These rules are written as :root:is(...) so that they out-rank globals.css's :root tokens
    whichever of the two files is read last.
@@ -83,12 +88,27 @@
   --segment: var(--t-page);
   --segment-foreground: var(--t-ink);
 
-  /* Destructive: an ink outline on a transparent fill (see .button--danger below). */
-  --danger: var(--t-ink);
-  --danger-foreground: var(--t-page);
-  --danger-soft: color-mix(in oklab, var(--t-warm) 18%, var(--t-page));
+  /* Destructive: red (see .button--danger below). Also the border and message of an invalid field. */
+  --danger: var(--t-negative);
+  --danger-foreground: var(--t-negative-on);
+  --danger-soft: color-mix(in oklab, var(--t-negative) 14%, var(--t-page));
   --danger-soft-foreground: var(--t-ink);
-  --danger-soft-hover: color-mix(in oklab, var(--t-warm) 28%, var(--t-page));
+  --danger-soft-hover: color-mix(
+    in oklab,
+    var(--t-negative) 24%,
+    var(--t-page)
+  );
+
+  /* Confirming money (paid / collected, "Habilitar"): green. */
+  --positive: var(--t-positive);
+  --positive-foreground: var(--t-positive-on);
+  --positive-soft: color-mix(in oklab, var(--t-positive) 14%, var(--t-page));
+  --positive-soft-foreground: var(--t-ink);
+  --positive-soft-hover: color-mix(
+    in oklab,
+    var(--t-positive) 24%,
+    var(--t-page)
+  );
 
   --success: var(--t-cool);
   --success-foreground: var(--t-cool-on);
@@ -184,10 +204,16 @@
     .forest
   )
   .button--danger-soft {
-  --button-bg: color-mix(in oklab, var(--t-warm) 14%, var(--t-page));
-  --button-bg-hover: color-mix(in oklab, var(--t-warm) 24%, var(--t-page));
-  --button-bg-pressed: color-mix(in oklab, var(--t-warm) 24%, var(--t-page));
-  --button-fg: var(--t-ink);
+  --button-bg: color-mix(in oklab, var(--t-negative) 14%, var(--t-page));
+  --button-bg-hover: color-mix(in oklab, var(--t-negative) 24%, var(--t-page));
+  --button-bg-pressed: color-mix(
+    in oklab,
+    var(--t-negative) 24%,
+    var(--t-page)
+  );
+  --button-fg: var(--t-negative);
+  /* The same outline as the edit button beside it, in red. */
+  border: 1px solid var(--t-negative);
 }
 
 :root:is(
@@ -204,11 +230,17 @@
     .forest
   )
   .button--danger {
-  --button-bg: transparent;
-  --button-bg-hover: color-mix(in oklab, var(--t-ink) 12%, transparent);
-  --button-bg-pressed: color-mix(in oklab, var(--t-ink) 12%, transparent);
-  --button-fg: var(--t-ink);
-  border: 1.5px solid var(--t-ink);
+  --button-bg: var(--t-negative);
+  --button-bg-hover: var(--t-negative-hover);
+  --button-bg-pressed: var(--t-negative-hover);
+  --button-fg: var(--t-negative-on);
+  border: 1.5px solid transparent;
+}
+
+/* The two signal colours every theme draws its red and its green from. */
+:root {
+  --signal-red: #d7263d;
+  --signal-green: #2e9e5b;
 }
 
 /* Summer Ocean Breeze: a light-based theme. */
@@ -257,6 +289,28 @@
   --t-cool-on: var(--p-deep-space-blue);
   --t-warm: var(--t-primary);
   --t-warm-on: var(--p-honeydew);
+  --t-negative: color-mix(
+    in oklab,
+    var(--p-strawberry-red) 65%,
+    var(--p-deep-space-blue)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-deep-space-blue)
+  );
+  --t-negative-on: var(--p-honeydew);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 55%,
+    var(--p-deep-space-blue)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-deep-space-blue)
+  );
+  --t-positive-on: var(--p-honeydew);
 }
 
 /* Rustic Charm: a light-based theme. */
@@ -297,6 +351,28 @@
   --t-cool-on: var(--p-carbon-black);
   --t-warm: var(--p-spicy-paprika);
   --t-warm-on: var(--p-carbon-black);
+  --t-negative: color-mix(
+    in oklab,
+    var(--signal-red) 85%,
+    var(--p-carbon-black)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-carbon-black)
+  );
+  --t-negative-on: var(--p-floral-white);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 65%,
+    var(--p-carbon-black)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-carbon-black)
+  );
+  --t-positive-on: var(--p-floral-white);
 }
 
 /* Cool Coastal Vibes: a light-based theme. */
@@ -345,6 +421,28 @@
   --t-cool-on: var(--p-space-indigo);
   --t-warm: var(--p-flag-red);
   --t-warm-on: var(--p-platinum);
+  --t-negative: color-mix(
+    in oklab,
+    var(--p-flag-red) 80%,
+    var(--p-space-indigo)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-space-indigo)
+  );
+  --t-negative-on: var(--p-platinum);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 55%,
+    var(--p-space-indigo)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-space-indigo)
+  );
+  --t-positive-on: var(--p-platinum);
 }
 
 /* Monochrome Harmony: a light-based theme. */
@@ -377,6 +475,28 @@
   --t-cool-on: var(--p-shadow-grey);
   --t-warm: color-mix(in oklab, var(--p-tuscan-sun) 50%, var(--p-shadow-grey));
   --t-warm-on: var(--p-ivory);
+  --t-negative: color-mix(
+    in oklab,
+    var(--signal-red) 75%,
+    var(--p-shadow-grey)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-shadow-grey)
+  );
+  --t-negative-on: var(--p-ivory);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 55%,
+    var(--p-shadow-grey)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-shadow-grey)
+  );
+  --t-positive-on: var(--p-ivory);
 }
 
 /* Sunny Beach Day: a light-based theme. */
@@ -417,6 +537,24 @@
   --t-cool-on: var(--p-papaya-whip);
   --t-warm: color-mix(in oklab, var(--p-harvest-orange) 65%, var(--p-brandy));
   --t-warm-on: var(--p-papaya-whip);
+  --t-negative: color-mix(in oklab, var(--signal-red) 80%, var(--p-ink-black));
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-ink-black)
+  );
+  --t-negative-on: var(--p-papaya-whip);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 65%,
+    var(--p-ink-black)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-ink-black)
+  );
+  --t-positive-on: var(--p-papaya-whip);
 }
 
 /* Monochrome Sky: a light-based theme. */
@@ -453,6 +591,20 @@
   --t-cool-on: var(--p-black);
   --t-warm: var(--p-blue-slate);
   --t-warm-on: var(--p-ghost-white);
+  --t-negative: color-mix(in oklab, var(--signal-red) 90%, var(--p-black));
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-black)
+  );
+  --t-negative-on: var(--p-ghost-white);
+  --t-positive: color-mix(in oklab, var(--signal-green) 75%, var(--p-black));
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-black)
+  );
+  --t-positive-on: var(--p-ghost-white);
 }
 
 /* Twilight Serenade: a light-based theme. */
@@ -497,6 +649,28 @@
   --t-cool-on: var(--p-prussian-blue);
   --t-warm: var(--p-dusty-grape);
   --t-warm-on: var(--p-azure-mist);
+  --t-negative: color-mix(
+    in oklab,
+    var(--signal-red) 90%,
+    var(--p-prussian-blue)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-prussian-blue)
+  );
+  --t-negative-on: var(--p-azure-mist);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 70%,
+    var(--p-prussian-blue)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-prussian-blue)
+  );
+  --t-positive-on: var(--p-azure-mist);
 }
 
 /* Autumn Harvest: a dark-based theme. */
@@ -537,6 +711,24 @@
   --t-cool-on: var(--p-jet-black-1);
   --t-warm: var(--p-tangerine-dream);
   --t-warm-on: var(--p-jet-black-1);
+  --t-negative: color-mix(in oklab, var(--signal-red) 45%, var(--p-soft-peach));
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-soft-peach)
+  );
+  --t-negative-on: var(--p-jet-black-1);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 65%,
+    var(--p-soft-peach)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-soft-peach)
+  );
+  --t-positive-on: var(--p-jet-black-1);
   --t-overlay: color-mix(in oklab, var(--t-tint) 38%, var(--p-jet-black-1));
 }
 
@@ -570,6 +762,28 @@
   --t-cool-on: var(--p-shadow-grey);
   --t-warm: var(--p-burnt-rose);
   --t-warm-on: var(--p-parchment);
+  --t-negative: color-mix(
+    in oklab,
+    var(--signal-red) 75%,
+    var(--p-shadow-grey)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-shadow-grey)
+  );
+  --t-negative-on: var(--p-parchment);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 55%,
+    var(--p-shadow-grey)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-shadow-grey)
+  );
+  --t-positive-on: var(--p-parchment);
 }
 
 /* Minimalist Elegance: a light-based theme. */
@@ -602,6 +816,24 @@
   --t-cool-on: var(--p-white);
   --t-warm: color-mix(in oklab, var(--p-coral-glow) 72%, var(--p-jet-black));
   --t-warm-on: var(--p-white);
+  --t-negative: color-mix(in oklab, var(--signal-red) 85%, var(--p-jet-black));
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-jet-black)
+  );
+  --t-negative-on: var(--p-white);
+  --t-positive: color-mix(
+    in oklab,
+    var(--signal-green) 60%,
+    var(--p-jet-black)
+  );
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-positive) 88%,
+    var(--p-jet-black)
+  );
+  --t-positive-on: var(--p-white);
 }
 
 /* Enchanted Forest: a light-based theme. */
@@ -658,4 +890,22 @@
     var(--p-black-forest)
   );
   --t-warm-on: var(--p-frosted-mint);
+  --t-negative: color-mix(
+    in oklab,
+    var(--signal-red) 75%,
+    var(--p-black-forest)
+  );
+  --t-negative-hover: color-mix(
+    in oklab,
+    var(--t-negative) 88%,
+    var(--p-black-forest)
+  );
+  --t-negative-on: var(--p-frosted-mint);
+  --t-positive: var(--t-link);
+  --t-positive-hover: color-mix(
+    in oklab,
+    var(--t-link) 88%,
+    var(--p-black-forest)
+  );
+  --t-positive-on: var(--p-frosted-mint);
 }

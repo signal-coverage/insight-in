@@ -1,4 +1,5 @@
-// `app-button--full-width` opts the header button out of the global native-button padding
-// and width cap, so its label lines up with the cells below it.
-export const SORT_BUTTON_CLASSNAME =
-  "app-button--full-width inline-flex items-center gap-1 font-medium text-inherit";
+// The label and its sort icon sit side by side at the start of the cell (HeroUI spreads them apart).
+export const SORT_HEADER_CLASSNAME = "inline-flex justify-start gap-1";
+
+// What a sortable column that is not the sorted one shows, dimmer than the sorted chevron.
+export const UNSORTED_ICON_CLASSNAME = "size-3.5 shrink-0 opacity-50";

@@ -87,6 +87,24 @@ describe("foldCurrencyTotals", () => {
     ]);
   });
 
+  it("leaves covered entries out of the total and of the settled part", () => {
+    expect(
+      foldCurrencyTotals([
+        { currency: "ARS", status: "SETTLED", _sum: { amount: BigInt(1000) } },
+        { currency: "ARS", status: "PLANNED", _sum: { amount: BigInt(500) } },
+        { currency: "ARS", status: "COVERED", _sum: { amount: BigInt(900) } },
+      ]),
+    ).toEqual([{ currency: "ARS", total: 1500, settled: 1000 }]);
+  });
+
+  it("gives no row to a currency that only has covered entries", () => {
+    expect(
+      foldCurrencyTotals([
+        { currency: "USD", status: "COVERED", _sum: { amount: BigInt(900) } },
+      ]),
+    ).toEqual([]);
+  });
+
   it("skips groups without a sum", () => {
     expect(
       foldCurrencyTotals([

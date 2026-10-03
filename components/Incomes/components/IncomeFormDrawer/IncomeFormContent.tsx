@@ -12,7 +12,9 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
+import { MediumField } from "@/components/Entries/components/MediumField";
 import { StatusSwitch } from "@/components/Entries/components/StatusSwitch";
+import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 import { InlineAlert } from "@/components/shared/InlineAlert";
 import { PendingButton } from "@/components/shared/PendingButton";
 import { useState, useTransition } from "react";
@@ -66,22 +68,50 @@ import {
   SELECT_TRIGGER_CLASS_NAME,
 } from "@/components/Entries/styles";
 
-import { STATUS_SWITCH_LABEL } from "../../consts";
+import { OriginSection } from "@/components/Entries/components/OriginSection";
+import { ORIGIN_SECTION_COPY, STATUS_SWITCH_LABEL } from "../../consts";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
 import type { IncomeFormContentProps } from "./types";
 import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import {
+  ReimbursesField,
+  REIMBURSES_FIELD,
+} from "./components/ReimbursesField";
+import { reimbursableChoices } from "./utils";
 
 // Mounted with a fresh key on every opening, so field defaults and errors always reset.
 export function IncomeFormContent({
   target,
   categories,
+  reimbursables,
   onClose,
 }: IncomeFormContentProps) {
   const { income, defaultDate } = target;
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<IncomeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // Kept in state because the origin section works out the implied rate from them, and offers
+  // every currency but the one of the net amount.
+  const [amount, setAmount] = useState(income?.amountDecimal ?? "");
+  const [currency, setCurrency] = useState(
+    income?.currency ?? DEFAULT_CURRENCY_CODE,
+  );
+  // The expense this income pays back. An installment of a loan repaid in cuotas has no such link, and
+  // an expense in another currency than the income is never kept as the choice.
+  const [reimbursesId, setReimbursesId] = useState<string | null>(
+    income?.reimbursesExpenseId ?? null,
+  );
+  const choices = reimbursableChoices(reimbursables, income);
+  const reimbursed = choices.find(
+    (option) => option.id === reimbursesId && option.currency === currency,
+  );
+  const canReimburse =
+    (income === null || income.installmentPlanId === null) &&
+    choices.some((option) => option.currency === currency);
+  const hasOriginErrors = Boolean(
+    fieldErrors.originCurrency || fieldErrors.originAmount,
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -144,7 +174,8 @@ export function IncomeFormContent({
               className={FIELD_CLASS_NAME}
               name="amount"
               inputMode="decimal"
-              defaultValue={income?.amountDecimal}
+              value={amount}
+              onChange={setAmount}
             >
               <Label>{AMOUNT_LABEL}</Label>
               <Input
@@ -162,7 +193,12 @@ export function IncomeFormContent({
               className={FIELD_CLASS_NAME}
               name="currency"
               placeholder={CURRENCY_PLACEHOLDER}
-              defaultValue={income?.currency ?? DEFAULT_CURRENCY_CODE}
+              value={currency}
+              onChange={(value) => {
+                if (typeof value === "string") {
+                  setCurrency(value);
+                }
+              }}
             >
               <Label>{CURRENCY_LABEL}</Label>
               <Select.Trigger className={SELECT_TRIGGER_CLASS_NAME}>
@@ -183,6 +219,33 @@ export function IncomeFormContent({
             </Select>
           </div>
 
+          <OriginSection
+            copy={ORIGIN_SECTION_COPY}
+            netAmount={amount}
+            netCurrency={currency}
+            defaultCurrency={income?.originCurrency ?? null}
+            defaultAmount={income?.originAmountDecimal ?? null}
+            hasErrors={hasOriginErrors}
+          />
+
+          {/* The expense it pays back, when it does. Only offered when the user has an expense in this
+              currency that expects money. The choice travels in a hidden input: "No es una devolución"
+              sends nothing. */}
+          {canReimburse ? (
+            <ReimbursesField
+              options={choices}
+              currency={currency}
+              value={reimbursed?.id ?? null}
+              onChange={setReimbursesId}
+              errorMessage={fieldErrors.reimbursesExpenseId?.[0]}
+            />
+          ) : null}
+          <input
+            type="hidden"
+            name={REIMBURSES_FIELD}
+            value={reimbursed?.id ?? ""}
+          />
+
           <DatePickerField
             isRequired
             name="date"
@@ -194,6 +257,10 @@ export function IncomeFormContent({
             categories={categories}
             defaultCategoryId={income?.categoryId ?? null}
             onCreate={createCategoryAction}
+          />
+
+          <MediumField
+            defaultMedium={income?.medium ?? DEFAULT_PAYMENT_MEDIUM}
           />
 
           <StatusSwitch

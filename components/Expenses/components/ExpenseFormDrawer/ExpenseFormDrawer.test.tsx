@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const actions = vi.hoisted(() => ({
@@ -10,13 +16,36 @@ const actions = vi.hoisted(() => ({
 
 vi.mock("@/core/expenses/actions", () => actions);
 
-import type { ExpenseRow, FormTarget } from "../../types";
+import type { CardOption, ExpenseRow, FormTarget } from "../../types";
 import { ExpenseFormDrawer } from "./ExpenseFormDrawer";
 
 const CATEGORIES = [
   { id: "c1", name: "Alquiler" },
   { id: "c2", name: "Comida" },
 ];
+
+// Closes on the 25th and is paid on the 5th.
+const CARD: CardOption = {
+  id: "card_1",
+  title: "Visa •••• 1234",
+  last4: "1234",
+  brand: "VISA",
+  closingDay: 25,
+  dueDay: 5,
+  currency: "ARS",
+  limitMode: "MONTHLY",
+  limitAmount: 30000000,
+  charges: [],
+};
+
+const DOLLAR_CARD: CardOption = {
+  ...CARD,
+  id: "card_2",
+  title: "Mastercard •••• 9999",
+  brand: "MASTERCARD",
+  last4: "9999",
+  currency: "USD",
+};
 
 const EXPENSE: ExpenseRow = {
   id: "exp_1",
@@ -28,13 +57,40 @@ const EXPENSE: ExpenseRow = {
   categoryName: "Alquiler",
   notes: null,
   status: "SETTLED",
+  medium: "DIGITAL",
   isRecurring: true,
+  installmentPlanId: null,
+  installmentNumber: null,
+  cardId: null,
+  purchaseDate: null,
+  originCurrency: null,
+  originAmount: null,
+  originAmountDecimal: null,
+  originLabel: null,
+  originTooltip: null,
+  expectedReimbursement: null,
+  reimbursementReceived: 0,
+  expectedReimbursementDecimal: null,
+  reimbursementTooltip: null,
   amountLabel: "$ 350.000,50",
   amountDecimal: "350000.50",
   dateLabel: "5 ene 2026",
 };
 
-const renderForm = (expense: ExpenseRow | null) => {
+const INSTALLMENT: ExpenseRow = {
+  ...EXPENSE,
+  id: "exp_9",
+  description: "Heladera (3/12)",
+  isRecurring: false,
+  status: "PLANNED",
+  installmentPlanId: "plan_1",
+  installmentNumber: 3,
+};
+
+const renderForm = (
+  expense: ExpenseRow | null,
+  cards: readonly CardOption[] = [],
+) => {
   const onClose = vi.fn();
   const target: FormTarget = { key: 1, expense, defaultDate: "2026-09-29" };
 
@@ -45,6 +101,7 @@ const renderForm = (expense: ExpenseRow | null) => {
       onClose={onClose}
       target={target}
       categories={CATEGORIES}
+      cards={cards}
     />,
   );
 
@@ -98,7 +155,10 @@ describe("create mode", () => {
     expect(document.querySelector('input[name="date"]')).toHaveValue(
       "2026-09-29",
     );
-    expect(screen.getByRole("switch", { name: "Ya pagado" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Pagada" })).toBeChecked();
+    expect(
+      screen.queryByRole("switch", { name: "Ya pagado" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("switch", { name: "Gasto recurrente" }),
     ).not.toBeChecked();
@@ -136,7 +196,7 @@ describe("create mode", () => {
     );
   });
 
-  it("sends the status and the recurring mark as the switches say", async () => {
+  it("sends the status picked and the recurring mark as the switch says", async () => {
     actions.createExpenseAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(null);
 
@@ -147,7 +207,7 @@ describe("create mode", () => {
       target: { value: "10" },
     });
     await pickCategory("Alquiler");
-    fireEvent.click(screen.getByRole("switch", { name: "Ya pagado" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Pendiente" }));
     fireEvent.click(screen.getByRole("switch", { name: "Gasto recurrente" }));
     fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
 
@@ -182,6 +242,211 @@ describe("create mode", () => {
   });
 });
 
+describe("medium field", () => {
+  it("offers Digital and Efectivo, with Digital chosen for a new expense", () => {
+    renderForm(null);
+
+    expect(screen.getByRole("radiogroup", { name: "Medio" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Efectivo" })).not.toBeChecked();
+  });
+
+  it("keeps the stored medium of the expense being edited", () => {
+    renderForm({ ...EXPENSE, medium: "CASH" });
+
+    expect(screen.getByRole("radio", { name: "Efectivo" })).toBeChecked();
+  });
+
+  it("sends the chosen medium with the rest of the form", async () => {
+    actions.createExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null);
+
+    fireEvent.change(screen.getByLabelText(/Descripción/), {
+      target: { value: "Coffee" },
+    });
+    fireEvent.change(screen.getByLabelText(/Monto/), {
+      target: { value: "10" },
+    });
+    await pickCategory("Comida");
+    fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(createdForm().get("medium")).toBe("CASH");
+  });
+
+  it("sends digital when nothing was changed", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(EXPENSE);
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(
+      (actions.updateExpenseAction.mock.calls[0][1] as FormData).get("medium"),
+    ).toBe("DIGITAL");
+  });
+});
+
+describe("the Estado field", () => {
+  const HINT = "Cubierta: la pagó otra persona, no se descuenta de tu plata.";
+  const statusGroup = () => screen.getByRole("radiogroup", { name: "Estado" });
+
+  const EXPENSES = [
+    ["a new expense", null],
+    ["an ordinary expense", { ...EXPENSE, isRecurring: false }],
+    ["a recurring expense", EXPENSE],
+    ["an installment of a purchase in cuotas", INSTALLMENT],
+  ] as const;
+
+  it.each(EXPENSES)(
+    "offers a three-way Estado instead of the 'Ya pagado' switch for %s",
+    (_name, expense) => {
+      renderForm(expense);
+
+      const radios = within(statusGroup()).getAllByRole("radio");
+
+      expect(
+        radios.map((radio) => radio.closest("label")?.textContent),
+      ).toEqual(["Pendiente", "Pagada", "Cubierta por otro"]);
+      expect(
+        screen.queryByRole("switch", { name: "Ya pagado" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(EXPENSES)(
+    "explains what 'Cubierta' means for %s",
+    (_name, expense) => {
+      renderForm(expense);
+
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+    },
+  );
+
+  it("starts a new expense as Pagada", () => {
+    renderForm(null);
+
+    expect(screen.getByRole("radio", { name: "Pagada" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Pendiente" })).not.toBeChecked();
+  });
+
+  it.each([
+    ["PLANNED", "Pendiente"],
+    ["SETTLED", "Pagada"],
+    ["COVERED", "Cubierta por otro"],
+  ] as const)(
+    "starts an ordinary expense with %s selected as %s",
+    (status, label) => {
+      renderForm({ ...EXPENSE, isRecurring: false, status });
+
+      expect(screen.getByRole("radio", { name: label })).toBeChecked();
+    },
+  );
+
+  it.each([
+    ["PLANNED", "Pendiente"],
+    ["SETTLED", "Pagada"],
+    ["COVERED", "Cubierta por otro"],
+  ] as const)(
+    "starts an installment with %s selected as %s",
+    (status, label) => {
+      renderForm({ ...INSTALLMENT, status });
+
+      expect(screen.getByRole("radio", { name: label })).toBeChecked();
+    },
+  );
+
+  it("sends COVERED for a new expense when it is picked", async () => {
+    actions.createExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null);
+
+    fireEvent.change(screen.getByLabelText(/Descripción/), {
+      target: { value: "Dinner" },
+    });
+    fireEvent.change(screen.getByLabelText(/Monto/), {
+      target: { value: "10" },
+    });
+    await pickCategory("Comida");
+    fireEvent.click(screen.getByRole("radio", { name: "Cubierta por otro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(createdForm().get("status")).toBe("COVERED");
+  });
+
+  it("sends COVERED for an ordinary expense when it is picked", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm({ ...EXPENSE, isRecurring: false });
+
+    fireEvent.click(screen.getByRole("radio", { name: "Cubierta por otro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = actions.updateExpenseAction.mock.calls[0][1] as FormData;
+
+    expect(actions.updateExpenseAction.mock.calls[0][0]).toBe("exp_1");
+    expect(sent.get("status")).toBe("COVERED");
+  });
+
+  it("sends the stored status when nothing was changed", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm({ ...EXPENSE, status: "PLANNED" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(
+      (actions.updateExpenseAction.mock.calls[0][1] as FormData).get("status"),
+    ).toBe("PLANNED");
+  });
+
+  it("sends the status picked, COVERED included, for an installment", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(INSTALLMENT);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Cubierta por otro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = actions.updateExpenseAction.mock.calls[0][1] as FormData;
+
+    expect(actions.updateExpenseAction.mock.calls[0][0]).toBe("exp_9");
+    expect(sent.get("status")).toBe("COVERED");
+    expect(sent.get("description")).toBe("Heladera (3/12)");
+  });
+
+  it("keeps the recurring switch for a new and an ordinary expense", () => {
+    renderForm(null);
+
+    expect(
+      screen.getByRole("switch", { name: "Gasto recurrente" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the recurring switch for an existing expense", () => {
+    renderForm({ ...EXPENSE, isRecurring: false });
+
+    expect(
+      screen.getByRole("switch", { name: "Gasto recurrente" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer to make an installment recurring", () => {
+    renderForm(INSTALLMENT);
+
+    expect(
+      screen.queryByRole("switch", { name: "Gasto recurrente" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("edit mode", () => {
   it("has a plain Save changes button, without a plus", () => {
     renderForm(EXPENSE);
@@ -202,7 +467,7 @@ describe("edit mode", () => {
       "Alquiler",
     );
     expect(screen.getByLabelText(/Notas/)).toHaveValue("Paid by transfer");
-    expect(screen.getByRole("switch", { name: "Ya pagado" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Pendiente" })).toBeChecked();
     expect(
       screen.getByRole("switch", { name: "Gasto recurrente" }),
     ).toBeChecked();
@@ -291,6 +556,227 @@ describe("edit mode", () => {
 
     expect(
       await screen.findByText("No se encontró el gasto."),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("the card", () => {
+  const cardButton = () => screen.getByRole("button", { name: /Tarjeta/ });
+
+  const pickCard = async (title: string) => {
+    fireEvent.keyDown(cardButton(), { key: "ArrowDown" });
+
+    const option = await screen.findByRole("option", { name: title });
+
+    fireEvent.keyDown(option, { key: "Enter" });
+    fireEvent.keyUp(option, { key: "Enter" });
+  };
+
+  const pickCurrency = async (code: string) => {
+    fireEvent.keyDown(screen.getByRole("button", { name: /Moneda/ }), {
+      key: "ArrowDown",
+    });
+
+    const option = await screen.findByRole("option", {
+      name: new RegExp(`^${code}`),
+    });
+
+    fireEvent.keyDown(option, { key: "Enter" });
+    fireEvent.keyUp(option, { key: "Enter" });
+  };
+
+  const fillRequired = async () => {
+    fireEvent.change(screen.getByLabelText(/Descripción/), {
+      target: { value: "Zapatillas" },
+    });
+    fireEvent.change(screen.getByLabelText(/Monto/), {
+      target: { value: "10" },
+    });
+    await pickCategory("Comida");
+  };
+
+  const WITH_CARD: ExpenseRow = {
+    ...EXPENSE,
+    isRecurring: false,
+    cardId: "card_1",
+    date: "2026-10-05",
+    purchaseDate: "2026-09-05",
+  };
+
+  it("is not offered when the user has no cards", () => {
+    renderForm(null);
+
+    expect(
+      screen.queryByRole("button", { name: /Tarjeta/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("starts on 'Sin tarjeta', with the date called 'Fecha' and no charge line", () => {
+    renderForm(null, [CARD]);
+
+    expect(cardButton()).toHaveTextContent("Sin tarjeta");
+    expect(screen.getByText("Fecha")).toBeInTheDocument();
+    expect(screen.queryByText(/Se cobra el/)).not.toBeInTheDocument();
+  });
+
+  it("offers only the cards in the currency of the expense", async () => {
+    renderForm(null, [CARD, DOLLAR_CARD]);
+
+    fireEvent.keyDown(cardButton(), { key: "ArrowDown" });
+
+    const options = await screen.findAllByRole("option");
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      "Sin tarjeta",
+      "Visa •••• 1234",
+    ]);
+  });
+
+  it("calls the date 'Fecha de la compra' and says when it is charged once a card is chosen", async () => {
+    renderForm(null, [CARD]);
+
+    await pickCard("Visa •••• 1234");
+
+    expect(screen.getByText("Fecha de la compra")).toBeInTheDocument();
+    // Bought on the 29th, after the closing day of the 25th: it goes in the next statement, which
+    // closes on October 25 and is paid on November 5.
+    expect(
+      screen.getByText(
+        /^Se cobra el 5 nov 2026 \(resumen que cierra el 25 oct 2026\)$/,
+      ),
+    ).toBeVisible();
+  });
+
+  it("goes back to 'Fecha' and hides the charge line when the card is taken off", async () => {
+    renderForm(null, [CARD]);
+
+    await pickCard("Visa •••• 1234");
+    await pickCard("Sin tarjeta");
+
+    expect(screen.getByText("Fecha")).toBeInTheDocument();
+    expect(screen.queryByText(/Se cobra el/)).not.toBeInTheDocument();
+  });
+
+  it("updates the charge line as the purchase date changes", async () => {
+    renderForm(null, [CARD]);
+
+    await pickCard("Visa •••• 1234");
+    fireEvent.click(screen.getByRole("button", { name: /calendar/i }));
+
+    const grid = await screen.findByRole("grid");
+    const day = Array.from(grid.querySelectorAll('[role="button"]')).find(
+      (cell) =>
+        cell.textContent === "10" && !cell.hasAttribute("data-outside-month"),
+    );
+
+    fireEvent.click(day!);
+
+    // Bought on September 10, before the closing: the September statement, paid on October 5.
+    expect(
+      await screen.findByText(
+        /^Se cobra el 5 oct 2026 \(resumen que cierra el 25 sept?\.? 2026\)$/,
+      ),
+    ).toBeVisible();
+  });
+
+  it("drops a card that is in another currency when the currency changes, and offers the cards of the new one", async () => {
+    renderForm(null, [CARD, DOLLAR_CARD]);
+
+    await pickCard("Visa •••• 1234");
+    await pickCurrency("USD");
+
+    expect(cardButton()).toHaveTextContent("Sin tarjeta");
+    expect(screen.queryByText(/Se cobra el/)).not.toBeInTheDocument();
+
+    fireEvent.keyDown(cardButton(), { key: "ArrowDown" });
+
+    const options = await screen.findAllByRole("option");
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      "Sin tarjeta",
+      "Mastercard •••• 9999",
+    ]);
+  });
+
+  it("sends the card and the purchase date with the rest of the form", async () => {
+    actions.createExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null, [CARD]);
+
+    await fillRequired();
+    await pickCard("Visa •••• 1234");
+    fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(createdForm().get("cardId")).toBe("card_1");
+    // The server turns the purchase day into the charge date, so the form sends the day typed.
+    expect(createdForm().get("date")).toBe("2026-09-29");
+  });
+
+  it("sends no card when none is chosen", async () => {
+    actions.createExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null, [CARD]);
+
+    await fillRequired();
+    fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    expect(createdForm().get("cardId")).toBe("");
+  });
+
+  it("shows the stored purchase date, not the charge date, for an expense that has a card, and the charge line", () => {
+    renderForm(WITH_CARD, [CARD]);
+
+    expect(cardButton()).toHaveTextContent("Visa •••• 1234");
+    expect(screen.getByText("Fecha de la compra")).toBeInTheDocument();
+    expect(document.querySelector('input[name="date"]')).toHaveValue(
+      "2026-09-05",
+    );
+    expect(
+      screen.getByText(
+        /^Se cobra el 5 oct 2026 \(resumen que cierra el 25 sept?\.? 2026\)$/,
+      ),
+    ).toBeVisible();
+  });
+
+  it("sends the purchase date back when an expense with a card is saved", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(WITH_CARD, [CARD]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = actions.updateExpenseAction.mock.calls[0][1] as FormData;
+
+    expect(sent.get("cardId")).toBe("card_1");
+    expect(sent.get("date")).toBe("2026-09-05");
+  });
+
+  it("does not offer a card for an installment of a plan", () => {
+    renderForm(INSTALLMENT, [CARD]);
+
+    expect(
+      screen.queryByRole("button", { name: /Tarjeta/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Fecha")).toBeInTheDocument();
+  });
+
+  it("shows the server's complaint about the card under the field", async () => {
+    actions.createExpenseAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: { cardId: ["No se encontró la tarjeta."] },
+    });
+    renderForm(null, [CARD]);
+
+    await fillRequired();
+    await pickCard("Visa •••• 1234");
+    fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
+
+    expect(
+      await screen.findByText("No se encontró la tarjeta."),
     ).toBeInTheDocument();
   });
 });

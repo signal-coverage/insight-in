@@ -17,15 +17,21 @@ const INCOME = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: null,
+  originCurrency: null,
+  originAmount: null,
+  reimbursesExpenseId: null,
   recurringIncomeId: null,
 };
 
 const LOADED = {
+  planProgress: {},
   page: { rows: [INCOME], total: 1, page: 1, pageSize: 25, totalPages: 1 },
   totals: [{ currency: "USD", total: 250000, settled: 100000 }],
   categories: [{ id: "c1", name: "Salary", incomeCount: 1 }],
   currencies: ["USD"],
   recurring: [],
+  repayments: { month: "2026-09", plans: [] },
+  reimbursables: [],
 };
 
 const start = () =>
@@ -46,6 +52,8 @@ describe("loadIncomesView", () => {
       "categories",
       "currencies",
       "recurring",
+      "reimbursables",
+      "repayments",
       "table",
       "totals",
     ]);
@@ -102,6 +110,25 @@ describe("loadIncomesView", () => {
     expect(table.hasAnyIncomes).toBe(true);
   });
 
+  it("gives each installment row the progress of its plan, for the delete dialog", async () => {
+    pageData.loadIncomesPageData.mockResolvedValue({
+      ...LOADED,
+      planProgress: { plan_1: { total: 6, settled: 2 } },
+      page: {
+        ...LOADED.page,
+        rows: [
+          { ...INCOME, installmentPlanId: "plan_1", installmentNumber: 3 },
+          { ...INCOME, id: "inc_2", installmentPlanId: null },
+        ],
+      },
+    });
+
+    const { rows } = await start().table;
+
+    expect(rows[0].planProgress).toEqual({ total: 6, settled: 2 });
+    expect(rows[1]).not.toHaveProperty("planProgress");
+  });
+
   it("says there are no incomes at all when the user has none in any currency", async () => {
     pageData.loadIncomesPageData.mockResolvedValue({
       ...LOADED,
@@ -127,6 +154,61 @@ describe("loadIncomesView", () => {
     ]);
     expect(await view.currencies).toEqual(["USD"]);
     expect(await view.recurring).toEqual([]);
+  });
+
+  it("offers the income form the expenses that still expect money, in their own currency", async () => {
+    pageData.loadIncomesPageData.mockResolvedValue({
+      ...LOADED,
+      reimbursables: [
+        {
+          id: "exp_1",
+          description: "Dentista",
+          date: "2026-09-12",
+          currency: "ARS",
+          outstanding: 400000,
+        },
+      ],
+    });
+
+    const [option] = await start().reimbursables;
+
+    expect(option).toMatchObject({ id: "exp_1", currency: "ARS" });
+    expect(option.label).toContain("Dentista · 12/09 · faltan");
+    expect(option.label).toMatch(/4.000,00/);
+  });
+
+  it("gives the repayments drawer the month and the loans, formatted", async () => {
+    pageData.loadIncomesPageData.mockResolvedValue({
+      ...LOADED,
+      repayments: {
+        month: "2026-09",
+        plans: [
+          {
+            id: "plan_1",
+            description: "Préstamo a Juan",
+            categoryName: "Préstamos",
+            currency: "ARS",
+            totalCuotas: 12,
+            doneCount: 3,
+            pendingCount: 9,
+            nextAmount: 10000000,
+            defaultCount: 1,
+          },
+        ],
+      },
+    });
+
+    const repayments = await start().repayments;
+
+    expect(repayments.month).toBe("2026-09");
+    expect(repayments.monthLabel).toBe("Septiembre de 2026");
+    expect(repayments.plans).toHaveLength(1);
+    expect(repayments.plans[0]).toMatchObject({
+      id: "plan_1",
+      progressLabel: "3 de 12 · quedan 9",
+      defaultCount: 1,
+    });
+    expect(repayments.plans[0].nextAmountLabel).toMatch(/100\.000,00/);
   });
 
   it("rejects every section when the load fails, so each reaches the error boundary", async () => {

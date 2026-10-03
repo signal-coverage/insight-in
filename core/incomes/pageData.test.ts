@@ -9,7 +9,20 @@ const service = vi.hoisted(() => ({
   materializeRecurringIncomes: vi.fn(),
 }));
 
+const installments = vi.hoisted(() => ({
+  listIncomeInstallmentPlans: vi.fn(),
+}));
+
+const reimbursements = vi.hoisted(() => ({
+  listReimbursableExpenses: vi.fn(),
+}));
+
+const progress = vi.hoisted(() => ({ listIncomePlanProgress: vi.fn() }));
+
 vi.mock("./service", () => service);
+vi.mock("@/core/reimbursements/service", () => reimbursements);
+vi.mock("@/core/installments/incomeService", () => installments);
+vi.mock("@/core/installments/progress", () => progress);
 
 import { loadIncomesPageData } from "./pageData";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
@@ -32,6 +45,8 @@ const reads = (label: string) => {
   service.listCategoriesWithCounts.mockResolvedValue([]);
   service.listIncomeCurrencies.mockResolvedValue(["USD"]);
   service.listRecurringIncomes.mockResolvedValue([]);
+  installments.listIncomeInstallmentPlans.mockResolvedValue([]);
+  reimbursements.listReimbursableExpenses.mockResolvedValue([]);
 };
 
 const READS = [
@@ -40,12 +55,14 @@ const READS = [
   service.listCategoriesWithCounts,
   service.listIncomeCurrencies,
   service.listRecurringIncomes,
+  installments.listIncomeInstallmentPlans,
 ];
 
 beforeEach(() => {
   vi.resetAllMocks();
   reads("first");
   service.materializeRecurringIncomes.mockResolvedValue(0);
+  progress.listIncomePlanProgress.mockResolvedValue({});
 });
 
 describe("loadIncomesPageData", () => {
@@ -67,6 +84,83 @@ describe("loadIncomesPageData", () => {
     expect(service.listCategoriesWithCounts).toHaveBeenCalledWith(USER_ID);
     expect(service.listIncomeCurrencies).toHaveBeenCalledWith(USER_ID);
     expect(service.listRecurringIncomes).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("reads the loans repaid in installments for the current month, whatever range the list is filtered to", async () => {
+    const plans = [{ id: "plan_1", defaultCount: 1 }];
+
+    installments.listIncomeInstallmentPlans.mockResolvedValue(plans);
+
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    expect(installments.listIncomeInstallmentPlans).toHaveBeenCalledWith(
+      USER_ID,
+      "2026-09",
+    );
+    expect(data.repayments).toEqual({ month: "2026-09", plans });
+  });
+
+  it("loads the progress of the plans of the final page's rows, once for all of them", async () => {
+    const rows = [
+      { id: "i1", installmentPlanId: "plan_1" },
+      { id: "i2", installmentPlanId: "plan_1" },
+      { id: "i3", installmentPlanId: null },
+    ];
+
+    service.listIncomes.mockResolvedValue({
+      rows,
+      total: 3,
+      page: 1,
+      pageSize: 25,
+      totalPages: 1,
+    });
+    progress.listIncomePlanProgress.mockResolvedValue({
+      plan_1: { total: 6, settled: 2 },
+    });
+
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    expect(progress.listIncomePlanProgress).toHaveBeenCalledTimes(1);
+    expect(progress.listIncomePlanProgress).toHaveBeenCalledWith(USER_ID, [
+      "plan_1",
+    ]);
+    expect(data.planProgress).toEqual({ plan_1: { total: 6, settled: 2 } });
+  });
+
+  it("reads the expenses an income can pay back, once, along with everything else", async () => {
+    const reimbursable = [
+      {
+        id: "exp_1",
+        description: "Dentista",
+        date: "2026-09-12",
+        currency: "ARS",
+        outstanding: 400000,
+      },
+    ];
+
+    reimbursements.listReimbursableExpenses.mockResolvedValue(reimbursable);
+    service.materializeRecurringIncomes.mockResolvedValue(2);
+
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    // Generating recurring incomes changes nothing about them, so even the second pass reads them once.
+    expect(reimbursements.listReimbursableExpenses).toHaveBeenCalledTimes(1);
+    expect(reimbursements.listReimbursableExpenses).toHaveBeenCalledWith(
+      USER_ID,
+    );
+    expect(data.reimbursables).toEqual(reimbursable);
   });
 
   it("uses the first reads, exactly once, when nothing was generated", async () => {

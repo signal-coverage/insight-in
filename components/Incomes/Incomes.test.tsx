@@ -1,10 +1,21 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("@/core/installments/actions", () => ({
+  createInstallmentPlanAction: vi.fn(),
+  applyIncomeInstallmentCountsAction: vi.fn(),
+}));
 const actions = vi.hoisted(() => ({ setIncomeStatusAction: vi.fn() }));
 
 vi.mock("@/core/incomes/actions", () => ({
@@ -12,6 +23,7 @@ vi.mock("@/core/incomes/actions", () => ({
   createIncomeAction: vi.fn(),
   updateIncomeAction: vi.fn(),
   deleteIncomeAction: vi.fn(),
+  deleteIncomesAction: vi.fn(),
   createCategoryAction: vi.fn(),
   renameCategoryAction: vi.fn(),
   deleteCategoryAction: vi.fn(),
@@ -23,7 +35,7 @@ vi.mock("@/core/incomes/actions", () => ({
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 
 import { Incomes } from "./Incomes";
-import type { IncomeRow } from "./types";
+import type { IncomeRow, RepaymentData } from "./types";
 
 const ROW: IncomeRow = {
   id: "inc_1",
@@ -34,14 +46,47 @@ const ROW: IncomeRow = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: null,
+  medium: "DIGITAL",
   recurringIncomeId: null,
+  installmentPlanId: null,
+  installmentNumber: null,
   status: "SETTLED",
   amountLabel: "$2,500.00",
   amountDecimal: "2500.00",
   dateLabel: "1 sept 2026",
+  originCurrency: null,
+  originAmount: null,
+  originAmountDecimal: null,
+  originLabel: null,
+  originTooltip: null,
+  reimbursesExpenseId: null,
+  reimbursesExpenseDescription: null,
+  reimbursementTooltip: null,
 };
 
-const TODAY = "2026-09-30";
+// Mid-month on purpose: the default range is the whole month, not the days up to today.
+const TODAY = "2026-09-15";
+
+// One loan repaid in installments, with one of its installments already in the month.
+const REPAYMENTS: RepaymentData = {
+  month: "2026-09",
+  monthLabel: "Septiembre de 2026",
+  plans: [
+    {
+      id: "plan_1",
+      description: "Préstamo a Juan",
+      categoryName: "Préstamos",
+      currency: "ARS",
+      totalCuotas: 12,
+      doneCount: 3,
+      pendingCount: 9,
+      nextAmount: 10000000,
+      defaultCount: 1,
+      nextAmountLabel: "$ 100.000,00",
+      progressLabel: "3 de 12 · quedan 9",
+    },
+  ],
+};
 
 const PAGINATION = { page: 1, totalPages: 1, total: 1, pageSize: 25 };
 
@@ -55,6 +100,8 @@ const renderIncomes = () =>
       currencies={["USD"]}
       table={{ rows: [ROW], pagination: PAGINATION, hasAnyIncomes: true }}
       recurring={[]}
+      repayments={REPAYMENTS}
+      reimbursables={[]}
     />,
   );
 
@@ -75,6 +122,8 @@ const renderEmptyIncomes = ({
         hasAnyIncomes: currencies.length > 0,
       }}
       recurring={[]}
+      repayments={REPAYMENTS}
+      reimbursables={[]}
     />,
   );
 
@@ -117,6 +166,8 @@ describe("Incomes while its data is still on the way", () => {
         currencies={never()}
         table={never()}
         recurring={never()}
+        repayments={never()}
+        reimbursables={never()}
       />,
     );
 
@@ -190,7 +241,21 @@ describe("Incomes while its data is still on the way", () => {
 
     const menu = await screen.findByRole("menu");
 
-    expect(within(menu).getAllByRole("menuitem")).toHaveLength(3);
+    expect(within(menu).getAllByRole("menuitem")).toHaveLength(6);
+  });
+
+  it("mounts the repayment drawers only once their data has arrived", async () => {
+    renderPending();
+
+    await choose("Devoluciones en cuotas");
+    await choose("Devolución en cuotas");
+
+    expect(
+      screen.queryByRole("heading", { name: /Devoluciones? en cuotas de/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Paso 1 de 2 · Datos de la devolución"),
+    ).not.toBeInTheDocument();
   });
 
   it("offers Clear filters from the URL alone when the view is not the default", () => {
@@ -223,6 +288,8 @@ describe("Incomes while its data is still on the way", () => {
             hasAnyIncomes: true,
           })}
           recurring={Promise.resolve([])}
+          repayments={Promise.resolve(REPAYMENTS)}
+          reimbursables={Promise.resolve([])}
         />,
       );
     });
@@ -284,6 +351,17 @@ describe("Incomes empty state with the current-month range on", () => {
     expect(
       screen.queryByRole("button", { name: "Limpiar filtros" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("treats a range that ends today as a filter, since the default reaches the end of the month", () => {
+    renderEmptyIncomes({
+      query: { ...CURRENT_MONTH, to: TODAY },
+      currencies: ["ARS"],
+    });
+
+    expect(
+      screen.getAllByRole("button", { name: "Limpiar filtros" }),
+    ).toHaveLength(2);
   });
 
   it("offers Clear filters, in the bar and in the empty state, once something is not the default", () => {
@@ -390,7 +468,7 @@ describe("Incomes header actions", () => {
     expect(trigger()).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("lists Add income, Recurring and Manage categories in that order", async () => {
+  it("lists Add income, Recurring, the repayments and Manage categories in that order", async () => {
     renderIncomes();
 
     const actions = trigger();
@@ -402,7 +480,84 @@ describe("Incomes header actions", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((item) => item.textContent),
-    ).toEqual(["Agregar ingreso", "Recurrentes", "Administrar categorías"]);
+    ).toEqual([
+      "Agregar ingreso",
+      "Recurrentes",
+      "Devolución en cuotas",
+      "Devoluciones en cuotas",
+      "Administrar categorías",
+      "Ayuda de íconos",
+    ]);
+  });
+
+  it("takes the user to the help page from Ayuda de íconos", async () => {
+    router.push.mockReset();
+    renderIncomes();
+
+    await choose("Ayuda de íconos");
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith("/dashboard/help");
+  });
+
+  it("opens the repayment planner from Devolución en cuotas", async () => {
+    renderIncomes();
+
+    await choose("Devolución en cuotas");
+
+    expect(
+      await screen.findByRole("heading", { name: "Devolución en cuotas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Paso 1 de 2 · Datos de la devolución"),
+    ).toBeVisible();
+  });
+
+  it("opens the month's repayments from Devoluciones en cuotas", async () => {
+    renderIncomes();
+
+    await choose("Devoluciones en cuotas");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Devoluciones en cuotas de Septiembre de 2026",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Elegí cuántas cuotas cobrás este mes."),
+    ).toBeVisible();
+    expect(screen.getByText("Préstamo a Juan")).toBeVisible();
+  });
+
+  it("opens each repayments drawer from scratch every time", async () => {
+    renderIncomes();
+
+    await choose("Devoluciones en cuotas");
+
+    const stepper = await screen.findByRole("textbox", {
+      name: "Cuotas este mes de Préstamo a Juan",
+    });
+
+    fireEvent.change(stepper, { target: { value: "3" } });
+    fireEvent.blur(stepper);
+    expect(stepper).toHaveValue("3");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", {
+          name: "Devoluciones en cuotas de Septiembre de 2026",
+        }),
+      ).not.toBeInTheDocument(),
+    );
+
+    await choose("Devoluciones en cuotas");
+
+    expect(
+      await screen.findByRole("textbox", {
+        name: "Cuotas este mes de Préstamo a Juan",
+      }),
+    ).toHaveValue("1");
   });
 
   it("opens the income form from Add income", async () => {

@@ -28,25 +28,36 @@ describe("recurringDecisionsSchema", () => {
     expect(result.success && result.data[0].amount).toBe("120.50");
   });
 
-  it("treats a blank amount as no amount, so the template amount is used", () => {
+  it("keeps the amount of a disabled row, trimmed", () => {
     const result = parse([
-      { recurringExpenseId: "a", choice: "enable", amount: "  " },
+      { recurringExpenseId: "a", choice: "disable", amount: " 99.90 " },
     ]);
 
     expect(result.success && result.data[0]).toEqual({
       recurringExpenseId: "a",
-      choice: "enable",
+      choice: "disable",
+      amount: "99.90",
     });
   });
 
-  it("drops the amount of a row that is not enabled", () => {
+  it.each(["enable", "disable"])(
+    "treats a blank amount of a %s row as no amount",
+    (choice) => {
+      const result = parse([{ recurringExpenseId: "a", choice, amount: "  " }]);
+
+      expect(result.success && result.data[0]).toEqual({
+        recurringExpenseId: "a",
+        choice,
+      });
+    },
+  );
+
+  it("drops the amount of a removed row, whose template goes away", () => {
     const result = parse([
-      { recurringExpenseId: "a", choice: "disable", amount: "10" },
       { recurringExpenseId: "b", choice: "remove", amount: "10" },
     ]);
 
     expect(result.success && result.data).toEqual([
-      { recurringExpenseId: "a", choice: "disable" },
       { recurringExpenseId: "b", choice: "remove" },
     ]);
   });

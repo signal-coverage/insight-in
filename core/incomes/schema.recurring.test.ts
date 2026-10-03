@@ -29,10 +29,25 @@ describe("recurringIncomeInputSchema", () => {
       currency: "USD",
       categoryId: "cat_1",
       notes: "Paid on the 5th",
+      medium: "DIGITAL",
       frequency: "MONTHLY",
       startDate: "2026-01-05",
       endDate: "2026-12-05",
     });
+  });
+
+  it("defaults the medium to digital and accepts cash", () => {
+    expect(recurringIncomeInputSchema.safeParse(validInput).data?.medium).toBe(
+      "DIGITAL",
+    );
+    expect(
+      recurringIncomeInputSchema.safeParse({ ...validInput, medium: "CASH" })
+        .data?.medium,
+    ).toBe("CASH");
+  });
+
+  it("rejects an unknown medium", () => {
+    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
   });
 
   it("allows a series without an end date", () => {

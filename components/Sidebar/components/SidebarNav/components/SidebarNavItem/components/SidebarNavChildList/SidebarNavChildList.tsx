@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { SidebarNavLink } from "../../../SidebarNavLink";
 import { isActivePath } from "../../utils";
 import {
   getChildLinkClassName,
@@ -32,13 +32,13 @@ export function SidebarNavChildList({
                 {child.label}
               </span>
             ) : (
-              <Link
+              <SidebarNavLink
                 href={child.href}
+                isActive={isActive}
                 className={getChildLinkClassName(isActive)}
-                aria-current={isActive ? "page" : undefined}
               >
                 {child.label}
-              </Link>
+              </SidebarNavLink>
             )}
           </li>
         );

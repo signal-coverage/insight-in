@@ -23,6 +23,11 @@ const requireCurrency = (code: string): DineroCurrency<number> => {
   return currency;
 };
 
+// How many decimals the currency's minor unit has (2 for USD, 0 for JPY), or null when it is not
+// one of the supported ISO currencies.
+export const currencyExponent = (code: string): number | null =>
+  CURRENCIES_BY_CODE.get(code)?.exponent ?? null;
+
 // BigInt -> number happens only here, at the persistence boundary. Dinero works with
 // plain numbers, so anything beyond the safe integer range is rejected instead of being
 // silently rounded.

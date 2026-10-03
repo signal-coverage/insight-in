@@ -1,12 +1,9 @@
-import type { DataTableColumn, DataTableSort } from "../../types";
-
-// The `aria-sort` values a column header can carry.
-export type AriaSort = "ascending" | "descending" | "none";
+import type { DataTableColumn } from "../../types";
 
 export interface ColumnHeaderProps<T> {
   column: DataTableColumn<T>;
-  // The column the rows are sorted by right now, if any.
-  sort?: DataTableSort;
-  // Without it no header is a sort button, whatever the column says.
-  onSortChange?: (sort: DataTableSort) => void;
+  // Whether the header sorts: the column asked for it and the table can report the new sort.
+  isSortable: boolean;
+  // Whether this column names the row (HeroUI's table needs one).
+  isRowHeader: boolean;
 }

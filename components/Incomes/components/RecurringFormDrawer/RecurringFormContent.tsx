@@ -39,6 +39,8 @@ import {
 } from "@/components/Entries/styles";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
+import { MediumField } from "@/components/Entries/components/MediumField";
+import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 import { DESCRIPTION_PLACEHOLDER } from "../IncomeFormDrawer/consts";
 import {
   AMOUNT_HINT,
@@ -189,6 +191,10 @@ export function RecurringFormContent({
             categories={categories}
             defaultCategoryId={recurring?.categoryId ?? null}
             onCreate={createCategoryAction}
+          />
+
+          <MediumField
+            defaultMedium={recurring?.medium ?? DEFAULT_PAYMENT_MEDIUM}
           />
 
           <Select

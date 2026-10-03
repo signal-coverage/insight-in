@@ -32,18 +32,22 @@ export const shiftMonth = (month: string, delta: number): string => {
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2099;
 
+// A well-formed month in a year this app can show.
+export const isSupportedMonth = (value: string): boolean => {
+  if (!isValidMonth(value)) return false;
+
+  const [year] = toYearAndMonth(value);
+
+  return year >= MIN_YEAR && year <= MAX_YEAR;
+};
+
 // The month an address asks for (`?month=2026-03`), or `fallback` when it asks for none, asks for
 // two, or asks for something that is not a month this app can show.
 export const parseMonthParam = (
   value: string | string[] | undefined,
   fallback: string,
-): string => {
-  if (typeof value !== "string" || !isValidMonth(value)) return fallback;
-
-  const [year] = toYearAndMonth(value);
-
-  return year >= MIN_YEAR && year <= MAX_YEAR ? value : fallback;
-};
+): string =>
+  typeof value === "string" && isSupportedMonth(value) ? value : fallback;
 
 // The first and the last day of the month, as calendar dates.
 export const monthRange = (month: string): { from: string; to: string } => {

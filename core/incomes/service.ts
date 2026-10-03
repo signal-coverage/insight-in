@@ -15,6 +15,7 @@ import {
   buildEntriesWhere,
   foldCurrencyTotals,
 } from "@/core/entries/listing";
+import { CoveredNotAllowedError } from "@/core/entries/errors";
 import type { EntryStatus } from "@/core/entries/status";
 
 import { dateToIsoDate, isoDateToDate } from "./dates";
@@ -27,6 +28,7 @@ import {
 import { minorUnitsToNumber } from "./money";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 import { occurrenceDates } from "./recurrence";
+import { assertReimbursable } from "@/core/reimbursements/service";
 import type { EntriesQuery } from "@/core/entries/query";
 import type {
   Income,
@@ -39,10 +41,21 @@ import type {
   RecurringIncomeInput,
 } from "./types";
 
-type IncomeWithCategory = IncomeRow & { category: { name: string } };
+type IncomeWithCategory = IncomeRow & {
+  category: { name: string };
+  // The expense the income pays back, when it pays one back.
+  reimbursesExpense?: { description: string } | null;
+};
 type RecurringWithCategory = RecurringRow & { category: { name: string } };
 
 const WITH_CATEGORY_NAME = { category: { select: { name: true } } } as const;
+
+// What an income needs besides its own columns: the name of its category and the description of the
+// expense it pays back, in the same query.
+const WITH_DETAILS = {
+  ...WITH_CATEGORY_NAME,
+  reimbursesExpense: { select: { description: true } },
+} as const;
 
 const toIncome = (row: IncomeWithCategory): Income => ({
   id: row.id,
@@ -54,7 +67,15 @@ const toIncome = (row: IncomeWithCategory): Income => ({
   categoryName: row.category.name,
   notes: row.notes,
   status: row.status,
+  medium: row.medium,
+  originCurrency: row.originCurrency,
+  originAmount:
+    row.originAmount === null ? null : minorUnitsToNumber(row.originAmount),
+  reimbursesExpenseId: row.reimbursesExpenseId,
+  reimbursesExpenseDescription: row.reimbursesExpense?.description ?? null,
   recurringIncomeId: row.recurringIncomeId,
+  installmentPlanId: row.installmentPlanId,
+  installmentNumber: row.installmentNumber,
 });
 
 const toCategory = (row: Pick<CategoryRow, "id" | "name">): IncomeCategory => ({
@@ -71,10 +92,34 @@ const toWritableData = (input: IncomeInput) => ({
   categoryId: input.categoryId,
   notes: input.notes,
   status: input.status,
+  medium: input.medium,
+  // Written as a pair; nulls clear a previous origin on update.
+  originCurrency: input.originCurrency,
+  originAmount: input.originAmount === null ? null : BigInt(input.originAmount),
+  // The expense this income pays back; null unlinks it on update.
+  reimbursesExpenseId: input.reimbursesExpenseId,
 });
 
+// The client only sends the id of the expense an income pays back, so it is never trusted: it must be
+// the user's, expect a reimbursement and be in the currency the income is saved with.
+const assertReimbursementLink = async (
+  userId: string,
+  input: IncomeInput,
+): Promise<void> => {
+  if (input.reimbursesExpenseId !== null) {
+    await assertReimbursable(userId, input.reimbursesExpenseId, input.currency);
+  }
+};
+
+// Nothing else ever pays an income, so "covered by someone else" has no meaning for it.
+const assertNotCovered = (status: EntryStatus): void => {
+  if (status === "COVERED") {
+    throw new CoveredNotAllowedError();
+  }
+};
+
 // The client only sends a category id, so it is never trusted: it must belong to the user.
-const assertCategoryOwnedBy = async (
+export const assertCategoryOwnedBy = async (
   userId: string,
   categoryId: string,
 ): Promise<void> => {
@@ -100,7 +145,7 @@ export const listIncomes = async (
   const findPage = (page: number) =>
     prisma.income.findMany({
       where,
-      include: WITH_CATEGORY_NAME,
+      include: WITH_DETAILS,
       orderBy,
       skip: (page - 1) * INCOMES_PAGE_SIZE,
       take: INCOMES_PAGE_SIZE,
@@ -160,11 +205,13 @@ export const createIncome = async (
   userId: string,
   input: IncomeInput,
 ): Promise<Income> => {
+  assertNotCovered(input.status);
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertReimbursementLink(userId, input);
 
   const row = await prisma.income.create({
     data: { userId, ...toWritableData(input) },
-    include: WITH_CATEGORY_NAME,
+    include: WITH_DETAILS,
   });
 
   return toIncome(row);
@@ -176,7 +223,9 @@ export const updateIncome = async (
   id: string,
   input: IncomeInput,
 ): Promise<boolean> => {
+  assertNotCovered(input.status);
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertReimbursementLink(userId, input);
 
   const { count } = await prisma.income.updateMany({
     where: { id, userId },
@@ -193,6 +242,8 @@ export const setIncomeStatus = async (
   id: string,
   status: EntryStatus,
 ): Promise<boolean> => {
+  assertNotCovered(status);
+
   const { count } = await prisma.income.updateMany({
     where: { id, userId },
     data: { status },
@@ -209,6 +260,20 @@ export const deleteIncome = async (
   const { count } = await prisma.income.deleteMany({ where: { id, userId } });
 
   return count > 0;
+};
+
+// Deletes the user's incomes among `ids` in one statement, with the same effect on each one as
+// deleteIncome. Returns how many were deleted: an id that is gone, or is not the user's, simply
+// does not count.
+export const deleteIncomes = async (
+  userId: string,
+  ids: readonly string[],
+): Promise<number> => {
+  const { count } = await prisma.income.deleteMany({
+    where: { id: { in: [...ids] }, userId },
+  });
+
+  return count;
 };
 
 const findCategories = async (userId: string): Promise<IncomeCategory[]> => {
@@ -359,7 +424,13 @@ export const deleteCategory = async (
     where: { id, userId },
     select: {
       id: true,
-      _count: { select: { incomes: true, recurringIncomes: true } },
+      _count: {
+        select: {
+          incomes: true,
+          recurringIncomes: true,
+          installmentPlans: true,
+        },
+      },
     },
   });
 
@@ -367,10 +438,15 @@ export const deleteCategory = async (
     throw new CategoryNotFoundError();
   }
 
-  if (category._count.incomes > 0 || category._count.recurringIncomes > 0) {
+  if (
+    category._count.incomes > 0 ||
+    category._count.recurringIncomes > 0 ||
+    category._count.installmentPlans > 0
+  ) {
     throw new CategoryInUseError(
       category._count.incomes,
       category._count.recurringIncomes,
+      category._count.installmentPlans,
     );
   }
 
@@ -387,14 +463,17 @@ export const deleteCategory = async (
       throw new CategoryNotFoundError();
     }
   } catch (error) {
-    // An income or template was attached between the check above and the delete.
+    // An income, template or plan was attached between the check above and the delete.
     if (isForeignKeyError(error)) {
-      const [incomes, templates] = await Promise.all([
+      const [incomes, templates, plans] = await Promise.all([
         prisma.income.count({ where: { categoryId: id, userId } }),
         prisma.recurringIncome.count({ where: { categoryId: id, userId } }),
+        prisma.installmentPlan.count({
+          where: { incomeCategoryId: id, userId },
+        }),
       ]);
 
-      throw new CategoryInUseError(incomes, templates);
+      throw new CategoryInUseError(incomes, templates, plans);
     }
 
     throw error;
@@ -409,6 +488,7 @@ const toRecurringIncome = (row: RecurringWithCategory): RecurringIncome => ({
   categoryId: row.categoryId,
   categoryName: row.category.name,
   notes: row.notes,
+  medium: row.medium,
   frequency: row.frequency,
   startDate: dateToIsoDate(row.startDate),
   endDate: row.endDate ? dateToIsoDate(row.endDate) : null,
@@ -421,6 +501,7 @@ const toRecurringWritableData = (input: RecurringIncomeInput) => ({
   currency: input.currency,
   categoryId: input.categoryId,
   notes: input.notes,
+  medium: input.medium,
   frequency: input.frequency,
   startDate: isoDateToDate(input.startDate),
   endDate: input.endDate ? isoDateToDate(input.endDate) : null,
@@ -532,6 +613,7 @@ export const materializeRecurringIncomes = async (
         currency: template.currency,
         categoryId: template.categoryId,
         notes: template.notes,
+        medium: template.medium,
         date: isoDateToDate(date),
         recurringIncomeId: template.id,
         // A generated occurrence still has to be confirmed as collected.

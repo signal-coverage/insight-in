@@ -4,3 +4,5 @@ export const DELETE_WARNING =
 export const CANCEL_LABEL = "Cancelar";
 export const CONFIRM_LABEL = "Eliminar";
 export const CONFIRM_PENDING_LABEL = "Eliminando…";
+export const DELETE_PLAN_HEADING = "¿Eliminar el plan completo?";
+export const CONFIRM_PLAN_LABEL = "Eliminar plan completo";

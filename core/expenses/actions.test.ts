@@ -25,6 +25,19 @@ vi.mock("./service", () => ({
 }));
 
 import {
+  CardCurrencyMismatchError,
+  CardNotFoundError,
+} from "@/core/cards/errors";
+import {
+  EXPECTED_REIMBURSEMENT_MESSAGE,
+  EXPENSE_CURRENCY_LOCKED_MESSAGE,
+  REIMBURSEMENT_LOCKED_MESSAGE,
+} from "@/core/reimbursements/consts";
+import {
+  ExpenseCurrencyLockedError,
+  ReimbursementLockedError,
+} from "@/core/reimbursements/errors";
+import {
   CategoryInUseError,
   CategoryNotFoundError,
   DuplicateCategoryError,
@@ -107,9 +120,157 @@ describe("createExpenseAction", () => {
       categoryId: "cat_1",
       notes: null,
       status: "SETTLED",
+      medium: "DIGITAL",
       isRecurring: true,
+      cardId: null,
+      originCurrency: null,
+      originAmount: null,
+      expectedReimbursement: null,
     });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/expenses");
+  });
+
+  it("passes on the price in another currency the form sends, in minor units", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    await createExpenseAction(
+      buildFormData({ originCurrency: "USD", originAmount: "20" }),
+    );
+
+    expect(mocks.createExpense.mock.calls[0][1]).toMatchObject({
+      amount: 35000050,
+      currency: "ARS",
+      originCurrency: "USD",
+      originAmount: 2000,
+    });
+  });
+
+  it("returns field errors for an incomplete origin without touching the service", async () => {
+    const result = await createExpenseAction(
+      buildFormData({ originAmount: "20" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      originCurrency: ["Elegí la moneda de origen."],
+    });
+    expect(mocks.createExpense).not.toHaveBeenCalled();
+  });
+
+  it("clears the origin on update when the form sends it empty", async () => {
+    mocks.updateExpense.mockResolvedValue(true);
+
+    await updateExpenseAction(
+      "exp_1",
+      buildFormData({ originCurrency: "", originAmount: "" }),
+    );
+
+    expect(mocks.updateExpense.mock.calls[0][2]).toMatchObject({
+      originCurrency: null,
+      originAmount: null,
+    });
+  });
+
+  it("sets an origin on update", async () => {
+    mocks.updateExpense.mockResolvedValue(true);
+
+    await updateExpenseAction(
+      "exp_1",
+      buildFormData({ originCurrency: "USDT", originAmount: "20" }),
+    );
+
+    expect(mocks.updateExpense.mock.calls[0][2]).toMatchObject({
+      originCurrency: "USDT",
+      originAmount: 20000000,
+    });
+  });
+
+  it("passes on the card the form sends", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    await createExpenseAction(buildFormData({ cardId: "card_1" }));
+
+    expect(mocks.createExpense.mock.calls[0][1].cardId).toBe("card_1");
+  });
+
+  it("passes on the card when an expense is edited", async () => {
+    mocks.updateExpense.mockResolvedValue(true);
+
+    await updateExpenseAction("exp_1", buildFormData({ cardId: "card_1" }));
+
+    expect(mocks.updateExpense.mock.calls[0][2].cardId).toBe("card_1");
+  });
+
+  it("maps a card that is not the user's to a cardId field error", async () => {
+    mocks.createExpense.mockRejectedValue(new CardNotFoundError());
+
+    const result = await createExpenseAction(
+      buildFormData({ cardId: "card_9" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      cardId: ["No se encontró la tarjeta."],
+    });
+  });
+
+  it("maps a card in another currency to a cardId field error", async () => {
+    mocks.createExpense.mockRejectedValue(new CardCurrencyMismatchError());
+
+    const result = await createExpenseAction(
+      buildFormData({ cardId: "card_1" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      cardId: ["La tarjeta tiene que estar en la misma moneda que la compra."],
+    });
+  });
+
+  it("passes on the reimbursement the form expects, in minor units", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    await createExpenseAction(buildFormData({ expectedReimbursement: "4000" }));
+
+    expect(mocks.createExpense.mock.calls[0][1].expectedReimbursement).toBe(
+      400000,
+    );
+  });
+
+  it("rejects an expected reimbursement that is not a positive amount, without writing", async () => {
+    const result = await createExpenseAction(
+      buildFormData({ expectedReimbursement: "0" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      expectedReimbursement: [EXPECTED_REIMBURSEMENT_MESSAGE],
+    });
+    expect(mocks.createExpense).not.toHaveBeenCalled();
+  });
+
+  it("maps a currency change refused because of linked incomes to a currency field error", async () => {
+    mocks.updateExpense.mockRejectedValue(new ExpenseCurrencyLockedError());
+
+    const result = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      currency: [EXPENSE_CURRENCY_LOCKED_MESSAGE],
+    });
+  });
+
+  it("maps clearing a reimbursement refused because of linked incomes to its field error", async () => {
+    mocks.updateExpense.mockRejectedValue(new ReimbursementLockedError());
+
+    const result = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      expectedReimbursement: [REIMBURSEMENT_LOCKED_MESSAGE],
+    });
+  });
+
+  it("passes on the medium the form sends", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    await createExpenseAction(buildFormData({ medium: "CASH" }));
+
+    expect(mocks.createExpense.mock.calls[0][1].medium).toBe("CASH");
   });
 
   it("ignores a userId submitted in the form", async () => {
@@ -163,6 +324,43 @@ describe("updateExpenseAction", () => {
       status: "error",
       message: "No se encontró el gasto.",
     });
+  });
+});
+
+describe("COVERED on any expense", () => {
+  it("is created without a field error when the form sends it", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    expect(
+      await createExpenseAction(buildFormData({ status: "COVERED" })),
+    ).toEqual({ status: "success" });
+    expect(mocks.createExpense.mock.calls[0][1].status).toBe("COVERED");
+  });
+
+  it("is saved without a field error when the form edits an expense", async () => {
+    mocks.updateExpense.mockResolvedValue(true);
+
+    expect(
+      await updateExpenseAction(
+        "exp_1",
+        buildFormData({ status: "COVERED", isRecurring: "false" }),
+      ),
+    ).toEqual({ status: "success" });
+    expect(mocks.updateExpense.mock.calls[0][2].status).toBe("COVERED");
+  });
+
+  it("is set without a field error when the status action asks for it", async () => {
+    mocks.setExpenseStatus.mockResolvedValue(true);
+
+    expect(await setExpenseStatusAction("exp_1", "COVERED")).toEqual({
+      status: "success",
+    });
+    expect(mocks.setExpenseStatus).toHaveBeenCalledWith(
+      USER_ID,
+      "exp_1",
+      "COVERED",
+    );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/expenses");
   });
 });
 
@@ -325,6 +523,45 @@ describe("deleteCategoryAction", () => {
     async (count, recurringCount, message) => {
       mocks.deleteCategory.mockRejectedValue(
         new CategoryInUseError(count, recurringCount),
+      );
+
+      expect(await deleteCategoryAction("c1")).toEqual({
+        status: "error",
+        message,
+      });
+    },
+  );
+
+  it.each([
+    [
+      0,
+      0,
+      1,
+      "1 compra en cuotas todavía usa esta categoría. Muévela o elimínala primero.",
+    ],
+    [
+      0,
+      0,
+      2,
+      "2 compras en cuotas todavía usan esta categoría. Muévelas o elimínalas primero.",
+    ],
+    [
+      12,
+      0,
+      1,
+      "12 gastos y 1 compra en cuotas todavía usan esta categoría. Muévelos o elimínalos primero.",
+    ],
+    [
+      2,
+      1,
+      1,
+      "2 gastos, 1 gasto recurrente y 1 compra en cuotas todavía usan esta categoría. Muévelos o elimínalos primero.",
+    ],
+  ])(
+    "also counts the installment plans that use the category (%i, %i, %i)",
+    async (count, recurringCount, installmentCount, message) => {
+      mocks.deleteCategory.mockRejectedValue(
+        new CategoryInUseError(count, recurringCount, installmentCount),
       );
 
       expect(await deleteCategoryAction("c1")).toEqual({

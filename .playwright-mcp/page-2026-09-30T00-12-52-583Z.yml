@@ -1,8 +1,0 @@
-- generic [active] [ref=e1]:
-  - main [ref=e2]:
-    - generic [ref=e4]:
-      - generic [aria-hidden] [ref=e5]: I
-      - generic [ref=e6]: Insight In
-    - complementary [aria-hidden] [ref=e8]
-  - button "Open Next.js Dev Tools" [ref=e17] [cursor=pointer]
-  - alert [ref=e21]

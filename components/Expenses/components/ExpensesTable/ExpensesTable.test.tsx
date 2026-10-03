@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ExpenseRow } from "../../types";
@@ -15,7 +15,21 @@ const ROW: ExpenseRow = {
   categoryName: "Alquiler",
   notes: "Paid by transfer",
   status: "SETTLED",
+  medium: "DIGITAL",
   isRecurring: false,
+  installmentPlanId: null,
+  installmentNumber: null,
+  cardId: null,
+  purchaseDate: null,
+  originCurrency: null,
+  originAmount: null,
+  originAmountDecimal: null,
+  originLabel: null,
+  originTooltip: null,
+  expectedReimbursement: null,
+  reimbursementReceived: 0,
+  expectedReimbursementDecimal: null,
+  reimbursementTooltip: null,
   amountLabel: "$ 350.000,50",
   amountDecimal: "350000.50",
   dateLabel: "5 sept 2026",
@@ -85,7 +99,7 @@ describe("ExpensesTable columns", () => {
   it("shows a dash for an expense without notes", () => {
     renderTable();
 
-    const cells = within(bodyRows()[1]).getAllByRole("cell");
+    const cells = within(bodyRows()[1]).getAllByRole("gridcell");
 
     expect(cells[cells.length - 1]).toHaveTextContent("—");
   });
@@ -107,7 +121,7 @@ describe("ExpensesTable column widths", () => {
   it("uses a fixed layout, so a column's width never depends on what is inside it", () => {
     renderTable();
 
-    expect(screen.getByRole("table")).toHaveClass(
+    expect(screen.getByRole("grid")).toHaveClass(
       "table-fixed",
       "min-w-[48rem]",
     );
@@ -126,11 +140,11 @@ describe("ExpensesTable column widths", () => {
   it("keeps the Actions column as wide as its two buttons, with the title centered and the same padding on both sides", () => {
     renderTable();
 
-    // The first column already has the table's 16px edge inset on its left; the right matches it.
+    // 16px on each side: the checkbox column leads the table, so the edge inset is not this column's.
     expect(screen.getByRole("columnheader", { name: "Acciones" })).toHaveClass(
       "w-[7.25rem]",
       "text-center",
-      "pr-4",
+      "px-4",
     );
   });
 
@@ -160,7 +174,7 @@ describe("ExpensesTable status column", () => {
     renderTable();
 
     bodyRows().forEach((row) => {
-      const statusCell = within(row).getAllByRole("cell")[1];
+      const statusCell = within(row).getAllByRole("gridcell")[1];
 
       expect(statusCell.firstElementChild).toHaveClass(
         "flex",
@@ -199,6 +213,89 @@ describe("ExpensesTable status column", () => {
   });
 });
 
+describe("ExpensesTable covered installments", () => {
+  const COVERED: ExpenseRow = {
+    ...ROW,
+    id: "exp_3",
+    description: "Heladera (3/12)",
+    status: "COVERED",
+    installmentPlanId: "plan_1",
+    installmentNumber: 3,
+  };
+
+  it("shows a marker instead of the checkbox, named 'Cubierta por otro'", () => {
+    renderTable([COVERED]);
+
+    const [row] = bodyRows();
+    const statusCell = within(row).getAllByRole("gridcell")[1];
+    const marker = within(statusCell).getByRole("img", {
+      name: "Cubierta por otro",
+    });
+
+    expect(marker.querySelector("title")).toBeNull();
+    expect(within(statusCell).queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("keeps the checkbox for the installments that are not covered", () => {
+    renderTable([
+      { ...COVERED, id: "exp_4", status: "PLANNED" },
+      { ...COVERED, id: "exp_5", status: "SETTLED" },
+    ]);
+
+    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+    expect(
+      screen.queryByRole("img", { name: "Cubierta por otro" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("centers the marker in its cell, like the checkbox", () => {
+    renderTable([COVERED]);
+
+    const statusCell = within(bodyRows()[0]).getAllByRole("gridcell")[1];
+
+    expect(statusCell.firstElementChild).toHaveClass("flex", "justify-center");
+  });
+
+  it("is not interactive", () => {
+    const { onToggleStatus } = renderTable([COVERED]);
+
+    fireEvent.click(screen.getByRole("img", { name: "Cubierta por otro" }));
+
+    expect(onToggleStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("ExpensesTable covered ordinary expenses", () => {
+  const COVERED_ORDINARY: ExpenseRow = {
+    ...ROW,
+    id: "exp_6",
+    status: "COVERED",
+    installmentPlanId: null,
+    installmentNumber: null,
+    cardId: null,
+    purchaseDate: null,
+  };
+
+  it("shows the covered marker instead of the checkbox, with no installment involved", () => {
+    renderTable([COVERED_ORDINARY]);
+
+    const statusCell = within(bodyRows()[0]).getAllByRole("gridcell")[1];
+
+    expect(
+      within(statusCell).getByRole("img", { name: "Cubierta por otro" }),
+    ).toBeInTheDocument();
+    expect(within(statusCell).queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("is not interactive", () => {
+    const { onToggleStatus } = renderTable([COVERED_ORDINARY]);
+
+    fireEvent.click(screen.getByRole("img", { name: "Cubierta por otro" }));
+
+    expect(onToggleStatus).not.toHaveBeenCalled();
+  });
+});
+
 describe("ExpensesTable recurring marker", () => {
   it("marks the expenses flagged as recurring", () => {
     renderTable([{ ...ROW, isRecurring: true }]);
@@ -212,6 +309,75 @@ describe("ExpensesTable recurring marker", () => {
     expect(
       screen.queryByRole("img", { name: "Recurrente" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("ExpensesTable installment marker", () => {
+  const INSTALLMENT: ExpenseRow = {
+    ...ROW,
+    description: "Heladera (3/12)",
+    installmentPlanId: "plan_1",
+    installmentNumber: 3,
+  };
+
+  it("marks an installment with a credit card, next to its description", () => {
+    renderTable([INSTALLMENT]);
+
+    const marker = screen.getByRole("img", { name: "Compra en cuotas" });
+
+    expect(marker.querySelector("title")).toBeNull();
+    expect(marker.parentElement).toHaveTextContent("Heladera (3/12)");
+  });
+
+  it("shows no installment marker on an ordinary expense", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Compra en cuotas" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the credit card instead of the recurring icon, since an installment belongs to its plan", () => {
+    renderTable([INSTALLMENT]);
+
+    expect(
+      screen.queryByRole("img", { name: "Recurrente" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("can sit beside the cash marker on an installment paid in cash", () => {
+    renderTable([{ ...INSTALLMENT, medium: "CASH" }]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Compra en cuotas" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("ExpensesTable cash marker", () => {
+  it("marks the expenses paid in cash, next to their description", () => {
+    renderTable([{ ...ROW, medium: "CASH" }]);
+
+    const marker = screen.getByRole("img", { name: "Efectivo" });
+
+    expect(marker.querySelector("title")).toBeNull();
+    expect(marker.parentElement).toHaveTextContent("Monthly rent");
+  });
+
+  it("shows no marker for digital expenses", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Efectivo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("can show both markers on a recurring cash expense", () => {
+    renderTable([{ ...ROW, medium: "CASH", isRecurring: true }]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
   });
 });
 
@@ -296,5 +462,272 @@ describe("ExpensesTable without rows", () => {
     expect(
       screen.getByRole("button", { name: "Limpiar filtros" }),
     ).toBeInTheDocument();
+  });
+});
+
+// React Aria only opens a tooltip on focus when the focus came from the keyboard, and a table first
+// takes the focus itself (a keyboard user tabs into the table, then on to what is in its cells).
+const focusWithKeyboard = (element: HTMLElement) => {
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  act(() => screen.getByRole("grid").focus());
+  act(() => element.focus());
+};
+
+describe("ExpensesTable tooltips", () => {
+  it("shows the full description as a tooltip when the cut text is focused, not as a title", () => {
+    renderTable();
+
+    const description = screen.getByText("Monthly rent");
+
+    expect(description).not.toHaveAttribute("title");
+    expect(description).toHaveAttribute("tabindex", "0");
+
+    focusWithKeyboard(description);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Monthly rent");
+  });
+
+  it("shows the full notes as a tooltip when they are focused", () => {
+    renderTable();
+
+    const notes = screen.getByText("Paid by transfer");
+
+    expect(notes).not.toHaveAttribute("title");
+
+    focusWithKeyboard(notes);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Paid by transfer");
+  });
+
+  it("gives the markers a tooltip with their own text", () => {
+    renderTable([{ ...ROW, medium: "CASH", isRecurring: true }]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Recurrente" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Recurrente");
+  });
+
+  it("gives the covered marker a tooltip with its text", () => {
+    renderTable([{ ...ROW, status: "COVERED" }]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Cubierta por otro" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Cubierta por otro");
+  });
+});
+
+describe("ExpensesTable as a HeroUI table", () => {
+  it("is named after what it lists and reads the description as the row's title", () => {
+    renderTable();
+
+    expect(screen.getByRole("grid", { name: "Gastos" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("rowheader").map((cell) => cell.textContent),
+    ).toEqual(["Monthly rent", "Gym"]);
+  });
+
+  it("makes the Description, Category and Date headers sortable, and no other", () => {
+    renderTable();
+
+    const sortable = screen
+      .getAllByRole("columnheader")
+      .filter((header) => header.hasAttribute("data-allows-sorting"))
+      .map((header) => header.textContent?.trim());
+
+    expect(sortable).toEqual(["Descripción", "Categoría", "Fecha"]);
+    expect(screen.getByRole("columnheader", { name: /Fecha/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+  });
+
+  it("reports the next sort from a header press, starting Date and others in their own direction", () => {
+    const onSortChange = vi.fn();
+
+    render(
+      <ExpensesTable
+        rows={[ROW]}
+        isFiltered={false}
+        sort={{ key: "date", direction: "desc" }}
+        onSortChange={onSortChange}
+        onAdd={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onToggleStatus={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("columnheader", { name: /Fecha/ }));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      key: "date",
+      direction: "asc",
+    });
+
+    fireEvent.click(screen.getByRole("columnheader", { name: /Categoría/ }));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      key: "category",
+      direction: "asc",
+    });
+  });
+
+  it("gives the skeleton the very same column classes as the data, so the widths never jump", () => {
+    const loaded = render(
+      <ExpensesTable
+        rows={[ROW]}
+        isFiltered={false}
+        sort={{ key: "date", direction: "desc" }}
+        onSortChange={() => {}}
+        onAdd={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onToggleStatus={() => {}}
+      />,
+    );
+    const classesOf = (container: HTMLElement) => ({
+      table: container.querySelector("table")?.className,
+      headers: Array.from(container.querySelectorAll("th")).map(
+        (header) => header.className,
+      ),
+      cells: Array.from(
+        container.querySelectorAll("tbody tr:first-child td"),
+      ).map((cell) => cell.className),
+    });
+    const withData = classesOf(loaded.container);
+
+    loaded.unmount();
+
+    const loading = render(
+      <ExpensesTable
+        rows={[]}
+        isLoading
+        isFiltered={false}
+        sort={{ key: "date", direction: "desc" }}
+        onSortChange={() => {}}
+        onAdd={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onToggleStatus={() => {}}
+      />,
+    );
+
+    expect(classesOf(loading.container)).toEqual(withData);
+  });
+});
+
+// A 20 USD subscription that really cost 35.000 ARS.
+const QUOTED_IN_USD: ExpenseRow = {
+  ...ROW,
+  id: "exp_3",
+  description: "Netflix",
+  amount: 3500000,
+  amountLabel: "$ 35.000,00",
+  amountDecimal: "35000.00",
+  originCurrency: "USD",
+  originAmount: 2000,
+  originAmountDecimal: "20.00",
+  originLabel: "Se cotizó en 20 USD",
+  originTooltip: "Se cotizó en US$ 20,00 · cotización 1.750,00",
+};
+
+describe("ExpensesTable origin marker", () => {
+  it("marks an expense that was quoted in another currency, next to its description", () => {
+    renderTable([QUOTED_IN_USD]);
+
+    const marker = screen.getByRole("img", { name: "Se cotizó en 20 USD" });
+
+    expect(marker.tagName.toLowerCase()).toBe("svg");
+    expect(marker.parentElement).toHaveTextContent("Netflix");
+  });
+
+  it("says the exact price and the implied rate in its tooltip", () => {
+    renderTable([QUOTED_IN_USD]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Se cotizó en 20 USD" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Se cotizó en US$ 20,00 · cotización 1.750,00",
+    );
+  });
+
+  it("shows no marker for an expense without an origin", () => {
+    renderTable();
+
+    expect(screen.queryByRole("img", { name: /^Se cotizó en/ })).toBeNull();
+  });
+
+  it("keeps the real amount as the only amount of the row", () => {
+    renderTable([QUOTED_IN_USD]);
+
+    const cells = within(bodyRows()[0]).getAllByRole("gridcell");
+
+    expect(cells[cells.length - 2]).toHaveTextContent("$ 35.000,00");
+    expect(cells[cells.length - 2]).not.toHaveTextContent("USD");
+  });
+
+  it("can show it next to the other markers", () => {
+    renderTable([{ ...QUOTED_IN_USD, medium: "CASH", isRecurring: true }]);
+
+    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Se cotizó en 20 USD" }),
+    ).toBeInTheDocument();
+  });
+});
+
+// A dentist visit of 10.000 that the health insurance is expected to pay back, 6.000 of it already.
+const EXPECTS_REIMBURSEMENT: ExpenseRow = {
+  ...ROW,
+  id: "exp_4",
+  description: "Dentista",
+  amount: 1000000,
+  amountLabel: "$ 10.000,00",
+  amountDecimal: "10000.00",
+  expectedReimbursement: 1000000,
+  reimbursementReceived: 600000,
+  expectedReimbursementDecimal: "10000.00",
+  reimbursementTooltip: "Te deben $ 4.000,00 de $ 10.000,00",
+};
+
+describe("ExpensesTable reimbursement marker", () => {
+  it("marks an expense that expects to be paid back, next to its description", () => {
+    renderTable([EXPECTS_REIMBURSEMENT]);
+
+    const marker = screen.getByRole("img", { name: "Reintegro esperado" });
+
+    expect(marker.tagName.toLowerCase()).toBe("svg");
+    expect(marker.parentElement).toHaveTextContent("Dentista");
+  });
+
+  it("says how much is still owed, out of what is expected, in its tooltip", () => {
+    renderTable([EXPECTS_REIMBURSEMENT]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Reintegro esperado" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Te deben $ 4.000,00 de $ 10.000,00",
+    );
+  });
+
+  it("says the reimbursement is complete once nothing is owed", () => {
+    renderTable([
+      {
+        ...EXPECTS_REIMBURSEMENT,
+        reimbursementReceived: 1000000,
+        reimbursementTooltip: "Reintegro completo",
+      },
+    ]);
+
+    focusWithKeyboard(screen.getByRole("img", { name: "Reintegro esperado" }));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Reintegro completo");
+  });
+
+  it("shows no marker for an expense that expects nothing", () => {
+    renderTable();
+
+    expect(
+      screen.queryByRole("img", { name: "Reintegro esperado" }),
+    ).toBeNull();
   });
 });

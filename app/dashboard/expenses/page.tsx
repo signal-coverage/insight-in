@@ -14,7 +14,7 @@ export default async function ExpensesPage({
   const today = todayIso();
 
   // Anything invalid in the URL falls back to a default instead of erroring; a URL with no
-  // date params defaults to the current month up to today.
+  // date params defaults to the whole current month.
   const query = parseEntriesQuery(await searchParams, { today });
 
   // Not awaited on purpose. Everything above is quick (session, URL); the database work starts

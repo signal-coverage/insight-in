@@ -27,7 +27,7 @@ export function LoadingSummary() {
               key={card.id}
               label={card.label}
               description={card.description}
-              emphasis={spec.emphasis}
+              emphasis={card.emphasis ?? spec.emphasis}
               tone={spec.tone === "balance" ? undefined : spec.tone}
               isLoading
             />

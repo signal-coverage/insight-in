@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatMonth,
+  isSupportedMonth,
   isValidMonth,
   monthOf,
   monthRange,
@@ -89,6 +90,19 @@ describe("isValidMonth", () => {
   ])("rejects %j", (month) => {
     expect(isValidMonth(month)).toBe(false);
   });
+});
+
+describe("isSupportedMonth", () => {
+  it.each(["2000-01", "2026-09", "2099-12"])("accepts %s", (month) => {
+    expect(isSupportedMonth(month)).toBe(true);
+  });
+
+  it.each(["1999-12", "2100-01", "0001-01", "2026-13", "2026-9", ""])(
+    "rejects %j: not a month this app can show",
+    (month) => {
+      expect(isSupportedMonth(month)).toBe(false);
+    },
+  );
 });
 
 describe("monthRange", () => {

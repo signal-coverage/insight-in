@@ -29,8 +29,42 @@ describe("expenseInputSchema", () => {
       categoryId: "cat_1",
       notes: "Paid by transfer",
       status: "SETTLED",
+      medium: "DIGITAL",
       isRecurring: false,
+      cardId: null,
+      originCurrency: null,
+      originAmount: null,
+      expectedReimbursement: null,
     });
+  });
+
+  it("reads the card as optional: nothing or an empty choice means no card", () => {
+    expect(expenseInputSchema.safeParse(validInput).data?.cardId).toBeNull();
+    expect(
+      expenseInputSchema.safeParse({ ...validInput, cardId: "" }).data?.cardId,
+    ).toBeNull();
+    expect(
+      expenseInputSchema.safeParse({ ...validInput, cardId: "  " }).data
+        ?.cardId,
+    ).toBeNull();
+  });
+
+  it("keeps the id of the card that was chosen", () => {
+    expect(
+      expenseInputSchema.safeParse({ ...validInput, cardId: " card_1 " }).data
+        ?.cardId,
+    ).toBe("card_1");
+  });
+
+  it("defaults the medium to digital and accepts cash", () => {
+    expect(expenseInputSchema.safeParse(validInput).data?.medium).toBe(
+      "DIGITAL",
+    );
+    expect(
+      expenseInputSchema.safeParse({ ...validInput, medium: "CASH" }).data
+        ?.medium,
+    ).toBe("CASH");
+    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
   });
 
   it("defaults the status to settled and accepts planned", () => {
@@ -39,6 +73,13 @@ describe("expenseInputSchema", () => {
         ?.status,
     ).toBe("PLANNED");
     expect(errorPaths({ ...validInput, status: "DONE" })).toEqual(["status"]);
+  });
+
+  it("accepts COVERED: any expense may be paid by someone else", () => {
+    expect(
+      expenseInputSchema.safeParse({ ...validInput, status: "COVERED" }).data
+        ?.status,
+    ).toBe("COVERED");
   });
 
   it("reads the recurring mark from the form's 'true' / 'false' text", () => {

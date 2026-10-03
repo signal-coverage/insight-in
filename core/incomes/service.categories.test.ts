@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   income: { count: vi.fn() },
   recurringIncome: { count: vi.fn() },
+  installmentPlan: { count: vi.fn() },
   incomeCategory: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
@@ -27,7 +28,7 @@ import {
   renameCategory,
 } from "./service";
 
-const { income, incomeCategory, recurringIncome } = db;
+const { income, incomeCategory, installmentPlan, recurringIncome } = db;
 
 const USER_ID = "user_123";
 
@@ -190,9 +191,13 @@ describe("renameCategory", () => {
 });
 
 describe("deleteCategory", () => {
-  const withCount = (incomes: number, recurringIncomes = 0) => ({
+  const withCount = (
+    incomes: number,
+    recurringIncomes = 0,
+    installmentPlans = 0,
+  ) => ({
     id: "c1",
-    _count: { incomes, recurringIncomes },
+    _count: { incomes, recurringIncomes, installmentPlans },
   });
 
   it("deletes an unused category the user owns while others remain", async () => {
@@ -206,7 +211,13 @@ describe("deleteCategory", () => {
       where: { id: "c1", userId: USER_ID },
       select: {
         id: true,
-        _count: { select: { incomes: true, recurringIncomes: true } },
+        _count: {
+          select: {
+            incomes: true,
+            recurringIncomes: true,
+            installmentPlans: true,
+          },
+        },
       },
     });
     expect(incomeCategory.count).toHaveBeenCalledWith({
@@ -252,18 +263,35 @@ describe("deleteCategory", () => {
     incomeCategory.deleteMany.mockRejectedValue(P2003);
     income.count.mockResolvedValue(2);
     recurringIncome.count.mockResolvedValue(1);
+    installmentPlan.count.mockResolvedValue(4);
 
     const error = await deleteCategory(USER_ID, "c1").catch((caught) => caught);
 
     expect(error).toBeInstanceOf(CategoryInUseError);
     expect(error.count).toBe(2);
     expect(error.recurringCount).toBe(1);
+    expect(error.installmentCount).toBe(4);
     expect(income.count).toHaveBeenCalledWith({
       where: { categoryId: "c1", userId: USER_ID },
     });
     expect(recurringIncome.count).toHaveBeenCalledWith({
       where: { categoryId: "c1", userId: USER_ID },
     });
+    expect(installmentPlan.count).toHaveBeenCalledWith({
+      where: { incomeCategoryId: "c1", userId: USER_ID },
+    });
+  });
+
+  it("blocks deleting a category that a loan repaid in installments still uses and reports the count", async () => {
+    incomeCategory.findFirst.mockResolvedValue(withCount(0, 0, 2));
+
+    const error = await deleteCategory(USER_ID, "c1").catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(CategoryInUseError);
+    expect(error.count).toBe(0);
+    expect(error.recurringCount).toBe(0);
+    expect(error.installmentCount).toBe(2);
+    expect(incomeCategory.deleteMany).not.toHaveBeenCalled();
   });
 
   it("blocks deleting a category that a recurring income still uses and reports the count", async () => {

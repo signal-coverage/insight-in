@@ -1,4 +1,4 @@
-import { HOME_HREF, HOME_LABEL } from "./consts";
+import { HOME_HREF, HOME_LABEL, SEGMENT_LABELS } from "./consts";
 import type { Crumb } from "./types";
 
 const safeDecode = (segment: string): string => {
@@ -20,8 +20,10 @@ export const buildCrumbs = (pathname: string): Crumb[] => {
   const crumbs: Crumb[] = [{ label: HOME_LABEL, href: HOME_HREF }];
 
   segments.forEach((segment, index) => {
+    if (`/${segment}` === HOME_HREF) return;
+
     crumbs.push({
-      label: formatSegment(segment),
+      label: SEGMENT_LABELS[segment] ?? formatSegment(segment),
       href: `/${segments.slice(0, index + 1).join("/")}`,
     });
   });

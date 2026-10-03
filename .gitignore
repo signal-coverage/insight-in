@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# generated Prisma client (created by `prisma generate` on postinstall)
+/lib/generated/prisma
+
 # vercel
 .vercel
 
@@ -41,3 +44,6 @@ yarn-error.log*
 next-env.d.ts
 # heroui-agents-md
 .heroui-docs/
+
+# Playwright MCP scratch output (console logs, page snapshots, screenshots)
+.playwright-mcp/

@@ -1,0 +1,1 @@
+export { IncomesTable } from "./IncomesTable";

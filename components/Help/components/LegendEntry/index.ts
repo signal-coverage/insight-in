@@ -1,0 +1,1 @@
+export { LegendEntry } from "./LegendEntry";

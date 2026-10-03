@@ -1,0 +1,1 @@
+export { CardOwnershipFields } from "./CardOwnershipFields";

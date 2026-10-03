@@ -1,0 +1,1 @@
+export { EntriesPagination } from "./EntriesPagination";

@@ -9,6 +9,7 @@ const validInput = {
   date: "2026-09-20",
   categoryId: "cat_1",
   notes: "",
+  accountId: "acc_1",
 };
 
 describe("incomeInputSchema reimbursed expense", () => {

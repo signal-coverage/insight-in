@@ -10,7 +10,7 @@ const validInput = {
   description: "Heladera",
   categoryId: "cat_1",
   currency: "ARS",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   notes: "",
   amount: "1200000.50",
   amountMode: "total",
@@ -33,7 +33,7 @@ describe("installmentPlanSchema", () => {
       description: "Heladera",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       notes: null,
       totalCuotas: 12,
       totalAmount: 120000050,
@@ -83,13 +83,6 @@ describe("installmentPlanSchema", () => {
         "cardId",
       ]);
     });
-
-    it("keeps the medium the user chose, cash included, since that is how the lender is repaid", () => {
-      expect(
-        installmentPlanSchema.safeParse({ ...validInput, medium: "CASH" }).data
-          ?.medium,
-      ).toBe("CASH");
-    });
   });
 
   describe("with one of the user's cards", () => {
@@ -121,17 +114,6 @@ describe("installmentPlanSchema", () => {
         installmentPlanSchema.safeParse({ ...withCard, cardId: " " }).error
           ?.issues[0].message,
       ).toBe("Elegí una tarjeta.");
-    });
-
-    it("is always digital money, whatever medium came with it", () => {
-      expect(
-        installmentPlanSchema.safeParse({ ...withCard, medium: "CASH" }).data
-          ?.medium,
-      ).toBe("DIGITAL");
-      expect(
-        installmentPlanSchema.safeParse({ ...withCard, medium: "DIGITAL" }).data
-          ?.medium,
-      ).toBe("DIGITAL");
     });
 
     it("requires the day of the purchase, since the card's cycle starts from it", () => {
@@ -172,19 +154,26 @@ describe("installmentPlanSchema", () => {
     expect(result.data?.totalAmount).toBe(120000600);
   });
 
-  it("defaults the medium to digital and accepts cash", () => {
-    const withoutMedium: Record<string, unknown> = { ...validInput };
+  it("requires the account the purchase is paid from", () => {
+    expect(errorPaths({ ...validInput, accountId: "" })).toEqual(["accountId"]);
+  });
 
-    delete withoutMedium.medium;
-
-    expect(installmentPlanSchema.safeParse(withoutMedium).data?.medium).toBe(
-      "DIGITAL",
-    );
+  it("keeps the account chosen with an own card: a card no longer forces anything", () => {
     expect(
-      installmentPlanSchema.safeParse({ ...validInput, medium: "CASH" }).data
-        ?.medium,
-    ).toBe("CASH");
-    expect(errorPaths({ ...validInput, medium: "CHEQUE" })).toEqual(["medium"]);
+      installmentPlanSchema.safeParse({
+        ...validInput,
+        cardOwnership: "own",
+        cardId: "card_1",
+        purchaseDate: "2026-10-10",
+        accountId: "acc_cash",
+      }).data?.accountId,
+    ).toBe("acc_cash");
+  });
+
+  it("no longer outputs a medium", () => {
+    expect(installmentPlanSchema.safeParse(validInput).data).not.toHaveProperty(
+      "medium",
+    );
   });
 
   it("trims the product and the notes, and keeps notes only when there are some", () => {
@@ -292,6 +281,13 @@ describe("installmentPlanSchema", () => {
     expect(result.data).not.toHaveProperty("userId");
     expect(result.data).not.toHaveProperty("id");
   });
+
+  it("refuses a purchase in a crypto currency, on the currency only: installments are legal tender", () => {
+    expect(errorPaths({ ...validInput, currency: "USDC" })).toEqual([
+      "currency",
+    ]);
+    expect(errorPaths({ ...validInput, currency: "USD" })).toEqual([]);
+  });
 });
 
 describe("incomeInstallmentPlanSchema", () => {
@@ -300,7 +296,7 @@ describe("incomeInstallmentPlanSchema", () => {
     description: "Préstamo a Juan",
     categoryId: "cat_1",
     currency: "ARS",
-    medium: "CASH",
+    accountId: "acc_1",
     notes: " en mano ",
     amount: "600000.50",
     amountMode: "total",
@@ -321,7 +317,7 @@ describe("incomeInstallmentPlanSchema", () => {
       description: "Préstamo a Juan",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "CASH",
+      accountId: "acc_1",
       notes: "en mano",
       totalCuotas: 6,
       totalAmount: 60000050,
@@ -366,13 +362,24 @@ describe("incomeInstallmentPlanSchema", () => {
     expect(result.data).not.toHaveProperty("kind");
   });
 
-  it("keeps the medium the user chose, since it is how the money arrives", () => {
+  it("keeps the account the money arrives in", () => {
     expect(
       incomeInstallmentPlanSchema.safeParse({
         ...validRepayment,
-        medium: "DIGITAL",
-      }).data?.medium,
-    ).toBe("DIGITAL");
+        accountId: "acc_cash",
+      }).data?.accountId,
+    ).toBe("acc_cash");
+  });
+
+  it("no longer outputs a medium, whatever came with the payload", () => {
+    const result = incomeInstallmentPlanSchema.safeParse({
+      ...validRepayment,
+      medium: "CASH",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toHaveProperty("accountId", "acc_1");
+    expect(result.data).not.toHaveProperty("medium");
   });
 
   it("asks for the concept in its own words", () => {
@@ -401,7 +408,7 @@ describe("incomeInstallmentPlanSchema", () => {
     ["2 to 60 installments", { totalCuotas: 1 }, "totalCuotas"],
     ["2 to 60 installments", { totalCuotas: 61 }, "totalCuotas"],
     ["a valid first date", { firstDate: "2026-02-31" }, "firstDate"],
-    ["a medium", { medium: "CHEQUE" }, "medium"],
+    ["an account", { accountId: "" }, "accountId"],
   ])("requires %s", (_name, patch, path) => {
     expect(repaymentErrorPaths({ ...validRepayment, ...patch })).toEqual([
       path,
@@ -427,6 +434,13 @@ describe("incomeInstallmentPlanSchema", () => {
 
     expect(result.data).not.toHaveProperty("userId");
     expect(result.data).not.toHaveProperty("id");
+  });
+
+  it("refuses a repayment in a crypto currency, on the currency only", () => {
+    expect(repaymentErrorPaths({ ...validRepayment, currency: "BTC" })).toEqual(
+      ["currency"],
+    );
+    expect(repaymentErrorPaths(validRepayment)).toEqual([]);
   });
 });
 

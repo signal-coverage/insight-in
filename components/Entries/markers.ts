@@ -6,7 +6,6 @@ import {
   LinkIcon,
   ReceiptRefundIcon,
   UserGroupIcon,
-  WalletIcon,
 } from "@heroicons/react/24/outline";
 
 import type { MarkerDefinition } from "./types";
@@ -15,7 +14,6 @@ import type { MarkerDefinition } from "./types";
 // accessible name and its tooltip). The tables draw their markers from here, and so does the help
 // page: that is what keeps what the app shows and what the help explains from drifting apart.
 export const MARKERS = {
-  cash: { icon: WalletIcon, label: "Efectivo" },
   installment: { icon: CreditCardIcon, label: "Compra en cuotas" },
   recurring: { icon: ArrowPathIcon, label: "Recurrente" },
   // An installment of a loan repaid to the user: a returning arrow, not the credit card of the

@@ -1,4 +1,3 @@
-import type { PaymentMedium } from "@/core/entries/medium";
 import type { EntryStatus } from "@/core/entries/status";
 
 import type { AMOUNT_MODES, CARD_OWNERSHIPS } from "./consts";
@@ -15,7 +14,9 @@ export interface InstallmentPlanInput {
   description: string;
   categoryId: string;
   currency: string;
-  medium: PaymentMedium;
+  // The account that pays the installments (with a card, the account that pays its statement). It
+  // is the user's, active and in the currency of the purchase (the service checks it).
+  accountId: string;
   notes: string | null;
   totalCuotas: number;
   totalAmount: number;
@@ -23,7 +24,7 @@ export interface InstallmentPlanInput {
   // The user's own card the purchase was paid with and the day it was made. Only a purchase paid with
   // an own card has them (a borrowed card has no record); the service checks the card is the user's
   // and in the currency of the purchase, and then works the dates out from its billing cycle instead
-  // of using `firstDate`. A purchase with a card is always digital money.
+  // of using `firstDate`.
   cardId?: string | null;
   purchaseDate?: string | null;
 }
@@ -34,7 +35,7 @@ export interface InstallmentPlanPayload {
   description: string;
   categoryId: string;
   currency: string;
-  medium: PaymentMedium;
+  accountId: string;
   notes: string;
   amount: string;
   amountMode: AmountMode;
@@ -50,12 +51,19 @@ export interface InstallmentPlanPayload {
   purchaseDate?: string | null;
 }
 
-// A validated loan repaid to the user in installments: the same as a purchase, without a card. The
-// category is one of the user's income categories, and `medium` is how the money arrives.
-export type IncomeInstallmentPlanInput = Omit<
-  InstallmentPlanInput,
-  "cardId" | "purchaseDate"
->;
+// A validated loan repaid to the user in installments: like a purchase, without a card. The category
+// is one of the user's income categories.
+export interface IncomeInstallmentPlanInput {
+  description: string;
+  categoryId: string;
+  currency: string;
+  // The account the money arrives in. It is the user's, active and in the currency of the loan.
+  accountId: string;
+  notes: string | null;
+  totalCuotas: number;
+  totalAmount: number;
+  firstDate: string;
+}
 
 // What the repayment planner sends: plain values, the amount still as typed. The `kind` tells the
 // server which sort of plan it is; the date is the one the user typed for the first installment.
@@ -64,7 +72,7 @@ export interface IncomeInstallmentPlanPayload {
   description: string;
   categoryId: string;
   currency: string;
-  medium: PaymentMedium;
+  accountId: string;
   notes: string;
   amount: string;
   amountMode: AmountMode;

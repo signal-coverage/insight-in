@@ -2,70 +2,45 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { creditCardRow, debitCardRow, limitRow } from "../../testRows";
 import type { CardRow } from "../../types";
 import { CardsTable } from "./CardsTable";
 
-const VISA: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 90000000,
-  monthUsed: 7500000,
-  used: 7500000,
-  available: 22500000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 75.000,00 de $ 300.000,00",
-  availableLabel: "$ 225.000,00",
-  limitDecimal: "300000.00",
-  percent: 25,
-};
+const VISA: CardRow = creditCardRow();
 
-const MASTERCARD: CardRow = {
-  ...VISA,
+// Two caps: pesos close to the cap, dollars over it.
+const MASTERCARD: CardRow = creditCardRow({
   id: "card_2",
   last4: "9876",
   brand: "MASTERCARD",
   limitMode: "TOTAL",
-  limitAmount: 120000000,
-  used: 100000000,
-  available: 20000000,
-  tier: "near",
   title: "Mastercard •••• 9876",
   brandName: "Mastercard",
+  bankName: "Banco Nación",
   closingLabel: "Día 31",
   dueLabel: "Día 10",
-  limitLabel: "$ 1.200.000,00 en total",
-  usedLabel: "$ 1.000.000,00 de $ 1.200.000,00",
-  availableLabel: "$ 200.000,00",
-  percent: 83,
-};
+  limits: [
+    limitRow({
+      limitLabel: "$ 1.200.000,00 en total",
+      usedLabel: "$ 1.000.000,00 de $ 1.200.000,00",
+      availableLabel: "$ 200.000,00",
+      percent: 83,
+      tier: "near",
+    }),
+    limitRow({
+      currency: "USD",
+      limitLabel: "US$ 1.000,00 en total",
+      usedLabel: "US$ 1.100,00 de US$ 1.000,00",
+      availableLabel: "-US$ 100,00",
+      percent: 100,
+      tier: "exceeded",
+    }),
+  ],
+});
 
-const EXCEEDED: CardRow = {
-  ...VISA,
-  id: "card_3",
-  last4: "0007",
-  brand: "OTHER",
-  used: 35000000,
-  available: -5000000,
-  tier: "exceeded",
-  title: "Otra •••• 0007",
-  brandName: "Otra",
-  usedLabel: "$ 350.000,00 de $ 300.000,00",
-  availableLabel: "-$ 50.000,00",
-  percent: 100,
-};
+const DEBIT: CardRow = debitCardRow();
 
-const renderTable = (rows: CardRow[] = [VISA, MASTERCARD, EXCEEDED]) => {
+const renderTable = (rows: CardRow[] = [VISA, MASTERCARD, DEBIT]) => {
   const onAdd = vi.fn();
   const onEdit = vi.fn();
   const onDelete = vi.fn();
@@ -83,12 +58,12 @@ const renderTable = (rows: CardRow[] = [VISA, MASTERCARD, EXCEEDED]) => {
 };
 
 const bodyRows = () => screen.getAllByRole("row").slice(1);
-// The card column names the row, so HeroUI marks its cell as a row header rather than a grid cell.
 const cellsOf = (row: HTMLElement) =>
   Array.from(row.querySelectorAll<HTMLTableCellElement>("td"));
 
+// 0 Acciones, 1 Tarjeta, 2 Tipo, 3 Banco, 4 Cierre, 5 Vencimiento, 6 Tope, 7 Uso, 8 Disponible.
 describe("CardsTable columns", () => {
-  it("lists Actions first, then the card, its cycle, its cap, its use and what is available", () => {
+  it("lists Actions first, then the card, its kind and bank, its cycle, its caps, their use and what is available", () => {
     renderTable();
 
     expect(
@@ -98,6 +73,8 @@ describe("CardsTable columns", () => {
     ).toEqual([
       "Acciones",
       "Tarjeta",
+      "Tipo",
+      "Banco",
       "Cierre",
       "Vencimiento",
       "Tope",
@@ -106,16 +83,21 @@ describe("CardsTable columns", () => {
     ]);
   });
 
-  it("writes the card with its brand and last four digits", () => {
+  it("writes the card with its brand logo and last four digits", () => {
     renderTable();
 
-    const cells = bodyRows().map((row) => cellsOf(row)[1].textContent);
-
-    expect(cells).toEqual([
+    expect(bodyRows().map((row) => cellsOf(row)[1].textContent)).toEqual([
       "Visa •••• 1234",
       "Mastercard •••• 9876",
-      "Otra •••• 0007",
+      "Mastercard •••• 9999",
     ]);
+    expect(
+      bodyRows().map((row) =>
+        cellsOf(row)[1]
+          .querySelector("[data-brand-logo]")
+          ?.getAttribute("data-brand-logo"),
+      ),
+    ).toEqual(["VISA", "MASTERCARD", "MASTERCARD"]);
   });
 
   it("shows the logo of the brand before the title, as a decoration", () => {
@@ -133,45 +115,56 @@ describe("CardsTable columns", () => {
     expect(logos).toEqual([
       ["VISA", "true"],
       ["MASTERCARD", "true"],
-      ["OTHER", "true"],
+      ["MASTERCARD", "true"],
     ]);
   });
 
-  it("shows the closing and the due day of the statement", () => {
+  it("names the kind of each card and its bank", () => {
     renderTable();
 
-    const [first, second] = bodyRows();
-
-    expect(cellsOf(first)[2]).toHaveTextContent("Día 25");
-    expect(cellsOf(first)[3]).toHaveTextContent("Día 5");
-    expect(cellsOf(second)[2]).toHaveTextContent("Día 31");
-    expect(cellsOf(second)[3]).toHaveTextContent("Día 10");
+    expect(bodyRows().map((row) => cellsOf(row)[2].textContent)).toEqual([
+      "Crédito",
+      "Crédito",
+      "Débito o prepago",
+    ]);
+    expect(bodyRows().map((row) => cellsOf(row)[3].textContent)).toEqual([
+      "Banco Galicia",
+      "Banco Nación",
+      "AstroPay",
+    ]);
   });
 
-  it("shows the cap with its mode: per month or in total", () => {
+  it("shows the cycle of a credit card and a dash for a debit card", () => {
     renderTable();
 
-    const [first, second] = bodyRows();
+    const [visa, , debit] = bodyRows();
 
-    expect(cellsOf(first)[4]).toHaveTextContent("$ 300.000,00 por mes");
-    expect(cellsOf(second)[4]).toHaveTextContent("$ 1.200.000,00 en total");
+    expect(cellsOf(visa)[4]).toHaveTextContent("Día 25");
+    expect(cellsOf(visa)[5]).toHaveTextContent("Día 5");
+    expect(cellsOf(debit)[4]).toHaveTextContent("—");
+    expect(cellsOf(debit)[5]).toHaveTextContent("—");
   });
 
-  it("shows what was used of the cap", () => {
+  it("shows one cap per currency for a credit card, and the currencies of a debit card without amounts", () => {
     renderTable();
 
-    expect(cellsOf(bodyRows()[0])[5]).toHaveTextContent(
-      "$ 75.000,00 de $ 300.000,00",
-    );
+    const [visa, master, debit] = bodyRows();
+
+    expect(cellsOf(visa)[6]).toHaveTextContent("$ 300.000,00 por mes");
+    expect(cellsOf(master)[6]).toHaveTextContent("$ 1.200.000,00 en total");
+    expect(cellsOf(master)[6]).toHaveTextContent("US$ 1.000,00 en total");
+    expect(cellsOf(debit)[6]).toHaveTextContent("ARS · USD");
   });
 
-  it("shows what is still available, with its sign when the cap was exceeded", () => {
+  it("shows what is available per cap, with its sign when a cap was exceeded, and a dash for a debit card", () => {
     renderTable();
 
-    const [first, , third] = bodyRows();
+    const [visa, master, debit] = bodyRows();
 
-    expect(cellsOf(first)[6]).toHaveTextContent("$ 225.000,00");
-    expect(cellsOf(third)[6]).toHaveTextContent("-$ 50.000,00");
+    expect(cellsOf(visa)[8]).toHaveTextContent("$ 225.000,00");
+    expect(cellsOf(master)[8]).toHaveTextContent("$ 200.000,00");
+    expect(cellsOf(master)[8]).toHaveTextContent("-US$ 100,00");
+    expect(cellsOf(debit)[8]).toHaveTextContent("—");
   });
 
   it("calls the handlers with the right row", () => {
@@ -181,16 +174,16 @@ describe("CardsTable columns", () => {
       screen.getByRole("button", { name: "Editar Visa •••• 1234" }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Eliminar Mastercard •••• 9876" }),
+      screen.getByRole("button", { name: "Eliminar Mastercard •••• 9999" }),
     );
 
     expect(onEdit).toHaveBeenCalledWith(VISA);
-    expect(onDelete).toHaveBeenCalledWith(MASTERCARD);
+    expect(onDelete).toHaveBeenCalledWith(DEBIT);
   });
 });
 
 describe("CardsTable usage", () => {
-  it("shows a progress bar per card, as full as the share of the cap that was used", () => {
+  it("shows a progress bar per cap, as full as the share used, named by card and currency", () => {
     renderTable();
 
     const bars = screen.getAllByRole("progressbar");
@@ -200,33 +193,50 @@ describe("CardsTable usage", () => {
       "83",
       "100",
     ]);
-    expect(bars[0]).toHaveAccessibleName("Uso de Visa •••• 1234");
+    expect(bars.map((bar) => bar.getAttribute("aria-label"))).toEqual([
+      "Uso de Visa •••• 1234 en ARS",
+      "Uso de Mastercard •••• 9876 en ARS",
+      "Uso de Mastercard •••• 9876 en USD",
+    ]);
   });
 
-  it("names the tier in words next to the bar, never only with a colour", () => {
+  it("shows no bar for a debit card, which has no cap", () => {
     renderTable();
 
-    const [first, second, third] = bodyRows();
+    const [visa, , debit] = bodyRows();
 
-    expect(cellsOf(first)[5]).toHaveTextContent("Disponible");
-    expect(cellsOf(second)[5]).toHaveTextContent("Cerca del tope");
-    expect(cellsOf(third)[5]).toHaveTextContent("Excedida");
+    expect(
+      cellsOf(visa)[7].querySelector("[role='progressbar']"),
+    ).not.toBeNull();
+    expect(cellsOf(debit)[7].querySelector("[role='progressbar']")).toBeNull();
+    expect(cellsOf(debit)[7]).toHaveTextContent("—");
   });
 
-  it("gives each tier its own icon", () => {
+  it("gives the available tier its own icon too, on a cap with room", () => {
     renderTable();
 
-    const icons = bodyRows().map((row) => {
-      const icon = cellsOf(row)[5].querySelector("svg[data-tier]");
+    const [visa] = bodyRows();
 
-      return icon?.getAttribute("data-tier");
-    });
-
-    expect(icons).toEqual(["available", "near", "exceeded"]);
+    expect(
+      cellsOf(visa)[7]
+        .querySelector("svg[data-tier]")
+        ?.getAttribute("data-tier"),
+    ).toBe("available");
   });
 
-  it("colours the bar of each tier differently", () => {
+  it("names the tier of each cap in words, gives it its icon and colours the bar", () => {
     renderTable();
+
+    const [visa, master] = bodyRows();
+
+    expect(cellsOf(visa)[7]).toHaveTextContent("Disponible");
+    expect(cellsOf(master)[7]).toHaveTextContent("Cerca del tope");
+    expect(cellsOf(master)[7]).toHaveTextContent("Excedida");
+    expect(
+      [...cellsOf(master)[7].querySelectorAll("svg[data-tier]")].map((icon) =>
+        icon.getAttribute("data-tier"),
+      ),
+    ).toEqual(["near", "exceeded"]);
 
     const [first, second, third] = screen.getAllByRole("progressbar");
 
@@ -237,12 +247,6 @@ describe("CardsTable usage", () => {
 });
 
 describe("CardsTable column widths", () => {
-  it("uses a fixed layout, so a column's width never depends on what is inside it", () => {
-    renderTable();
-
-    expect(screen.getByRole("grid")).toHaveClass("table-fixed");
-  });
-
   it("keeps the Actions column as wide as its two buttons, with the title centered", () => {
     renderTable();
 
@@ -253,10 +257,24 @@ describe("CardsTable column widths", () => {
     );
   });
 
+  it("uses a fixed layout, so a column's width never depends on what is inside it", () => {
+    renderTable();
+
+    expect(screen.getByRole("grid")).toHaveClass("table-fixed");
+  });
+
   it("gives the columns that hold short values a width of their own and leaves the card to take the rest", () => {
     renderTable();
 
-    ["Cierre", "Vencimiento", "Tope", "Uso", "Disponible"].forEach((name) => {
+    [
+      "Tipo",
+      "Banco",
+      "Cierre",
+      "Vencimiento",
+      "Tope",
+      "Uso",
+      "Disponible",
+    ].forEach((name) => {
       expect(screen.getByRole("columnheader", { name }).className).toMatch(
         /\bw-/,
       );
@@ -287,13 +305,11 @@ describe("CardsTable while the cards are on their way", () => {
       />,
     );
 
-    const cells = Array.from(
+    const textCells = Array.from(
       container.querySelectorAll("tbody tr:first-child td"),
-    );
-    // The actions hold fixed-size buttons; the other six hold text.
-    const textCells = cells.slice(1);
+    ).slice(1);
 
-    expect(textCells).toHaveLength(6);
+    expect(textCells).toHaveLength(8);
     textCells.forEach((cell) => {
       expect(cell.querySelector(".skeleton")?.className).toMatch(
         /\bw-(\d+\/\d+|full)\b/,
@@ -336,13 +352,22 @@ describe("CardsTable as a HeroUI table", () => {
     expect(screen.getByRole("grid", { name: "Tarjetas" })).toBeInTheDocument();
     expect(
       screen.getAllByRole("rowheader").map((cell) => cell.textContent),
-    ).toEqual(["Visa •••• 1234", "Mastercard •••• 9876", "Otra •••• 0007"]);
+    ).toEqual([
+      "Visa •••• 1234",
+      "Mastercard •••• 9876",
+      "Mastercard •••• 9999",
+    ]);
   });
+});
 
+describe("CardsTable headers", () => {
   it("has no sortable header, since the cards come in a fixed order", () => {
     renderTable();
 
-    screen.getAllByRole("columnheader").forEach((header) => {
+    const headers = screen.getAllByRole("columnheader");
+
+    expect(headers.length).toBeGreaterThan(0);
+    headers.forEach((header) => {
       expect(header).not.toHaveAttribute("data-allows-sorting");
     });
   });
@@ -363,21 +388,17 @@ describe("CardsTable tooltips", () => {
 
     expect(title).not.toHaveAttribute("title");
     expect(title).toHaveAttribute("tabindex", "0");
-
     focusWithKeyboard(title);
-
     expect(screen.getByRole("tooltip")).toHaveTextContent("Visa •••• 1234");
   });
 
-  it("shows the whole used-of-cap text as a tooltip", () => {
+  it("shows the whole used-of-cap text of a cap as a tooltip", () => {
     renderTable();
 
     const used = screen.getByText("$ 75.000,00 de $ 300.000,00");
 
     expect(used).not.toHaveAttribute("title");
-
     focusWithKeyboard(used);
-
     expect(screen.getByRole("tooltip")).toHaveTextContent(
       "$ 75.000,00 de $ 300.000,00",
     );

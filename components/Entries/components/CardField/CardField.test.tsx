@@ -5,9 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 import { CardField } from "./CardField";
 
 const CARDS = [
-  { id: "visa", title: "Visa •••• 1234", currency: "ARS" },
-  { id: "master", title: "Mastercard •••• 9999", currency: "ARS" },
-  { id: "dollars", title: "Visa •••• 4321", currency: "USD" },
+  { id: "visa", title: "Visa •••• 1234", currencies: ["ARS"] },
+  { id: "master", title: "Mastercard •••• 9999", currencies: ["ARS"] },
+  { id: "dollars", title: "Visa •••• 4321", currencies: ["USD"] },
+  { id: "both", title: "Visa •••• 5555", currencies: ["EUR", "USD"] },
 ];
 
 const renderField = (patch: Partial<Parameters<typeof CardField>[0]> = {}) => {
@@ -61,6 +62,18 @@ describe("CardField", () => {
     expect(options.map((option) => option.textContent)).toEqual([
       "Sin tarjeta",
       "Visa •••• 4321",
+      "Visa •••• 5555",
+    ]);
+  });
+
+  it("offers a card in every currency it can pay in, and in no other", async () => {
+    renderField({ currency: "EUR" });
+
+    const options = await open();
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      "Sin tarjeta",
+      "Visa •••• 5555",
     ]);
   });
 
@@ -129,5 +142,27 @@ describe("CardField", () => {
     renderField({ errorMessage: "No se encontró la tarjeta." });
 
     expect(screen.getByText("No se encontró la tarjeta.")).toBeInTheDocument();
+  });
+
+  it("keeps offering the card the record already has, even in a currency it no longer pays in", async () => {
+    renderField({ currency: "ARS", value: "dollars", keepCardId: "dollars" });
+
+    expect(trigger()).toHaveTextContent("Visa •••• 4321");
+
+    const options = await open();
+
+    expect(options.map((option) => option.textContent)).toContain(
+      "Visa •••• 4321",
+    );
+  });
+
+  it("does not offer that card to any other record", async () => {
+    renderField({ currency: "ARS" });
+
+    const options = await open();
+
+    expect(options.map((option) => option.textContent)).not.toContain(
+      "Visa •••• 4321",
+    );
   });
 });

@@ -46,7 +46,8 @@ const ROW: IncomeRow = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   recurringIncomeId: null,
   installmentPlanId: null,
   installmentNumber: null,
@@ -65,6 +66,22 @@ const ROW: IncomeRow = {
 };
 
 // Mid-month on purpose: the default range is the whole month, not the days up to today.
+// Accounts as the forms receive them: one per currency, so each is preselected.
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const TODAY = "2026-09-15";
 
 // One loan repaid in installments, with one of its installments already in the month.
@@ -102,6 +119,7 @@ const renderIncomes = () =>
       recurring={[]}
       repayments={REPAYMENTS}
       reimbursables={[]}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -124,6 +142,7 @@ const renderEmptyIncomes = ({
       recurring={[]}
       repayments={REPAYMENTS}
       reimbursables={[]}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -168,6 +187,7 @@ describe("Incomes while its data is still on the way", () => {
         recurring={never()}
         repayments={never()}
         reimbursables={never()}
+        accounts={never()}
       />,
     );
 
@@ -290,6 +310,7 @@ describe("Incomes while its data is still on the way", () => {
           recurring={Promise.resolve([])}
           repayments={Promise.resolve(REPAYMENTS)}
           reimbursables={Promise.resolve([])}
+          accounts={Promise.resolve(ACCOUNTS)}
         />,
       );
     });

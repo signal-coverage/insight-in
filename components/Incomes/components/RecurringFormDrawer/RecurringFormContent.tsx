@@ -39,8 +39,10 @@ import {
 } from "@/components/Entries/styles";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
-import { MediumField } from "@/components/Entries/components/MediumField";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { DESCRIPTION_PLACEHOLDER } from "../IncomeFormDrawer/consts";
 import {
   AMOUNT_HINT,
@@ -53,7 +55,7 @@ import {
   NOTES_PLACEHOLDER,
 } from "@/components/Entries/formConsts";
 import { AMOUNT_ROW_CLASS_NAME } from "@/components/Entries/styles";
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import { CurrencyListBox } from "@/components/Entries/components/CurrencyListBox";
 import {
   CANCEL_LABEL,
   CREATE_DESCRIPTION,
@@ -80,12 +82,26 @@ import type { RecurringFormContentProps } from "./types";
 export function RecurringFormContent({
   target,
   categories,
+  accounts,
   onClose,
 }: RecurringFormContentProps) {
   const { recurring, defaultDate } = target;
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<IncomeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // The currency is kept in state because the account choice depends on it; a currency change drops
+  // the account, an edit keeps the template's own (even archived).
+  const [currency, setCurrency] = useState(
+    recurring?.currency ?? DEFAULT_CURRENCY_CODE,
+  );
+  const keepAccountId = recurring?.accountId ?? null;
+  const [accountId, setAccountId] = useState<string | null>(keepAccountId);
+  const account = resolveAccountId(
+    accounts,
+    currency,
+    accountId,
+    keepAccountId,
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -166,7 +182,13 @@ export function RecurringFormContent({
               className={FIELD_CLASS_NAME}
               name="currency"
               placeholder={CURRENCY_PLACEHOLDER}
-              defaultValue={recurring?.currency ?? DEFAULT_CURRENCY_CODE}
+              value={currency}
+              onChange={(value) => {
+                if (typeof value === "string") {
+                  setCurrency(value);
+                  setAccountId(null);
+                }
+              }}
             >
               <Label>{CURRENCY_LABEL}</Label>
               <Select.Trigger className={SELECT_TRIGGER_CLASS_NAME}>
@@ -174,14 +196,7 @@ export function RecurringFormContent({
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover>
-                <ListBox>
-                  {CURRENCY_OPTIONS.map(({ code, label }) => (
-                    <ListBox.Item key={code} id={code} textValue={label}>
-                      {label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
+                <CurrencyListBox includeCrypto />
               </Select.Popover>
               <FieldError />
             </Select>
@@ -193,8 +208,13 @@ export function RecurringFormContent({
             onCreate={createCategoryAction}
           />
 
-          <MediumField
-            defaultMedium={recurring?.medium ?? DEFAULT_PAYMENT_MEDIUM}
+          <AccountField
+            accounts={accounts}
+            currency={currency}
+            value={account}
+            keepAccountId={keepAccountId}
+            onChange={setAccountId}
+            errorMessage={fieldErrors.accountId?.[0]}
           />
 
           <Select

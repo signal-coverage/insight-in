@@ -30,4 +30,10 @@ if (typeof window !== "undefined") {
 
     globalThis.ResizeObserver = ResizeObserverStub;
   }
+
+  // jsdom has no Web Animations API; react-aria-components' SharedElementTransition (the animated
+  // Tabs.Indicator) asks each element for its running animations when the selection moves.
+  if (typeof Element.prototype.getAnimations !== "function") {
+    Element.prototype.getAnimations = () => [];
+  }
 }

@@ -1,6 +1,7 @@
 import { Description, Switch } from "@heroui/react";
 
 import { InlineAlert } from "@/components/shared/InlineAlert";
+import { SavingIndicator } from "@/components/shared/SavingIndicator";
 import { saveIncludeExpectedIncomesAction } from "@/core/settings/actions";
 
 import { SWITCH_DESCRIPTION, SWITCH_LABEL } from "./consts";
@@ -13,7 +14,7 @@ import { useOptimisticSetting } from "./useOptimisticSetting";
 export function ExpectedIncomesSwitch({
   isSelected,
 }: ExpectedIncomesSwitchProps) {
-  const { value, error, change } = useOptimisticSetting(
+  const { value, error, isPending, change } = useOptimisticSetting(
     isSelected,
     saveIncludeExpectedIncomesAction,
   );
@@ -29,6 +30,7 @@ export function ExpectedIncomesSwitch({
         </Switch.Content>
         <Description>{SWITCH_DESCRIPTION}</Description>
       </Switch>
+      {isPending ? <SavingIndicator /> : null}
       {error ? <InlineAlert variant="error">{error}</InlineAlert> : null}
     </div>
   );

@@ -8,6 +8,7 @@ const validInput = {
   currency: "ARS",
   date: "2026-09-05",
   categoryId: "cat_1",
+  accountId: "acc_1",
   notes: "Paid by transfer",
 };
 
@@ -29,7 +30,7 @@ describe("expenseInputSchema", () => {
       categoryId: "cat_1",
       notes: "Paid by transfer",
       status: "SETTLED",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       isRecurring: false,
       cardId: null,
       originCurrency: null,
@@ -56,15 +57,42 @@ describe("expenseInputSchema", () => {
     ).toBe("card_1");
   });
 
-  it("defaults the medium to digital and accepts cash", () => {
-    expect(expenseInputSchema.safeParse(validInput).data?.medium).toBe(
-      "DIGITAL",
-    );
+  it("requires the account and trims it", () => {
     expect(
-      expenseInputSchema.safeParse({ ...validInput, medium: "CASH" }).data
-        ?.medium,
-    ).toBe("CASH");
-    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
+      expenseInputSchema.safeParse({ ...validInput, accountId: " acc_1 " }).data
+        ?.accountId,
+    ).toBe("acc_1");
+    expect(errorPaths({ ...validInput, accountId: "" })).toEqual(["accountId"]);
+
+    const withoutAccount: Record<string, unknown> = { ...validInput };
+
+    delete withoutAccount.accountId;
+
+    expect(errorPaths(withoutAccount)).toEqual(["accountId"]);
+  });
+
+  it("does not ask for the account when a card is chosen: the server decides or checks it by the card's kind", () => {
+    const withCard: Record<string, unknown> = {
+      ...validInput,
+      cardId: "card_9",
+    };
+
+    delete withCard.accountId;
+
+    expect(expenseInputSchema.safeParse(withCard)).toMatchObject({
+      success: true,
+      data: { accountId: null, cardId: "card_9" },
+    });
+  });
+
+  it("no longer knows a medium: one that arrives is dropped", () => {
+    const parsed = expenseInputSchema.safeParse({
+      ...validInput,
+      medium: "CASH",
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data).not.toHaveProperty("medium");
   });
 
   it("defaults the status to settled and accepts planned", () => {

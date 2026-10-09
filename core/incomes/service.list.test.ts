@@ -14,8 +14,14 @@ const { income } = db;
 
 const USER_ID = "user_123";
 
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
+
 const INCLUDE = {
   category: { select: { name: true } },
+  account: { select: { name: true, bank: { select: { name: true } } } },
   reimbursesExpense: { select: { description: true } },
 };
 
@@ -33,6 +39,8 @@ const row = {
   date: new Date("2026-09-01T00:00:00.000Z"),
   categoryId: "cat_1",
   category: { name: "Salary" },
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   notes: null,
   originCurrency: null,
   originAmount: null,
@@ -75,6 +83,8 @@ describe("listIncomes", () => {
           date: "2026-09-01",
           categoryId: "cat_1",
           categoryName: "Salary",
+          accountId: "acc_1",
+          accountLabel: "Banco Galicia · Caja de ahorro",
           notes: null,
           originCurrency: null,
           originAmount: null,

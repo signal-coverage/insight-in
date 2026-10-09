@@ -8,6 +8,7 @@ const validInput = {
   currency: "USD",
   categoryId: "cat_1",
   notes: "Paid on the 5th",
+  accountId: "acc_1",
   frequency: "MONTHLY",
   startDate: "2026-01-05",
   endDate: "2026-12-05",
@@ -29,25 +30,21 @@ describe("recurringIncomeInputSchema", () => {
       currency: "USD",
       categoryId: "cat_1",
       notes: "Paid on the 5th",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       frequency: "MONTHLY",
       startDate: "2026-01-05",
       endDate: "2026-12-05",
     });
   });
 
-  it("defaults the medium to digital and accepts cash", () => {
-    expect(recurringIncomeInputSchema.safeParse(validInput).data?.medium).toBe(
-      "DIGITAL",
-    );
+  it("requires the account and trims it", () => {
     expect(
-      recurringIncomeInputSchema.safeParse({ ...validInput, medium: "CASH" })
-        .data?.medium,
-    ).toBe("CASH");
-  });
-
-  it("rejects an unknown medium", () => {
-    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
+      recurringIncomeInputSchema.safeParse({
+        ...validInput,
+        accountId: " acc_1 ",
+      }).data?.accountId,
+    ).toBe("acc_1");
+    expect(errorPaths({ ...validInput, accountId: "" })).toEqual(["accountId"]);
   });
 
   it("allows a series without an end date", () => {

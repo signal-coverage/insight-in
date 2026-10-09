@@ -113,6 +113,20 @@ describe("foldCurrencyTotals", () => {
     ).toEqual([]);
   });
 
+  it("folds a crypto currency on its own, after the legal tender ones", () => {
+    expect(
+      foldCurrencyTotals([
+        { currency: "BTC", status: "SETTLED", _sum: { amount: BigInt(1) } },
+        {
+          currency: "USDC",
+          status: "PLANNED",
+          _sum: { amount: BigInt(1500000) },
+        },
+        { currency: "ARS", status: "SETTLED", _sum: { amount: BigInt(100) } },
+      ]).map(({ currency }) => currency),
+    ).toEqual(["ARS", "USDC", "BTC"]);
+  });
+
   it("returns an empty list for no groups", () => {
     expect(foldCurrencyTotals([])).toEqual([]);
   });

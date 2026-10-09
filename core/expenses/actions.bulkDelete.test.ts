@@ -55,6 +55,7 @@ describe("deleteExpensesAction", () => {
 
   it.each([
     ["an empty list", []],
+    ["nothing at all", undefined],
     ["something that is not a list", "exp_1"],
     ["a list with an empty id", ["exp_1", ""]],
     ["a list of numbers", [1, 2]],

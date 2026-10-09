@@ -20,7 +20,7 @@ const item = (
   categoryId: "cat_1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,

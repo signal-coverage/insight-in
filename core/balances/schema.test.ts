@@ -1,10 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { openingBalanceInputSchema } from "./schema";
 
+beforeEach(() => {
+  // 2026-10-15 in Argentina, whatever the machine's zone.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-15T15:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const row = (accountId: string, currency: string, amount: string) => ({
+  accountId,
+  currency,
+  amount,
+});
+
 const valid = {
   month: "2026-06",
-  balances: [{ currency: "ARS", digital: "1500.50", cash: "200" }],
+  balances: [row("acc_bank", "ARS", "1500.50"), row("acc_cash", "ARS", "200")],
 };
 
 const issuePaths = (input: unknown): string[] => {
@@ -16,87 +32,62 @@ const issuePaths = (input: unknown): string[] => {
 };
 
 describe("openingBalanceInputSchema", () => {
-  it("turns each amount into minor units of its currency", () => {
-    const result = openingBalanceInputSchema.parse(valid);
-
-    expect(result).toEqual({
+  it("turns each account's amount into minor units of its currency", () => {
+    expect(openingBalanceInputSchema.parse(valid)).toEqual({
       month: "2026-06",
       amounts: [
-        { currency: "ARS", medium: "DIGITAL", amount: 150050 },
-        { currency: "ARS", medium: "CASH", amount: 20000 },
+        { accountId: "acc_bank", currency: "ARS", amount: 150050 },
+        { accountId: "acc_cash", currency: "ARS", amount: 20000 },
       ],
     });
   });
 
   it("respects the decimals of each currency", () => {
-    const result = openingBalanceInputSchema.parse({
-      month: "2026-06",
-      balances: [{ currency: "JPY", digital: "1500", cash: "" }],
-    });
-
-    expect(result.amounts).toEqual([
-      { currency: "JPY", medium: "DIGITAL", amount: 1500 },
-    ]);
+    expect(
+      openingBalanceInputSchema.parse({
+        month: "2026-06",
+        balances: [row("acc_yen", "JPY", "1500")],
+      }).amounts,
+    ).toEqual([{ accountId: "acc_yen", currency: "JPY", amount: 1500 }]);
   });
 
-  it("leaves out a field that is empty or only spaces: it means no amount", () => {
-    const result = openingBalanceInputSchema.parse({
-      month: "2026-06",
-      balances: [{ currency: "ARS", digital: "   ", cash: "" }],
-    });
-
-    expect(result.amounts).toEqual([]);
+  it("leaves out an amount that is empty or only spaces: it means no amount", () => {
+    expect(
+      openingBalanceInputSchema.parse({
+        month: "2026-06",
+        balances: [row("acc_bank", "ARS", "   ")],
+      }).amounts,
+    ).toEqual([]);
   });
 
   it("keeps an explicit zero: it is an amount, not a missing one", () => {
-    const result = openingBalanceInputSchema.parse({
-      month: "2026-06",
-      balances: [{ currency: "ARS", digital: "0", cash: "" }],
-    });
-
-    expect(result.amounts).toEqual([
-      { currency: "ARS", medium: "DIGITAL", amount: 0 },
-    ]);
+    expect(
+      openingBalanceInputSchema.parse({
+        month: "2026-06",
+        balances: [row("acc_bank", "ARS", "0")],
+      }).amounts,
+    ).toEqual([{ accountId: "acc_bank", currency: "ARS", amount: 0 }]);
   });
 
-  it("accepts no currency at all: that clears the opening balance", () => {
+  it("accepts no account at all: that clears the opening balance", () => {
     expect(
       openingBalanceInputSchema.parse({ month: "2026-06", balances: [] })
         .amounts,
     ).toEqual([]);
   });
 
-  it("rejects a negative amount, pointing at the field", () => {
-    expect(
-      issuePaths({
-        ...valid,
-        balances: [{ currency: "ARS", digital: "-5", cash: "" }],
-      }),
-    ).toEqual(["balances.0.digital"]);
-  });
-
-  it("rejects an amount that is not a number", () => {
-    expect(
-      issuePaths({
-        ...valid,
-        balances: [{ currency: "ARS", digital: "", cash: "abc" }],
-      }),
-    ).toEqual(["balances.0.cash"]);
-  });
-
-  it("rejects more decimals than the currency has", () => {
-    expect(
-      issuePaths({
-        ...valid,
-        balances: [{ currency: "ARS", digital: "1.005", cash: "" }],
-      }),
-    ).toEqual(["balances.0.digital"]);
+  it("rejects a negative amount, a word and too many decimals, pointing at the field", () => {
+    for (const amount of ["-5", "abc", "1.005"]) {
+      expect(
+        issuePaths({ ...valid, balances: [row("acc_bank", "ARS", amount)] }),
+      ).toEqual(["balances.0.amount"]);
+    }
   });
 
   it("says what is wrong with an amount, in Spanish", () => {
     const result = openingBalanceInputSchema.safeParse({
       ...valid,
-      balances: [{ currency: "ARS", digital: "x", cash: "" }],
+      balances: [row("acc_bank", "ARS", "x")],
     });
 
     expect(result.error?.issues[0].message).toBe(
@@ -111,33 +102,88 @@ describe("openingBalanceInputSchema", () => {
     },
   );
 
-  it("rejects a missing month", () => {
+  it("accepts the current month and a past one", () => {
+    // The positive twin of the future-month checks below: these two must get through.
+    for (const month of ["2026-10", "2026-09", "2023-01"]) {
+      expect(issuePaths({ ...valid, month })).toEqual([]);
+    }
+  });
+
+  it("rejects a month that has not started yet, in Spanish", () => {
+    for (const month of ["2026-11", "2027-01", "2099-12"]) {
+      expect(issuePaths({ ...valid, month })).toEqual(["month"]);
+    }
+
+    const result = openingBalanceInputSchema.safeParse({
+      ...valid,
+      month: "2026-11",
+    });
+
+    expect(result.error?.issues[0].message).toBe(
+      "El mes inicial no puede ser posterior al actual. Elegí el mes actual o uno anterior.",
+    );
+  });
+
+  it("decides the current month by the Argentine date, not the UTC one", () => {
+    // 01:00 UTC of 1 November is still 31 October in Argentina (UTC-3).
+    vi.setSystemTime(new Date("2026-11-01T01:00:00.000Z"));
+
+    expect(issuePaths({ ...valid, month: "2026-11" })).toEqual(["month"]);
+    expect(issuePaths({ ...valid, month: "2026-10" })).toEqual([]);
+
+    // 03:00 UTC of 1 November is already 1 November in Argentina.
+    vi.setSystemTime(new Date("2026-11-01T03:00:00.000Z"));
+
+    expect(issuePaths({ ...valid, month: "2026-11" })).toEqual([]);
+  });
+
+  it("rejects a missing month, pointing at it", () => {
     expect(issuePaths({ balances: valid.balances })).toEqual(["month"]);
   });
 
   it("rejects a currency that is not supported", () => {
     expect(
-      issuePaths({
-        ...valid,
-        balances: [{ currency: "XXX", digital: "1", cash: "" }],
-      }),
+      issuePaths({ ...valid, balances: [row("acc_bank", "XXX", "1")] }),
     ).toEqual(["balances.0.currency"]);
   });
 
-  it("rejects the same currency twice", () => {
+  it("rejects the same account twice", () => {
     expect(
       issuePaths({
         ...valid,
-        balances: [
-          { currency: "ARS", digital: "1", cash: "" },
-          { currency: "ARS", digital: "2", cash: "" },
-        ],
+        balances: [row("acc_bank", "ARS", "1"), row("acc_bank", "ARS", "2")],
       }),
-    ).toEqual(["balances.1.currency"]);
+    ).toEqual(["balances.1.accountId"]);
+  });
+
+  it("rejects a row without an account", () => {
+    expect(issuePaths({ ...valid, balances: [row("  ", "ARS", "1")] })).toEqual(
+      ["balances.0.accountId"],
+    );
+  });
+
+  it("rejects more rows than any user has accounts", () => {
+    expect(
+      issuePaths({
+        month: "2026-06",
+        balances: Array.from({ length: 201 }, (_, index) =>
+          row(`acc_${index}`, "ARS", "1"),
+        ),
+      }),
+    ).toEqual(["balances"]);
   });
 
   it("rejects something that is not a list of balances", () => {
     expect(issuePaths({ ...valid, balances: "nope" })).toEqual(["balances"]);
     expect(issuePaths(null)).not.toEqual([]);
+  });
+
+  it("turns the amount of a crypto account into millionths", () => {
+    expect(
+      openingBalanceInputSchema.parse({
+        month: "2026-06",
+        balances: [row("acc_usdc", "USDC", "1.5")],
+      }).amounts,
+    ).toEqual([{ accountId: "acc_usdc", currency: "USDC", amount: 1500000 }]);
   });
 });

@@ -8,6 +8,7 @@ const validInput = {
   currency: "ARS",
   date: "2026-09-01",
   categoryId: "cat_1",
+  accountId: "acc_1",
   notes: "",
 };
 
@@ -105,7 +106,7 @@ describe("expenseInputSchema origin", () => {
 
   it("rejects a currency that is neither crypto nor supported", () => {
     expect(
-      fieldErrors({ ...validInput, originCurrency: "BTC", originAmount: "1" }),
+      fieldErrors({ ...validInput, originCurrency: "XRP", originAmount: "1" }),
     ).toEqual({ originCurrency: [MISSING_CURRENCY] });
   });
 

@@ -1,12 +1,9 @@
 import { z } from "zod";
 
 import type { IssueContext } from "@/core/entries/fields";
-import { SUPPORTED_CURRENCY_CODES } from "@/core/incomes/consts";
-import { toMinorUnits } from "@/core/incomes/money";
+import { isSupportedCurrencyCode, toMinorUnits } from "@/core/incomes/money";
 
 import { EXPECTED_REIMBURSEMENT_MESSAGE } from "./consts";
-
-const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
 
 // An empty field (or one that is not sent) is "not filled in".
 const optionalText = z
@@ -29,7 +26,7 @@ export const checkExpectedReimbursement = (
 ): void => {
   if (
     value.expectedReimbursement === null ||
-    !SUPPORTED_CURRENCY_SET.has(value.currency)
+    !isSupportedCurrencyCode(value.currency)
   ) {
     return;
   }

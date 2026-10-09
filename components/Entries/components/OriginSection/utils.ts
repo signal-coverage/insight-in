@@ -1,20 +1,19 @@
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import {
+  CRYPTO_CURRENCY_OPTIONS,
+  CURRENCY_OPTIONS,
+} from "@/components/Entries/currencyOptions";
 import type { OriginRateInput } from "@/components/Entries/types";
 import { originRate } from "@/components/Entries/utils";
-import { CRYPTO_CURRENCIES } from "@/core/currencies/consts";
 
 import { RATE_LINE_LABEL } from "./consts";
 import type { OriginCurrencyGroups } from "./types";
 
-// The origin currencies on offer: the crypto assets first, then every ISO currency but the one of
-// the net amount (an origin in the same currency would say nothing).
+// The origin currencies on offer: the crypto assets first, then every ISO currency, in both cases
+// without the one of the net amount (an origin in the same currency would say nothing).
 export const originCurrencyGroups = (
   netCurrency: string,
 ): OriginCurrencyGroups => ({
-  crypto: CRYPTO_CURRENCIES.map(({ code, name }) => ({
-    code,
-    label: `${code} - ${name}`,
-  })),
+  crypto: CRYPTO_CURRENCY_OPTIONS.filter(({ code }) => code !== netCurrency),
   fiat: CURRENCY_OPTIONS.filter(({ code }) => code !== netCurrency),
 });
 

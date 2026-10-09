@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-
+import { BankArchivedError, BankNotFoundError } from "@/core/banks/errors";
 import {
   failure,
   fieldFailure,
@@ -13,26 +12,28 @@ import type { ActionFailure } from "@/core/entries/actionHelpers";
 import { BULK_INVALID_MESSAGE, bulkIdsSchema } from "@/core/entries/bulk";
 
 import {
+  CARD_BANK_ARCHIVED_MESSAGE,
+  CARD_BANK_LOCKED_MESSAGE,
+  CARD_BANK_NOT_FOUND_MESSAGE,
   CARD_FORM_FIELDS,
   CARD_HAS_PENDING_MESSAGE,
+  CARD_KIND_LOCKED_MESSAGE,
   CARD_NOT_FOUND_MESSAGE,
   CARDS_NOT_FOUND_MESSAGE,
   CARDS_PATH,
   duplicateCardMessage,
 } from "./consts";
 import {
+  CardBankLockedError,
   CardHasPendingExpensesError,
+  CardKindLockedError,
   CardNotFoundError,
   DuplicateCardError,
 } from "./errors";
-import { cardInputSchema } from "./schema";
+import { readLimitRows } from "./formLimits";
+import { parseCardInput } from "./schema";
 import { createCard, deleteCard, deleteCards, updateCard } from "./service";
-import type {
-  CardActionResult,
-  CardFieldErrors,
-  CardInput,
-  CardsDeleteResult,
-} from "./types";
+import type { CardActionResult, CardInput, CardsDeleteResult } from "./types";
 
 // The owner always comes from the Clerk session; see runAuthenticated in the helpers.
 const runAuthenticated = <Result extends { status: string }>(
@@ -43,20 +44,16 @@ const SUCCESS: CardActionResult = { status: "success" };
 
 type ParsedForm = { data: CardInput } | { error: ActionFailure };
 
+// The single-value fields plus the caps, which travel as repeated pairs.
 const parseCardForm = (formData: FormData): ParsedForm => {
-  const result = cardInputSchema.safeParse(
-    readForm(formData, CARD_FORM_FIELDS),
-  );
+  const result = parseCardInput({
+    ...readForm(formData, CARD_FORM_FIELDS),
+    limits: readLimitRows(formData),
+  });
 
-  if (result.success) {
-    return { data: result.data };
-  }
-
-  return {
-    error: fieldFailure(
-      z.flattenError(result.error).fieldErrors as CardFieldErrors,
-    ),
-  };
+  return result.success
+    ? { data: result.data }
+    : { error: fieldFailure(result.fieldErrors) };
 };
 
 // The errors a card can run into that the user can act on. Anything else is unexpected and is left
@@ -74,6 +71,22 @@ const toKnownFailure = (error: unknown): ActionFailure | undefined => {
 
   if (error instanceof CardHasPendingExpensesError) {
     return failure(CARD_HAS_PENDING_MESSAGE);
+  }
+
+  if (error instanceof CardKindLockedError) {
+    return fieldFailure({ kind: [CARD_KIND_LOCKED_MESSAGE] });
+  }
+
+  if (error instanceof CardBankLockedError) {
+    return fieldFailure({ bankId: [CARD_BANK_LOCKED_MESSAGE] });
+  }
+
+  if (error instanceof BankNotFoundError) {
+    return fieldFailure({ bankId: [CARD_BANK_NOT_FOUND_MESSAGE] });
+  }
+
+  if (error instanceof BankArchivedError) {
+    return fieldFailure({ bankId: [CARD_BANK_ARCHIVED_MESSAGE] });
   }
 
   return undefined;
@@ -122,6 +135,11 @@ export async function updateCardAction(
   formData: FormData,
 ): Promise<CardActionResult> {
   return runAuthenticated(async (userId) => {
+    // An id that is not text cannot be a card of the user (and undefined would vanish from a where).
+    if (typeof id !== "string" || id.length === 0) {
+      return failure(CARD_NOT_FOUND_MESSAGE);
+    }
+
     const parsed = parseCardForm(formData);
 
     if ("error" in parsed) {

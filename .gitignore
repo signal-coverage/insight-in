@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Playwright MCP scratch output (console logs, page snapshots, screenshots)
 .playwright-mcp/
+
+# Claude Code personal, per-machine settings
+.claude/settings.local.json

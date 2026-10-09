@@ -15,35 +15,34 @@ const actions = vi.hoisted(() => ({
 
 vi.mock("@/core/cards/actions", () => actions);
 
+import type { BankChoice } from "@/core/banks/types";
+
+import { creditCardRow, debitCardRow, limitRow } from "../../testRows";
 import type { CardRow, FormTarget } from "../../types";
 import { CardFormDrawer } from "./CardFormDrawer";
 
-const CARD: CardRow = {
-  id: "card_1",
-  last4: "1234",
+const BANKS: BankChoice[] = [
+  { id: "bank_1", name: "Banco Galicia" },
+  { id: "bank_2", name: "AstroPay" },
+];
+
+const CARD: CardRow = creditCardRow({
   brand: "MASTERCARD",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "USD",
-  limitMode: "TOTAL",
-  limitAmount: 120050,
-  committedTotal: 0,
-  monthUsed: 0,
-  used: 0,
-  available: 120050,
-  tier: "available",
   title: "Mastercard •••• 1234",
   brandName: "Mastercard",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "US$ 1.200,50 en total",
-  usedLabel: "US$ 0,00 de US$ 1.200,50",
-  availableLabel: "US$ 1.200,50",
-  limitDecimal: "1200.50",
-  percent: 0,
-};
+  limitMode: "TOTAL",
+  limits: [
+    limitRow({ currency: "ARS", limitDecimal: "300000.00" }),
+    limitRow({ currency: "USD", limitDecimal: "1200.50" }),
+  ],
+});
 
-const renderForm = (card: CardRow | null) => {
+const DEBIT: CardRow = debitCardRow();
+
+const renderForm = (
+  card: CardRow | null,
+  banks: readonly BankChoice[] = BANKS,
+) => {
   const onClose = vi.fn();
   const target: FormTarget = { key: 1, card };
 
@@ -53,6 +52,7 @@ const renderForm = (card: CardRow | null) => {
       onOpenChange={() => {}}
       onClose={onClose}
       target={target}
+      banks={banks}
     />,
   );
 
@@ -65,9 +65,14 @@ const closingInput = () =>
   screen.getByRole("textbox", { name: /Día de cierre/ });
 const dueInput = () =>
   screen.getByRole("textbox", { name: /Día de vencimiento/ });
-const limitInput = () =>
-  screen.getByRole("textbox", { name: /Monto del tope/ });
+const amountInputs = () =>
+  screen.getAllByRole("textbox", { name: /Monto del tope/ });
+const currencyButtons = () =>
+  screen.getAllByRole("button", { name: /Moneda del tope$/ });
+const bankButton = () => screen.getByRole("button", { name: /Banco$/ });
 const submitButton = (name: string) => screen.getByRole("button", { name });
+const addLimitButton = () =>
+  screen.getByRole("button", { name: "Agregar un tope en otra moneda" });
 
 // A number field commits what was typed when it loses focus.
 const typeDay = (input: HTMLElement, value: string) => {
@@ -75,11 +80,19 @@ const typeDay = (input: HTMLElement, value: string) => {
   fireEvent.blur(input);
 };
 
-const fillCard = () => {
+const pickOption = async (trigger: HTMLElement, name: string | RegExp) => {
+  fireEvent.keyDown(trigger, { key: "ArrowDown" });
+
+  const option = await screen.findByRole("option", { name });
+
+  fireEvent.keyDown(option, { key: "Enter" });
+  fireEvent.keyUp(option, { key: "Enter" });
+};
+
+const fillCredit = async () => {
   fireEvent.change(last4Input(), { target: { value: "4321" } });
-  typeDay(closingInput(), "25");
-  typeDay(dueInput(), "5");
-  fireEvent.change(limitInput(), { target: { value: "300000" } });
+  await pickOption(bankButton(), "Banco Galicia");
+  fireEvent.change(amountInputs()[0], { target: { value: "300000" } });
 };
 
 const createdForm = (): FormData =>
@@ -108,7 +121,7 @@ describe("create mode", () => {
     expect(screen.getByText(/no pedimos el número completo/i)).toBeVisible();
   });
 
-  it("has an add button with the same plus icon as every other add action, and a Cancel", () => {
+  it("has an add button with the plus icon, and a Cancel", () => {
     renderForm(null);
 
     const button = submitButton("Agregar tarjeta");
@@ -118,152 +131,140 @@ describe("create mode", () => {
     expect(screen.getByRole("button", { name: "Cancelar" })).toBeEnabled();
   });
 
-  it("asks for the last four digits, the brand, the two days, the currency, the kind of cap and its amount", () => {
+  it("starts as a credit card, offering Crédito and Débito o prepago", () => {
     renderForm(null);
 
-    expect(last4Input()).toBeVisible();
-    expect(screen.getByRole("radiogroup", { name: "Marca" })).toBeVisible();
-    expect(closingInput()).toBeVisible();
-    expect(dueInput()).toBeVisible();
-    expect(screen.getByRole("button", { name: /Moneda/ })).toBeVisible();
-    expect(
-      screen.getByRole("radiogroup", { name: "Tipo de tope" }),
-    ).toBeVisible();
-    expect(limitInput()).toBeVisible();
-  });
-
-  it("starts with sensible defaults: Visa, the default currency and a monthly cap", () => {
-    renderForm(null);
-
-    expect(screen.getByRole("radio", { name: "Visa" })).toBeChecked();
-    expect(screen.getByRole("button", { name: /Moneda/ })).toHaveTextContent(
-      "ARS",
-    );
-    expect(screen.getByRole("radio", { name: /Mensual/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /Total/ })).not.toBeChecked();
-  });
-
-  it("offers Visa, Mastercard and Otra as brands", () => {
-    renderForm(null);
-
-    const group = screen.getByRole("radiogroup", { name: "Marca" });
+    const group = screen.getByRole("radiogroup", { name: "Tipo" });
 
     expect(
       within(group)
         .getAllByRole("radio")
         .map((radio) => radio.closest("label")?.textContent),
-    ).toEqual(["Visa", "Mastercard", "Otra"]);
+    ).toEqual([
+      expect.stringContaining("Crédito"),
+      expect.stringContaining("Débito o prepago"),
+    ]);
+    expect(screen.getByRole("radio", { name: /Crédito/ })).toBeChecked();
   });
 
-  describe("the last four digits", () => {
-    it("takes four digits at most, and a numeric keyboard", () => {
+  it("asks a credit card for the bank, the digits, the brand, the two days, the kind of cap and one cap to start with", () => {
+    renderForm(null);
+
+    expect(bankButton()).toBeVisible();
+    expect(last4Input()).toBeVisible();
+    expect(screen.getByRole("radiogroup", { name: "Marca" })).toBeVisible();
+    expect(closingInput()).toBeVisible();
+    expect(dueInput()).toBeVisible();
+    expect(
+      screen.getByRole("radiogroup", { name: "Tipo de tope" }),
+    ).toBeVisible();
+    expect(amountInputs()).toHaveLength(1);
+    expect(currencyButtons()[0]).toHaveTextContent("ARS");
+  });
+
+  it("asks a debit or prepaid card only for the bank, the digits and the brand", () => {
+    renderForm(null);
+
+    fireEvent.click(screen.getByRole("radio", { name: /Débito o prepago/ }));
+
+    expect(bankButton()).toBeVisible();
+    expect(last4Input()).toBeVisible();
+    expect(
+      screen.queryByRole("textbox", { name: /Día de cierre/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("radiogroup", { name: "Tipo de tope" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: /Monto del tope/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  describe("the bank", () => {
+    it("starts with none chosen when the user has several", () => {
       renderForm(null);
 
-      expect(last4Input()).toHaveAttribute("maxlength", "4");
-      expect(last4Input()).toHaveAttribute("inputmode", "numeric");
+      expect(bankButton()).toHaveTextContent("Elegí un banco");
     });
 
-    it("keeps only digits of what is typed or pasted", () => {
-      renderForm(null);
+    it("is preselected when the user has only one active bank", () => {
+      renderForm(null, [BANKS[0]]);
 
-      fireEvent.change(last4Input(), { target: { value: "12a4-b" } });
-
-      expect(last4Input()).toHaveValue("124");
+      expect(bankButton()).toHaveTextContent("Banco Galicia");
     });
 
-    it("keeps leading zeros", () => {
+    it("says so, and links to Bancos, when the user has no active bank", () => {
+      renderForm(null, []);
+
+      expect(
+        screen.getByText(/Todavía no tenés bancos activos\./),
+      ).toBeVisible();
+      expect(
+        screen.getByRole("link", { name: "Creá uno en Bancos" }),
+      ).toHaveAttribute("href", "/dashboard/banks");
+    });
+
+    it("has no such notice when there are banks", () => {
       renderForm(null);
 
-      fireEvent.change(last4Input(), { target: { value: "0042" } });
-
-      expect(last4Input()).toHaveValue("0042");
+      expect(
+        screen.queryByText(/Todavía no tenés bancos activos\./),
+      ).not.toBeInTheDocument();
     });
   });
 
-  describe("the hints", () => {
-    it("says what the closing and the due day are", () => {
+  describe("the caps", () => {
+    it("adds a cap in the next free currency, and never offers a currency twice", async () => {
       renderForm(null);
 
-      expect(
-        screen.getByText("El día del mes en que cierra el resumen"),
-      ).toBeVisible();
-      expect(
-        screen.getByText("El día del mes en que se paga el resumen"),
-      ).toBeVisible();
+      fireEvent.click(addLimitButton());
+
+      expect(amountInputs()).toHaveLength(2);
+      expect(currencyButtons()[1]).toHaveTextContent("USD");
+
+      fireEvent.keyDown(currencyButtons()[1], { key: "ArrowDown" });
+
+      const options = await screen.findAllByRole("option");
+      const codes = options.map((option) => option.textContent?.slice(0, 3));
+
+      expect(codes).toContain("USD");
+      expect(codes).toContain("EUR");
+      expect(codes).not.toContain("ARS");
     });
 
-    it("says what each kind of cap means", () => {
+    it("removes a cap, but never the last one", () => {
       renderForm(null);
 
       expect(
-        screen.getByText("Lo máximo que querés pagar por mes con esta tarjeta"),
-      ).toBeVisible();
+        screen.getByRole("button", { name: "Quitar el tope en ARS" }),
+      ).toBeDisabled();
+
+      fireEvent.click(addLimitButton());
+      fireEvent.click(
+        screen.getByRole("button", { name: "Quitar el tope en USD" }),
+      );
+
+      expect(amountInputs()).toHaveLength(1);
+    });
+
+    it("says what a cap means", () => {
+      renderForm(null);
+
       expect(
         screen.getByText(
-          "Lo máximo que querés tener comprometido en cuotas pendientes",
+          "Cada tope puede ser el límite real de la tarjeta o uno menor que quieras respetar. Los topes de distintas monedas nunca se suman.",
         ),
       ).toBeVisible();
     });
-
-    it("says the cap can be the real limit or a lower one", () => {
-      renderForm(null);
-
-      expect(
-        screen.getByText(
-          "Puede ser el límite real de la tarjeta o uno menor que quieras respetar.",
-        ),
-      ).toBeVisible();
-    });
   });
 
-  it("keeps the days between 1 and 31", () => {
-    renderForm(null);
-
-    typeDay(closingInput(), "45");
-    expect(closingInput()).toHaveValue("31");
-
-    typeDay(dueInput(), "0");
-    expect(dueInput()).toHaveValue("1");
-  });
-
-  it("does not send the form while something required is missing", async () => {
-    renderForm(null);
-
-    fireEvent.change(last4Input(), { target: { value: "4321" } });
-    fireEvent.click(submitButton("Agregar tarjeta"));
-
-    // The days start filled in, so the first thing still missing is the cap amount.
-    await waitFor(() => expect(limitInput()).toBeInvalid());
-    expect(actions.createCardAction).not.toHaveBeenCalled();
-  });
-
-  it("starts a new card closing on day 1 and due on day 15", () => {
-    renderForm(null);
-
-    expect(closingInput()).toHaveValue("1");
-    expect(dueInput()).toHaveValue("15");
-  });
-
-  it("sends the default days when they are not touched", async () => {
+  it("sends a credit card with its kind, bank, days, mode and caps as pairs, in the order shown, and closes", async () => {
     actions.createCardAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(null);
 
-    fireEvent.change(last4Input(), { target: { value: "4321" } });
-    fireEvent.change(limitInput(), { target: { value: "300000" } });
-    fireEvent.click(submitButton("Agregar tarjeta"));
-
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
-
-    expect(createdForm().get("closingDay")).toBe("1");
-    expect(createdForm().get("dueDay")).toBe("15");
-  });
-
-  it("sends what was filled in, with the chosen mode, and closes", async () => {
-    actions.createCardAction.mockResolvedValue({ status: "success" });
-    const { onClose } = renderForm(null);
-
-    fillCard();
-    fireEvent.click(screen.getByRole("radio", { name: "Mastercard" }));
+    await fillCredit();
+    fireEvent.click(addLimitButton());
+    fireEvent.change(amountInputs()[1], { target: { value: "1000" } });
     fireEvent.click(screen.getByRole("radio", { name: /Total/ }));
     fireEvent.click(submitButton("Agregar tarjeta"));
 
@@ -271,20 +272,151 @@ describe("create mode", () => {
 
     const sent = createdForm();
 
+    expect(sent.get("kind")).toBe("CREDIT");
+    expect(sent.get("bankId")).toBe("bank_1");
     expect(sent.get("last4")).toBe("4321");
-    expect(sent.get("brand")).toBe("MASTERCARD");
-    expect(sent.get("closingDay")).toBe("25");
-    expect(sent.get("dueDay")).toBe("5");
-    expect(sent.get("currency")).toBe("ARS");
+    expect(sent.get("brand")).toBe("VISA");
+    expect(sent.get("closingDay")).toBe("1");
+    expect(sent.get("dueDay")).toBe("15");
     expect(sent.get("limitMode")).toBe("TOTAL");
-    expect(sent.get("limitAmount")).toBe("300000");
+    expect(sent.getAll("limitCurrency")).toEqual(["ARS", "USD"]);
+    expect(sent.getAll("limitAmount")).toEqual(["300000", "1000"]);
+  });
+
+  it("sends a debit card with no field only a credit card has", async () => {
+    actions.createCardAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null);
+
+    fireEvent.click(screen.getByRole("radio", { name: /Débito o prepago/ }));
+    fireEvent.change(last4Input(), { target: { value: "9999" } });
+    await pickOption(bankButton(), "AstroPay");
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = createdForm();
+
+    expect(sent.get("kind")).toBe("DEBIT");
+    expect(sent.get("bankId")).toBe("bank_2");
+    expect(sent.get("last4")).toBe("9999");
+    expect(sent.get("closingDay")).toBeNull();
+    expect(sent.get("limitMode")).toBeNull();
+    expect(sent.getAll("limitCurrency")).toEqual([]);
+  });
+
+  it("does not send the form while a cap amount is missing", async () => {
+    renderForm(null);
+
+    fireEvent.change(last4Input(), { target: { value: "4321" } });
+    await pickOption(bankButton(), "Banco Galicia");
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    await waitFor(() => expect(amountInputs()[0]).toBeInvalid());
+    expect(actions.createCardAction).not.toHaveBeenCalled();
+  });
+
+  it("shows the server's error on the cap it is about", async () => {
+    actions.createCardAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: {
+        "limits.0.amount": ["El monto debe ser mayor que cero."],
+      },
+    });
+    const { onClose } = renderForm(null);
+
+    await fillCredit();
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    expect(
+      await screen.findByText("El monto debe ser mayor que cero."),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows the server's error on the list of caps", async () => {
+    actions.createCardAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: { limits: ["Agregá al menos un tope."] },
+    });
+    const { onClose } = renderForm(null);
+
+    await fillCredit();
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    expect(
+      await screen.findByText("Agregá al menos un tope."),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows the server's error on the bank and on the last four digits", async () => {
+    actions.createCardAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: {
+        bankId: ["Elegí un banco válido."],
+        last4: ["Ya tenés una tarjeta Visa terminada en 4321."],
+      },
+    });
+    renderForm(null);
+
+    await fillCredit();
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    expect(
+      await screen.findByText("Elegí un banco válido."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Ya tenés una tarjeta Visa terminada en 4321."),
+    ).toBeInTheDocument();
+  });
+
+  it("starts with Visa chosen, offering Visa, Mastercard and Otra as brands", () => {
+    renderForm(null);
+
+    const group = screen.getByRole("radiogroup", { name: "Marca" });
+
+    expect(screen.getByRole("radio", { name: "Visa" })).toBeChecked();
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.closest("label")?.textContent),
+    ).toEqual(["Visa", "Mastercard", "Otra"]);
+  });
+
+  it("starts a credit card with a monthly cap, and says what each kind of cap means", () => {
+    renderForm(null);
+
+    expect(screen.getByRole("radio", { name: /Mensual/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Total/ })).not.toBeChecked();
+    expect(
+      screen.getByText("Lo máximo que querés pagar por mes con esta tarjeta"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Lo máximo que querés tener comprometido en cuotas pendientes",
+      ),
+    ).toBeVisible();
+  });
+
+  it("says what the closing and the due day are", () => {
+    renderForm(null);
+
+    expect(
+      screen.getByText("El día del mes en que cierra el resumen"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("El día del mes en que se paga el resumen"),
+    ).toBeVisible();
   });
 
   it("sends a monthly cap and Visa when nothing else was chosen", async () => {
     actions.createCardAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(null);
 
-    fillCard();
+    await fillCredit();
     fireEvent.click(submitButton("Agregar tarjeta"));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
@@ -293,30 +425,21 @@ describe("create mode", () => {
     expect(createdForm().get("limitMode")).toBe("MONTHLY");
   });
 
-  it("shows 'Agregando tarjeta…' with a spinner, and locks Cancel, while it saves", async () => {
-    const save = deferred<{ status: "success" }>();
+  it("sends the days and the brand that were typed and chosen", async () => {
+    actions.createCardAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(null);
 
-    actions.createCardAction.mockReturnValue(save.promise);
-    renderForm(null);
-
-    fillCard();
+    await fillCredit();
+    fireEvent.click(screen.getByRole("radio", { name: "Mastercard" }));
+    typeDay(closingInput(), "25");
+    typeDay(dueInput(), "5");
     fireEvent.click(submitButton("Agregar tarjeta"));
 
-    const pending = await screen.findByRole("button", {
-      name: /Agregando tarjeta/,
-    });
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
 
-    expect(pending).toHaveTextContent("Agregando tarjeta…");
-    expect(pending.querySelector(".spinner")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
-
-    save.resolve({ status: "success" });
-
-    await waitFor(() =>
-      expect(
-        screen.queryByRole("button", { name: /Agregando tarjeta/ }),
-      ).not.toBeInTheDocument(),
-    );
+    expect(createdForm().get("brand")).toBe("MASTERCARD");
+    expect(createdForm().get("closingDay")).toBe("25");
+    expect(createdForm().get("dueDay")).toBe("5");
   });
 
   it("shows a duplicate card on the last four digits and stays open", async () => {
@@ -329,7 +452,7 @@ describe("create mode", () => {
     });
     const { onClose } = renderForm(null);
 
-    fillCard();
+    await fillCredit();
     fireEvent.click(submitButton("Agregar tarjeta"));
 
     expect(
@@ -338,12 +461,11 @@ describe("create mode", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("shows the server's field errors on the cap and the days", async () => {
+  it("shows the server's error on the days", async () => {
     actions.createCardAction.mockResolvedValue({
       status: "error",
       message: "Corrige los campos resaltados.",
       fieldErrors: {
-        limitAmount: ["El monto debe ser mayor que cero."],
         closingDay: [
           "El día de cierre debe ser un número entero entre 1 y 31.",
         ],
@@ -351,14 +473,11 @@ describe("create mode", () => {
     });
     renderForm(null);
 
-    fillCard();
+    await fillCredit();
     fireEvent.click(submitButton("Agregar tarjeta"));
 
     expect(
-      await screen.findByText("El monto debe ser mayor que cero."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
+      await screen.findByText(
         "El día de cierre debe ser un número entero entre 1 y 31.",
       ),
     ).toBeInTheDocument();
@@ -371,36 +490,112 @@ describe("create mode", () => {
     });
     renderForm(null);
 
-    fillCard();
+    await fillCredit();
     fireEvent.click(submitButton("Agregar tarjeta"));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Algo salió mal. Inténtalo de nuevo.",
     );
   });
+
+  it("shows 'Agregando tarjeta…' with a spinner, and locks Cancel, while it saves", async () => {
+    const save = deferred<{ status: "success" }>();
+
+    actions.createCardAction.mockReturnValue(save.promise);
+    renderForm(null);
+
+    await fillCredit();
+    fireEvent.click(submitButton("Agregar tarjeta"));
+
+    const pending = await screen.findByRole("button", {
+      name: /Agregando tarjeta/,
+    });
+
+    expect(pending.querySelector(".spinner")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
+
+    save.resolve({ status: "success" });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /Agregando tarjeta/ }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  describe("the last four digits", () => {
+    it("takes four digits at most, and a numeric keyboard", () => {
+      renderForm(null);
+
+      expect(last4Input()).toHaveAttribute("maxlength", "4");
+      expect(last4Input()).toHaveAttribute("inputmode", "numeric");
+    });
+
+    it("keeps leading zeros", () => {
+      renderForm(null);
+
+      fireEvent.change(last4Input(), { target: { value: "0042" } });
+
+      expect(last4Input()).toHaveValue("0042");
+    });
+
+    it("keeps only digits, leading zeros included", () => {
+      renderForm(null);
+
+      fireEvent.change(last4Input(), { target: { value: "0a4-b2" } });
+
+      expect(last4Input()).toHaveValue("042");
+    });
+  });
+
+  it("keeps the days between 1 and 31, starting on day 1 and day 15", () => {
+    renderForm(null);
+
+    expect(closingInput()).toHaveValue("1");
+    expect(dueInput()).toHaveValue("15");
+
+    typeDay(closingInput(), "45");
+    typeDay(dueInput(), "0");
+
+    expect(closingInput()).toHaveValue("31");
+    expect(dueInput()).toHaveValue("1");
+  });
 });
 
 const preview = () =>
   screen.getByRole("group", { name: "Vista previa de la tarjeta" });
-const previewLogo = () =>
-  preview().querySelector("[data-brand-logo]")?.getAttribute("data-brand-logo");
 
 describe("the card preview", () => {
-  it("shows a card preview at the top of the form, with the Visa logo by default", () => {
+  it("shows the Visa logo and the cycle of a new credit card", () => {
     renderForm(null);
 
-    expect(preview()).toBeVisible();
-    expect(previewLogo()).toBe("VISA");
-    expect(preview()).toHaveTextContent("Visa");
+    expect(
+      preview()
+        .querySelector("[data-brand-logo]")
+        ?.getAttribute("data-brand-logo"),
+    ).toBe("VISA");
+    expect(preview()).toHaveTextContent("Cierra el día 1 · Vence el día 15");
+  });
+
+  it("follows the digits and the days as they are typed", () => {
+    renderForm(null);
+
+    fireEvent.change(last4Input(), { target: { value: "12" } });
+    typeDay(closingInput(), "25");
+    typeDay(dueInput(), "5");
+
+    expect(preview()).toHaveTextContent("•••• •••• •••• 12••");
+    expect(preview()).toHaveTextContent("Cierra el día 25 · Vence el día 5");
+  });
+
+  it("draws the logo as decoration, names the brand, and sits before the first field", () => {
+    renderForm(null);
+
     expect(preview().querySelector("[data-brand-logo]")).toHaveAttribute(
       "aria-hidden",
       "true",
     );
-  });
-
-  it("is rendered before the first field", () => {
-    renderForm(null);
-
+    expect(preview()).toHaveTextContent("Visa");
     expect(
       preview().compareDocumentPosition(last4Input()) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -413,46 +608,34 @@ describe("the card preview", () => {
     expect(preview()).toHaveTextContent("•••• •••• •••• ••••");
   });
 
-  it("shows the last four digits as they are typed", () => {
-    renderForm(null);
-
-    fireEvent.change(last4Input(), { target: { value: "12" } });
-    expect(preview()).toHaveTextContent("•••• •••• •••• 12••");
-
-    fireEvent.change(last4Input(), { target: { value: "1234" } });
-    expect(preview()).toHaveTextContent("•••• •••• •••• 1234");
-  });
-
   it("changes its logo with the chosen brand", () => {
     renderForm(null);
 
+    const logo = () =>
+      preview()
+        .querySelector("[data-brand-logo]")
+        ?.getAttribute("data-brand-logo");
+
     fireEvent.click(screen.getByRole("radio", { name: "Mastercard" }));
-    expect(previewLogo()).toBe("MASTERCARD");
+    expect(logo()).toBe("MASTERCARD");
     expect(preview()).toHaveTextContent("Mastercard");
 
     fireEvent.click(screen.getByRole("radio", { name: "Otra" }));
-    expect(previewLogo()).toBe("OTHER");
+    expect(logo()).toBe("OTHER");
     expect(preview()).toHaveTextContent("Tarjeta");
 
     fireEvent.click(screen.getByRole("radio", { name: "Visa" }));
-    expect(previewLogo()).toBe("VISA");
-  });
-
-  it("shows the closing and due day, and follows them", () => {
-    renderForm(null);
-
-    expect(preview()).toHaveTextContent("Cierra el día 1 · Vence el día 15");
-
-    typeDay(closingInput(), "25");
-    typeDay(dueInput(), "5");
-
-    expect(preview()).toHaveTextContent("Cierra el día 25 · Vence el día 5");
+    expect(logo()).toBe("VISA");
   });
 
   it("starts from the stored card when editing", () => {
     renderForm(CARD);
 
-    expect(previewLogo()).toBe("MASTERCARD");
+    expect(
+      preview()
+        .querySelector("[data-brand-logo]")
+        ?.getAttribute("data-brand-logo"),
+    ).toBe("MASTERCARD");
     expect(preview()).toHaveTextContent("•••• •••• •••• 1234");
     expect(preview()).toHaveTextContent("Cierra el día 25 · Vence el día 5");
   });
@@ -461,22 +644,28 @@ describe("the card preview", () => {
     actions.createCardAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(null);
 
-    fillCard();
+    await fillCredit();
     fireEvent.click(screen.getByRole("radio", { name: "Otra" }));
     fireEvent.click(submitButton("Agregar tarjeta"));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
 
     expect(createdForm().get("last4")).toBe("4321");
-    expect(createdForm().get("brand")).toBe("OTHER");
-    expect(createdForm().get("closingDay")).toBe("25");
-    expect(createdForm().get("dueDay")).toBe("5");
     expect(createdForm().getAll("brand")).toEqual(["OTHER"]);
+  });
+
+  it("says Débito o prepago instead of a cycle for a debit card", () => {
+    renderForm(null);
+
+    fireEvent.click(screen.getByRole("radio", { name: /Débito o prepago/ }));
+
+    expect(preview()).toHaveTextContent("Débito o prepago");
+    expect(preview()).not.toHaveTextContent("Cierra el día");
   });
 });
 
 describe("edit mode", () => {
-  it("is titled 'Editar tarjeta', with a plain Guardar cambios button, without a plus", () => {
+  it("is titled 'Editar tarjeta', with a plain Guardar cambios button", () => {
     renderForm(CARD);
 
     expect(
@@ -485,28 +674,40 @@ describe("edit mode", () => {
     expect(submitButton("Guardar cambios").querySelector("svg")).toBeNull();
   });
 
-  it("prefills every field from the card", () => {
+  it("shows the kind and the bank, which cannot change, instead of choosing them", () => {
+    renderForm(CARD);
+
+    expect(screen.getByText("Crédito · Banco Galicia")).toBeVisible();
+    expect(
+      screen.getByText(
+        "El tipo y el banco de una tarjeta no se pueden cambiar.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("radiogroup", { name: "Tipo" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Banco$/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("prefills every field from the card, one row per cap", () => {
     renderForm(CARD);
 
     expect(last4Input()).toHaveValue("1234");
     expect(screen.getByRole("radio", { name: "Mastercard" })).toBeChecked();
     expect(closingInput()).toHaveValue("25");
     expect(dueInput()).toHaveValue("5");
-    expect(screen.getByRole("button", { name: /Moneda/ })).toHaveTextContent(
-      "USD",
-    );
     expect(screen.getByRole("radio", { name: /Total/ })).toBeChecked();
-    expect(limitInput()).toHaveValue("1200.50");
+    expect(
+      currencyButtons().map((button) => button.textContent?.slice(0, 3)),
+    ).toEqual(["ARS", "USD"]);
+    expect(
+      amountInputs().map((input) => (input as HTMLInputElement).value),
+    ).toEqual(["300000.00", "1200.50"]);
   });
 
-  it("keeps a monthly cap monthly", () => {
-    renderForm({ ...CARD, limitMode: "MONTHLY" });
-
-    expect(screen.getByRole("radio", { name: /Mensual/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /Total/ })).not.toBeChecked();
-  });
-
-  it("saves through the update action with the card id and closes", async () => {
+  it("saves through the update action with the stored kind and bank, and closes", async () => {
     actions.updateCardAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(CARD);
 
@@ -520,25 +721,49 @@ describe("edit mode", () => {
     ];
 
     expect(id).toBe("card_1");
-    expect(sent.get("last4")).toBe("1234");
-    expect(sent.get("brand")).toBe("MASTERCARD");
+    expect(sent.get("kind")).toBe("CREDIT");
+    expect(sent.get("bankId")).toBe("bank_1");
     expect(sent.get("limitMode")).toBe("TOTAL");
-    expect(sent.get("limitAmount")).toBe("1200.50");
+    expect(sent.getAll("limitCurrency")).toEqual(["ARS", "USD"]);
+    expect(sent.getAll("limitAmount")).toEqual(["300000.00", "1200.50"]);
     expect(actions.createCardAction).not.toHaveBeenCalled();
   });
 
-  it("sends the other mode once it is switched, and only one of them", async () => {
+  it("edits a debit card with only its digits and brand", async () => {
     actions.updateCardAction.mockResolvedValue({ status: "success" });
-    const { onClose } = renderForm(CARD);
+    const { onClose } = renderForm(DEBIT);
 
-    fireEvent.click(screen.getByRole("radio", { name: /Mensual/ }));
+    expect(screen.getByText("Débito o prepago · AstroPay")).toBeVisible();
+    expect(
+      screen.queryByRole("textbox", { name: /Día de cierre/ }),
+    ).not.toBeInTheDocument();
+
     fireEvent.click(submitButton("Guardar cambios"));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
 
     const sent = actions.updateCardAction.mock.calls[0][1] as FormData;
 
-    expect(sent.getAll("limitMode")).toEqual(["MONTHLY"]);
+    expect(sent.get("kind")).toBe("DEBIT");
+    expect(sent.get("bankId")).toBe("bank_2");
+    expect(sent.getAll("limitCurrency")).toEqual([]);
+  });
+
+  it("keeps a monthly cap monthly, and sends only the mode that is chosen once it is switched", async () => {
+    actions.updateCardAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm({ ...CARD, limitMode: "MONTHLY" });
+
+    expect(screen.getByRole("radio", { name: /Mensual/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Total/ })).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Total/ }));
+    fireEvent.click(submitButton("Guardar cambios"));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = actions.updateCardAction.mock.calls[0][1] as FormData;
+
+    expect(sent.getAll("limitMode")).toEqual(["TOTAL"]);
   });
 
   it("shows 'Guardando…' with a spinner, and locks Cancel, while it saves", async () => {
@@ -559,6 +784,21 @@ describe("edit mode", () => {
     await waitFor(() =>
       expect(actions.updateCardAction).toHaveBeenCalledTimes(1),
     );
+  });
+
+  it("shows the server's refusal of a change of kind", async () => {
+    actions.updateCardAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: { kind: ["El tipo de una tarjeta no se puede cambiar."] },
+    });
+    renderForm(CARD);
+
+    fireEvent.click(submitButton("Guardar cambios"));
+
+    expect(
+      await screen.findByText("El tipo de una tarjeta no se puede cambiar."),
+    ).toBeInTheDocument();
   });
 
   it("shows a general error when the card was not found", async () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ACCOUNT_REQUIRED_MESSAGE } from "@/core/accounts/consts";
 import {
   amountField,
   categoryIdField,
@@ -8,7 +9,6 @@ import {
   dateField,
   descriptionField,
   expenseStatusField,
-  mediumField,
   notesField,
   toAmount,
 } from "@/core/entries/fields";
@@ -39,6 +39,14 @@ const cardIdField = z
   .nullish()
   .transform((value) => value || null);
 
+// The account the money leaves. Without a card it is required here; with one, the service decides (a
+// debit card's account comes from its bank, a credit card's is still required).
+const optionalAccountIdField = z
+  .string()
+  .trim()
+  .nullish()
+  .transform((value) => value || null);
+
 // Validates raw form values (all strings) and outputs the persisted shape, with the amount
 // already converted to minor units for the chosen currency.
 export const expenseInputSchema = z
@@ -50,7 +58,7 @@ export const expenseInputSchema = z
     categoryId: categoryIdField,
     notes: notesField,
     status: expenseStatusField,
-    medium: mediumField,
+    accountId: optionalAccountIdField,
     isRecurring: recurringField,
     cardId: cardIdField,
     originCurrency: originCurrencyField,
@@ -61,6 +69,14 @@ export const expenseInputSchema = z
     checkAmount(value, ctx);
     checkOrigin(value, ctx);
     checkExpectedReimbursement(value, ctx);
+
+    if (!value.cardId && !value.accountId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["accountId"],
+        message: ACCOUNT_REQUIRED_MESSAGE,
+      });
+    }
   })
   .transform((value): ExpenseInput => ({
     ...value,

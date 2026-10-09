@@ -1,20 +1,20 @@
+import { resolveAccountId } from "@/components/Entries/components/AccountField";
 import {
+  ACCOUNT_LINE,
   CATEGORY_LINE,
   COUNT_LINE,
   FIRST_LINE,
   LAST_LINE,
-  MEDIUM_LINE,
   PER_INSTALLMENT_LINE,
   TOTAL_LINE,
 } from "@/components/Entries/components/InstallmentTicket/consts";
-import { MEDIUM_OPTIONS } from "@/components/Entries/components/MediumField/consts";
 import type { TicketLine } from "@/components/Entries/types";
 import {
   installmentAmountLabel,
   installmentPreviewText,
   splitSummary,
 } from "@/components/Entries/utils";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
+import type { AccountChoice } from "@/core/accounts/types";
 import { DEFAULT_CURRENCY_CODE } from "@/core/incomes/consts";
 import { formatIncomeDate } from "@/core/incomes/dates";
 import { formatMoney } from "@/core/incomes/money";
@@ -27,13 +27,13 @@ import { formatMonth } from "@/core/summary/month";
 import { CONCEPT_LINE } from "./consts";
 import type { RepaymentSummary, RepaymentValues } from "./types";
 
-// What the first step starts with: nothing typed, pesos, digital, a year of installments and the
-// first one today.
+// What the first step starts with: nothing typed, pesos, no account yet, a year of installments and
+// the first one today.
 export const initialValues = (defaultDate: string): RepaymentValues => ({
   description: "",
   categoryId: null,
   currency: DEFAULT_CURRENCY_CODE,
-  medium: DEFAULT_PAYMENT_MEDIUM,
+  accountId: null,
   amountMode: "total",
   amount: "",
   totalCuotas: DEFAULT_TOTAL_CUOTAS,
@@ -41,15 +41,18 @@ export const initialValues = (defaultDate: string): RepaymentValues => ({
   notes: "",
 });
 
-// What the server receives. A piece with no value yet goes as a value the server's rules refuse.
+// What the server receives. A piece with no value yet goes as a value the server's rules refuse. The
+// account is the one chosen, or the only one of the currency.
 export const toPayload = (
   values: RepaymentValues,
+  accounts: readonly AccountChoice[] = [],
 ): IncomeInstallmentPlanPayload => ({
   kind: "income",
   description: values.description,
   categoryId: values.categoryId ?? "",
   currency: values.currency,
-  medium: values.medium,
+  accountId:
+    resolveAccountId(accounts, values.currency, values.accountId) ?? "",
   notes: values.notes,
   amount: values.amount,
   amountMode: values.amountMode,
@@ -57,12 +60,24 @@ export const toPayload = (
   firstDate: values.firstDate ?? "",
 });
 
+// A change of the first step: a currency change drops the account of the old currency.
+export const withRepaymentChange = (
+  values: RepaymentValues,
+  patch: Partial<RepaymentValues>,
+): RepaymentValues =>
+  patch.currency !== undefined && patch.currency !== values.currency
+    ? { ...values, ...patch, accountId: null }
+    : { ...values, ...patch };
+
 // The repayment as the server will read it, or null while it is not valid. It is the server's own
 // schema, so the button and the live preview agree with what the save will accept.
 export const parseRepayment = (
   values: RepaymentValues,
+  accounts: readonly AccountChoice[] = [],
 ): RepaymentSummary | null => {
-  const parsed = incomeInstallmentPlanSchema.safeParse(toPayload(values));
+  const parsed = incomeInstallmentPlanSchema.safeParse(
+    toPayload(values, accounts),
+  );
 
   if (!parsed.success) {
     return null;
@@ -72,6 +87,8 @@ export const parseRepayment = (
 
   return {
     input,
+    accountLabel:
+      accounts.find(({ id }) => id === input.accountId)?.label ?? "",
     ...splitSummary(input.totalAmount, input.totalCuotas),
     lastMonth: lastInstallmentMonth(input.firstDate, input.totalCuotas),
   };
@@ -94,29 +111,31 @@ export const previewText = ({
 
 // The lines of the ticket, in the order a receipt would list them.
 export const toTicketLines = (
-  { input, installmentAmount, isApproximate, lastMonth }: RepaymentSummary,
+  {
+    input,
+    installmentAmount,
+    isApproximate,
+    lastMonth,
+    accountLabel,
+  }: RepaymentSummary,
   categoryName: string,
-): TicketLine[] => {
-  const medium = MEDIUM_OPTIONS.find(({ value }) => value === input.medium);
-
-  return [
-    { label: CONCEPT_LINE, value: input.description },
-    { label: CATEGORY_LINE, value: categoryName },
-    { label: COUNT_LINE, value: String(input.totalCuotas) },
-    {
-      label: PER_INSTALLMENT_LINE,
-      value: installmentAmountLabel(
-        installmentAmount,
-        input.currency,
-        isApproximate,
-      ),
-    },
-    {
-      label: TOTAL_LINE,
-      value: formatMoney(input.totalAmount, input.currency),
-    },
-    { label: FIRST_LINE, value: formatIncomeDate(input.firstDate) },
-    { label: LAST_LINE, value: formatMonth(lastMonth) },
-    { label: MEDIUM_LINE, value: medium?.label ?? input.medium },
-  ];
-};
+): TicketLine[] => [
+  { label: CONCEPT_LINE, value: input.description },
+  { label: CATEGORY_LINE, value: categoryName },
+  { label: COUNT_LINE, value: String(input.totalCuotas) },
+  {
+    label: PER_INSTALLMENT_LINE,
+    value: installmentAmountLabel(
+      installmentAmount,
+      input.currency,
+      isApproximate,
+    ),
+  },
+  {
+    label: TOTAL_LINE,
+    value: formatMoney(input.totalAmount, input.currency),
+  },
+  { label: FIRST_LINE, value: formatIncomeDate(input.firstDate) },
+  { label: LAST_LINE, value: formatMonth(lastMonth) },
+  { label: ACCOUNT_LINE, value: accountLabel },
+];

@@ -16,7 +16,7 @@ export const useOptimisticSetting = (
 ) => {
   const [value, setOptimisticValue] = useOptimistic(saved);
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const change = (next: boolean) => {
     startTransition(async () => {
@@ -39,5 +39,5 @@ export const useOptimisticSetting = (
     });
   };
 
-  return { value, error, change };
+  return { value, error, isPending, change };
 };

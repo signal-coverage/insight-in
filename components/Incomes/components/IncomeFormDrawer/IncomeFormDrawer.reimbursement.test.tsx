@@ -28,6 +28,21 @@ const REIMBURSABLES: ReimbursableOption[] = [
   },
 ];
 
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const INCOME: IncomeRow = {
   id: "inc_1",
   description: "Reintegro obra social",
@@ -41,7 +56,8 @@ const INCOME: IncomeRow = {
   installmentPlanId: null,
   installmentNumber: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   amountLabel: "$ 6.000,00",
   amountDecimal: "6000.00",
   dateLabel: "20 sept 2026",
@@ -76,6 +92,7 @@ const renderForm = (
       target={target}
       categories={CATEGORIES}
       reimbursables={reimbursables}
+      accounts={ACCOUNTS}
     />,
   );
 };
@@ -230,7 +247,7 @@ describe("reimbursed expense field of the income form", () => {
   it("drops a choice that does not fit when the currency changes, and sends none", async () => {
     renderForm(LINKED);
 
-    await pickCurrency(/^USD/);
+    await pickCurrency(/^USD - /);
 
     const formData = await submittedForm(
       actions.updateIncomeAction,

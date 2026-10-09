@@ -123,4 +123,85 @@ describe("useOptimisticStatus", () => {
       description: "Luz",
     });
   });
+  it("keeps what the server said when it refused the change, and forgets it on the next toggle", async () => {
+    const save = vi
+      .fn()
+      .mockResolvedValueOnce({ status: "error", message: "Sin fondos." })
+      .mockResolvedValueOnce({ status: "success" });
+    const { result } = renderHook(() => useOptimisticStatus(save));
+
+    await act(async () => {
+      result.current.toggle("a", true);
+    });
+
+    expect(result.current.refusal).toBe("Sin fondos.");
+
+    await act(async () => {
+      result.current.toggle("a", true);
+    });
+
+    expect(result.current.refusal).toBeNull();
+  });
+
+  it("has no refusal after a save that went through", async () => {
+    const save = vi.fn().mockResolvedValue({ status: "success" });
+    const { result } = renderHook(() => useOptimisticStatus(save));
+
+    await act(async () => {
+      result.current.toggle("a", true);
+    });
+
+    expect(save).toHaveBeenCalledWith("a", "SETTLED");
+    expect(result.current.refusal).toBeNull();
+  });
+
+  it("shows only the answer of the latest toggle, not a late refusal of an earlier one", async () => {
+    const answers: Array<(value: unknown) => void> = [];
+    const save = vi.fn(
+      () =>
+        new Promise<unknown>((resolve) => {
+          answers.push(resolve);
+          unfinished.push(() => resolve({ status: "success" }));
+        }),
+    );
+    const { result } = renderHook(() => useOptimisticStatus(save));
+
+    await act(async () => {
+      result.current.toggle("a", true);
+      result.current.toggle("b", false);
+    });
+    await act(async () => {
+      answers[1]({ status: "success" });
+    });
+    await act(async () => {
+      answers[0]({ status: "error", message: "Sin fondos." });
+    });
+
+    expect(result.current.refusal).toBeNull();
+  });
+
+  it("still shows the refusal of the latest toggle when an earlier one answers after it", async () => {
+    const answers: Array<(value: unknown) => void> = [];
+    const save = vi.fn(
+      () =>
+        new Promise<unknown>((resolve) => {
+          answers.push(resolve);
+          unfinished.push(() => resolve({ status: "success" }));
+        }),
+    );
+    const { result } = renderHook(() => useOptimisticStatus(save));
+
+    await act(async () => {
+      result.current.toggle("a", true);
+      result.current.toggle("b", false);
+    });
+    await act(async () => {
+      answers[1]({ status: "error", message: "Sin fondos." });
+    });
+    await act(async () => {
+      answers[0]({ status: "success" });
+    });
+
+    expect(result.current.refusal).toBe("Sin fondos.");
+  });
 });

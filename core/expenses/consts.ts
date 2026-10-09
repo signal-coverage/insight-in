@@ -1,3 +1,16 @@
+// Someone (or another tab) changed the expense between reading it and writing it.
+export const EXPENSE_CHANGED_MESSAGE =
+  "El gasto cambió mientras lo guardabas. Volvé a intentarlo.";
+
+// A paid expense with a debit card moves money on its date, so that date cannot be in the future.
+export const EXPENSE_FUTURE_DEBIT_MESSAGE =
+  "Un gasto pagado con débito no puede tener fecha posterior a hoy. Usá la fecha de hoy o dejalo por pagar.";
+
+// A paid expense with a debit card refused because the account could not cover it. Transfers have their
+// own wording (insufficientFundsMessage in core/transfers).
+export const expenseInsufficientFundsMessage = (available: string): string =>
+  `La cuenta no tiene fondos suficientes para este gasto: tenía ${available}.`;
+
 export const EXPENSES_PATH = "/dashboard/expenses";
 
 // The summary counts the expenses the wizard creates.
@@ -13,7 +26,7 @@ export const EXPENSE_FORM_FIELDS = [
   "categoryId",
   "notes",
   "status",
-  "medium",
+  "accountId",
   "isRecurring",
   "cardId",
   "originCurrency",
@@ -51,7 +64,7 @@ export const RECURRING_FORM_FIELDS = [
   "currency",
   "categoryId",
   "notes",
-  "medium",
+  "accountId",
   "originCurrency",
   "originAmount",
   "dayOfMonth",

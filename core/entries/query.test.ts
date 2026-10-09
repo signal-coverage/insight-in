@@ -294,6 +294,11 @@ describe("parseEntriesQuery", () => {
     expect(parseEntriesQuery({ currency: "ZZZ" }).currency).toBeNull();
   });
 
+  it("keeps a crypto currency filter, upper-cased like any other", () => {
+    expect(parseEntriesQuery({ currency: "usdc" }).currency).toBe("USDC");
+    expect(parseEntriesQuery({ currency: "BTC" }).currency).toBe("BTC");
+  });
+
   it("reads a valid sort and direction", () => {
     const query = parseEntriesQuery({ sort: "description", direction: "desc" });
 

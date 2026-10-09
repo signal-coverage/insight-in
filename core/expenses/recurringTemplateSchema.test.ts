@@ -8,7 +8,7 @@ const validInput = {
   currency: "ARS",
   categoryId: "cat_1",
   notes: "Paid by transfer",
-  medium: "CASH",
+  accountId: "acc_1",
   dayOfMonth: "5",
 };
 
@@ -28,7 +28,7 @@ describe("recurringExpenseInputSchema", () => {
       currency: "ARS",
       categoryId: "cat_1",
       notes: "Paid by transfer",
-      medium: "CASH",
+      accountId: "acc_1",
       originCurrency: null,
       originAmount: null,
       dayOfMonth: 5,
@@ -77,23 +77,22 @@ describe("recurringExpenseInputSchema", () => {
     ).toEqual(["originCurrency"]);
   });
 
-  it("defaults the medium to digital and turns empty notes into null", () => {
+  it("turns empty notes into null", () => {
     const result = recurringExpenseInputSchema.safeParse({
       ...validInput,
-      medium: undefined,
       notes: "  ",
     });
 
-    expect(result.data?.medium).toBe("DIGITAL");
     expect(result.data?.notes).toBeNull();
   });
 
-  it("requires a description, an amount, a currency, a category and a day", () => {
+  it("requires a description, an amount, a currency, a category, an account and a day", () => {
     expect(errorPaths({})).toEqual([
       "description",
       "amount",
       "currency",
       "categoryId",
+      "accountId",
       "dayOfMonth",
     ]);
   });
@@ -129,7 +128,7 @@ describe("recurringExpenseInputSchema", () => {
     },
   );
 
-  it("rejects a medium that does not exist", () => {
-    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
+  it("requires the account", () => {
+    expect(errorPaths({ ...validInput, accountId: "" })).toEqual(["accountId"]);
   });
 });

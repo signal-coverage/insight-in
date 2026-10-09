@@ -1,4 +1,4 @@
-import type { NavItem } from "./types";
+import type { NavItem, NavSection } from "./types";
 
 const matchesLabel = (label: string, query: string): boolean =>
   label.toLowerCase().includes(query);
@@ -36,6 +36,26 @@ export const filterNavItems = (
 
     if (filtered) {
       acc.push(filtered);
+    }
+
+    return acc;
+  }, []);
+};
+
+// Filters every section with the same rules; a section left with no item disappears with its title.
+export const filterNavSections = (
+  sections: readonly NavSection[],
+  query: string,
+): readonly NavSection[] => {
+  if (!query.trim()) {
+    return sections;
+  }
+
+  return sections.reduce<NavSection[]>((acc, section) => {
+    const items = filterNavItems(section.items, query);
+
+    if (items.length > 0) {
+      acc.push({ ...section, items });
     }
 
     return acc;

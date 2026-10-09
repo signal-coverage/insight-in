@@ -4,17 +4,21 @@ import {
   CATEGORY_NAME_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
   NOTES_MAX_LENGTH,
-  SUPPORTED_CURRENCY_CODES,
 } from "@/core/incomes/consts";
 import { isValidIsoDate } from "@/core/incomes/dates";
-import { toMinorUnits } from "@/core/incomes/money";
+import {
+  isLegalTenderCode,
+  isSupportedCurrencyCode,
+  toMinorUnits,
+} from "@/core/incomes/money";
+import { ACCOUNT_REQUIRED_MESSAGE } from "@/core/accounts/consts";
 
-import { DEFAULT_PAYMENT_MEDIUM, PAYMENT_MEDIUMS } from "./medium";
 import { DEFAULT_ENTRY_STATUS, ENTRY_STATUSES, MONEY_STATUSES } from "./status";
 
-// Field definitions shared by incomes and expenses (and their recurring templates).
-const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
-
+// Field definitions shared by incomes and expenses (and their recurring templates), transfers,
+// accounts and opening balances. `currencyField` takes any currency an account can hold (legal tender
+// or a crypto asset; whether a given account may is the account service's call);
+// `legalTenderCurrencyField` is for what can never be crypto (a credit card cap, a plan in installments).
 export const requiredText = (label: string, maxLength: number) =>
   z
     .string({ error: `${label} es obligatorio.` })
@@ -29,12 +33,15 @@ export const descriptionField = requiredText(
 
 export const amountField = z.string({ error: "El monto es obligatorio." });
 
+const UNSUPPORTED_CURRENCY_MESSAGE = "Selecciona una moneda compatible.";
+
 export const currencyField = z
   .string({ error: "La moneda es obligatoria." })
-  .refine(
-    (code) => SUPPORTED_CURRENCY_SET.has(code),
-    "Selecciona una moneda compatible.",
-  );
+  .refine(isSupportedCurrencyCode, UNSUPPORTED_CURRENCY_MESSAGE);
+
+export const legalTenderCurrencyField = z
+  .string({ error: "La moneda es obligatoria." })
+  .refine(isLegalTenderCode, UNSUPPORTED_CURRENCY_MESSAGE);
 
 export const categoryIdField = z
   .string({ error: "La categoría es obligatoria." })
@@ -65,9 +72,12 @@ export const expenseStatusField = z
   .enum(ENTRY_STATUSES, { error: "Selecciona un estado válido." })
   .default(DEFAULT_ENTRY_STATUS);
 
-export const mediumField = z
-  .enum(PAYMENT_MEDIUMS, { error: "Selecciona un medio válido." })
-  .default(DEFAULT_PAYMENT_MEDIUM);
+// The account of an entry, template or plan. The service checks that it is the user's, active and in
+// the currency of the movement.
+export const accountIdField = z
+  .string({ error: ACCOUNT_REQUIRED_MESSAGE })
+  .trim()
+  .min(1, ACCOUNT_REQUIRED_MESSAGE);
 
 export type IssueContext = {
   addIssue: (issue: {
@@ -83,7 +93,7 @@ export const checkAmount = (
   value: { amount: string; currency: string },
   ctx: IssueContext,
 ): void => {
-  if (!SUPPORTED_CURRENCY_SET.has(value.currency)) {
+  if (!isSupportedCurrencyCode(value.currency)) {
     return;
   }
 

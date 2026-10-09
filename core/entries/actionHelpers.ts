@@ -1,15 +1,28 @@
 import { auth } from "@clerk/nextjs/server";
 
 import {
+  ACCOUNT_ARCHIVED_MESSAGE,
+  ACCOUNT_CHOICE_NOT_FOUND_MESSAGE,
+  ACCOUNT_CURRENCY_MISMATCH_MESSAGE,
+} from "@/core/accounts/consts";
+import {
+  AccountArchivedError,
+  AccountCurrencyMismatchError,
+  AccountNotFoundError,
+} from "@/core/accounts/errors";
+import {
   CARD_CURRENCY_MISMATCH_MESSAGE,
+  CARD_KIND_NOT_ALLOWED_MESSAGE,
   CARD_NOT_FOUND_MESSAGE,
 } from "@/core/cards/consts";
 import {
   CardCurrencyMismatchError,
+  CardKindNotAllowedError,
   CardNotFoundError,
 } from "@/core/cards/errors";
 import {
   COVERED_NOT_ALLOWED_MESSAGE,
+  INSTALLMENT_CURRENCY_LOCKED_MESSAGE,
   DUPLICATE_CATEGORY_MESSAGE,
   GENERIC_ERROR_MESSAGE,
   INVALID_CATEGORY_MESSAGE,
@@ -35,7 +48,10 @@ import {
   ReimbursementNotExpectedError,
 } from "@/core/reimbursements/errors";
 
-import { CoveredNotAllowedError } from "./errors";
+import {
+  CoveredNotAllowedError,
+  InstallmentCurrencyLockedError,
+} from "./errors";
 
 // Plumbing shared by the incomes and expenses server actions. It is not a "use server" module:
 // nothing here is callable from the browser.
@@ -95,6 +111,24 @@ const toKnownFailure = (error: unknown): ActionFailure | undefined => {
     return fieldFailure({ cardId: [CARD_CURRENCY_MISMATCH_MESSAGE] });
   }
 
+  if (error instanceof CardKindNotAllowedError) {
+    return fieldFailure({ cardId: [CARD_KIND_NOT_ALLOWED_MESSAGE] });
+  }
+
+  // The account of an entry, template or plan: one that is not the user's, archived, or in another
+  // currency than the movement.
+  if (error instanceof AccountNotFoundError) {
+    return fieldFailure({ accountId: [ACCOUNT_CHOICE_NOT_FOUND_MESSAGE] });
+  }
+
+  if (error instanceof AccountArchivedError) {
+    return fieldFailure({ accountId: [ACCOUNT_ARCHIVED_MESSAGE] });
+  }
+
+  if (error instanceof AccountCurrencyMismatchError) {
+    return fieldFailure({ accountId: [ACCOUNT_CURRENCY_MISMATCH_MESSAGE] });
+  }
+
   // The expense an income pays back: one that is not the user's, that expects nothing or that is in
   // another currency.
   if (error instanceof ReimbursedExpenseNotFoundError) {
@@ -118,6 +152,10 @@ const toKnownFailure = (error: unknown): ActionFailure | undefined => {
   // An expense with incomes linked to it keeps its currency and its expected reimbursement.
   if (error instanceof ExpenseCurrencyLockedError) {
     return fieldFailure({ currency: [EXPENSE_CURRENCY_LOCKED_MESSAGE] });
+  }
+
+  if (error instanceof InstallmentCurrencyLockedError) {
+    return fieldFailure({ currency: [INSTALLMENT_CURRENCY_LOCKED_MESSAGE] });
   }
 
   if (error instanceof ReimbursementLockedError) {

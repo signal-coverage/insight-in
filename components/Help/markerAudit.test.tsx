@@ -8,6 +8,7 @@ import {
   TIER_LABELS,
   TIER_MEANINGS,
 } from "@/components/Cards/components/CardsTable/components/UsageCell/components/TierChip/consts";
+import { creditCardRow, limitRow } from "@/components/Cards/testRows";
 import type { CardRow } from "@/components/Cards/types";
 import { MARKERS } from "@/components/Entries/markers";
 import { ExpensesTable } from "@/components/Expenses/components/ExpensesTable";
@@ -31,7 +32,8 @@ const EXPENSE: ExpenseRow = {
   categoryName: "Ocio",
   notes: null,
   status: "SETTLED",
-  medium: "CASH",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   isRecurring: true,
   installmentPlanId: "plan_1",
   installmentNumber: 1,
@@ -56,7 +58,6 @@ const COVERED_EXPENSE: ExpenseRow = {
   id: "exp_2",
   description: "Cena",
   status: "COVERED",
-  medium: "DIGITAL",
   isRecurring: false,
   installmentPlanId: null,
   installmentNumber: null,
@@ -84,7 +85,8 @@ const INCOME: IncomeRow = {
   installmentPlanId: "plan_2",
   installmentNumber: 1,
   status: "SETTLED",
-  medium: "CASH",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   amountLabel: "$ 1.200.000,00",
   amountDecimal: "1200000.00",
   dateLabel: "1 sept 2026",
@@ -98,41 +100,20 @@ const INCOME: IncomeRow = {
   reimbursementTooltip: "Devolución de: Dentista",
 };
 
-const CARD: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 0,
-  monthUsed: 7500000,
-  used: 7500000,
-  available: 22500000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 75.000,00 de $ 300.000,00",
-  availableLabel: "$ 225.000,00",
-  limitDecimal: "300000.00",
-  percent: 25,
-};
+const CARD: CardRow = creditCardRow();
 
 const CARDS: CardRow[] = [
   CARD,
-  { ...CARD, id: "card_2", title: "Visa •••• 2222", tier: "near", percent: 90 },
-  {
-    ...CARD,
+  creditCardRow({
+    id: "card_2",
+    title: "Visa •••• 2222",
+    limits: [limitRow({ tier: "near", percent: 90 })],
+  }),
+  creditCardRow({
     id: "card_3",
     title: "Visa •••• 3333",
-    tier: "exceeded",
-    percent: 100,
-  },
+    limits: [limitRow({ tier: "exceeded", percent: 100 })],
+  }),
 ];
 
 const renderTables = () =>
@@ -229,19 +210,17 @@ const settle = () =>
   });
 
 describe("every icon the tables draw", () => {
-  it("shows up in the tables of the audit: cash, installment, recurring, repayment, origin (twice), reimbursement (both ways) and covered", () => {
+  it("shows up in the tables of the audit: installment, recurring, repayment, origin (twice), reimbursement (both ways) and covered", () => {
     renderTables();
 
     expect(markers().map(nameOf)).toEqual([
       // Expenses: the first row, then the covered one.
-      "Efectivo",
       "Compra en cuotas",
       "Recurrente",
       "Se cotizó en 20 USD",
       "Reintegro esperado",
       "Cubierta por otro",
       // Incomes.
-      "Efectivo",
       "Recurrente",
       "Devolución en cuotas",
       "Viene de 1.000 USDC",

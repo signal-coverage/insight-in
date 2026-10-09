@@ -29,6 +29,8 @@ export const loadExpensesView = (userId: string, query: EntriesQuery) => {
     currencies: data.then(({ currencies }) => currencies),
     recurring: data.then(({ recurring }) => toRecurringData(recurring)),
     cards: data.then(({ cards }) => toCardOptions(cards)),
+    // Every account of the user, for the "Cuenta" field of the forms.
+    accounts: data.then(({ accounts }) => accounts),
     table: data.then(({ page, planProgress, currencies }) => {
       const { rows, ...pagination } = page;
 

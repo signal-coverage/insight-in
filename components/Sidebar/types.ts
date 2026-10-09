@@ -15,3 +15,9 @@ export interface NavItem {
   // the group live under that address).
   exact?: boolean;
 }
+
+export interface NavSection {
+  // The section title; null for a section shown apart, with no title.
+  label: string | null;
+  items: readonly NavItem[];
+}

@@ -1,5 +1,9 @@
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { AmountCurrencyFields } from "@/components/Entries/components/AmountCurrencyFields";
 import { AmountModeField } from "@/components/Entries/components/AmountModeField";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
@@ -35,6 +39,7 @@ export function PurchaseForm({
   values,
   categories,
   cards,
+  accounts,
   preview,
   recommendations,
   firstInstallment,
@@ -77,13 +82,21 @@ export function PurchaseForm({
         onChange={onChange}
       />
 
-      {/* A purchase in installments is always on a card: one of the user's own (digital money, with
-          the cards of the purchase's currency to pick from) or a borrowed one (with its medium). */}
+      {/* A purchase in installments is always on a card: one of the user's own (with the cards of the
+          purchase's currency to pick from) or a borrowed one. Either way the account that pays it is
+          chosen right after. */}
       <CardOwnershipFields
         values={values}
         cards={cards}
         recommendations={recommendations}
         onChange={onChange}
+      />
+
+      <AccountField
+        accounts={accounts}
+        currency={values.currency}
+        value={resolveAccountId(accounts, values.currency, values.accountId)}
+        onChange={(accountId) => onChange({ accountId })}
       />
 
       <div className={AMOUNT_ROW_CLASS_NAME}>

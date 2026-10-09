@@ -2,14 +2,13 @@ export const FORM_ID = "opening-balance-form";
 
 export const HEADING = "Saldo inicial";
 export const DESCRIPTION =
-  "Cuánto tenías al empezar el mes que elijas. Los meses anteriores dejan de contar.";
+  "Cuánto tenía cada cuenta al empezar el mes que elijas. Los meses anteriores dejan de contar.";
 
 export const MONTH_LABEL = "Vigente desde";
-export const MONTH_PLACEHOLDER = "Selecciona un mes";
+export const MONTH_PLACEHOLDER = "Seleccioná un mes";
 export const MONTH_FIELD_NAME = "month";
 
-export const DIGITAL_LABEL = "Digital";
-export const CASH_LABEL = "Efectivo";
+export const ARCHIVED_ACCOUNT_SUFFIX = " · archivada";
 export const AMOUNT_PLACEHOLDER = "0.00";
 export const AMOUNT_HINT = "Usa un punto para los decimales.";
 

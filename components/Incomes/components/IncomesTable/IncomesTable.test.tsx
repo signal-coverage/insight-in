@@ -18,7 +18,8 @@ const ROW: IncomeRow = {
   installmentPlanId: null,
   installmentNumber: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   amountLabel: "$2,500.00",
   amountDecimal: "2500.00",
   dateLabel: "1 sept 2026",
@@ -75,6 +76,7 @@ describe("IncomesTable columns", () => {
       "Estado",
       "Descripción",
       "Categoría",
+      "Cuenta",
       "Fecha",
       "Monto",
       "Notas",
@@ -198,6 +200,7 @@ describe("IncomesTable while loading", () => {
       "Estado",
       "Descripción",
       "Categoría",
+      "Cuenta",
       "Fecha",
       "Monto",
       "Notas",
@@ -224,10 +227,10 @@ describe("IncomesTable while rows are on their way", () => {
     const cells = Array.from(
       container.querySelectorAll("tbody tr:first-child td"),
     );
-    // Status and actions hold fixed-size controls; the other five hold text.
+    // Status and actions hold fixed-size controls; the other six hold text.
     const textCells = cells.slice(2);
 
-    expect(textCells).toHaveLength(5);
+    expect(textCells).toHaveLength(6);
     textCells.forEach((cell) => {
       expect(cell.querySelector(".skeleton")?.className).toMatch(
         /\bw-(\d+\/\d+|full)\b/,
@@ -293,22 +296,6 @@ describe("IncomesTable repayment marker", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("can show it next to the cash marker", () => {
-    renderTable([
-      {
-        ...ROW,
-        medium: "CASH",
-        installmentPlanId: "plan_1",
-        installmentNumber: 1,
-      },
-    ]);
-
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: "Devolución en cuotas" }),
-    ).toBeInTheDocument();
-  });
-
   it("gives it a tooltip with its own text", () => {
     renderTable([
       { ...ROW, installmentPlanId: "plan_1", installmentNumber: 1 },
@@ -372,9 +359,8 @@ describe("IncomesTable origin marker", () => {
   });
 
   it("can show it next to the other markers", () => {
-    renderTable([{ ...FROM_USDC, medium: "CASH", recurringIncomeId: "rec_1" }]);
+    renderTable([{ ...FROM_USDC, recurringIncomeId: "rec_1" }]);
 
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Viene de 1.000 USDC" }),
@@ -382,29 +368,34 @@ describe("IncomesTable origin marker", () => {
   });
 });
 
-describe("IncomesTable cash marker", () => {
-  it("marks the incomes that arrived as cash, next to their description", () => {
-    renderTable([{ ...ROW, medium: "CASH" }]);
-
-    const marker = screen.getByRole("img", { name: "Efectivo" });
-
-    expect(marker.querySelector("title")).toBeNull();
-    expect(marker.parentElement).toHaveTextContent("Monthly salary");
-  });
-
-  it("shows no marker for digital incomes", () => {
+describe("IncomesTable account column", () => {
+  it("names the account of each income as 'Banco · Cuenta', cut with an ellipsis when long", () => {
     renderTable();
 
+    expect(screen.getByRole("columnheader", { name: "Cuenta" })).toHaveClass(
+      "w-44",
+      "overflow-hidden",
+      "text-ellipsis",
+    );
     expect(
-      screen.queryByRole("img", { name: "Efectivo" }),
-    ).not.toBeInTheDocument();
+      within(bodyRows()[0]).getByText("Banco Galicia · Caja de ahorro"),
+    ).toBeInTheDocument();
   });
 
-  it("can show both markers on a recurring cash income", () => {
-    renderTable([{ ...ROW, medium: "CASH", recurringIncomeId: "rec_1" }]);
+  it("draws no cash marker any more: the account says where the money is", () => {
+    // A row still carrying the retired medium must not bring the marker back.
+    renderTable([
+      {
+        ...ROW,
+        medium: "CASH",
+        accountLabel: "Efectivo · Efectivo",
+      } as IncomeRow,
+    ]);
 
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
+    expect(
+      within(bodyRows()[0]).getByText("Efectivo · Efectivo"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Efectivo" })).toBeNull();
   });
 });
 
@@ -414,7 +405,7 @@ describe("IncomesTable column widths", () => {
 
     expect(screen.getByRole("grid")).toHaveClass(
       "table-fixed",
-      "min-w-[48rem]",
+      "min-w-[59rem]",
     );
   });
 
@@ -555,14 +546,6 @@ describe("IncomesTable tooltips", () => {
     focusWithKeyboard(screen.getByRole("img", { name: "Recurrente" }));
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Recurrente");
-  });
-
-  it("gives the cash marker a tooltip with its own text", () => {
-    renderTable([{ ...ROW, medium: "CASH" }]);
-
-    focusWithKeyboard(screen.getByRole("img", { name: "Efectivo" }));
-
-    expect(screen.getByRole("tooltip")).toHaveTextContent("Efectivo");
   });
 });
 

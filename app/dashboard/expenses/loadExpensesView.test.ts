@@ -4,6 +4,7 @@ const pageData = vi.hoisted(() => ({ loadExpensesPageData: vi.fn() }));
 
 vi.mock("@/core/expenses/pageData", () => pageData);
 
+import { creditCard } from "@/core/cards/testFixtures";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 
 import { loadExpensesView } from "./loadExpensesView";
@@ -33,14 +34,7 @@ const LOADED = {
   currencies: ["ARS"],
   cards: [
     {
-      id: "card_1",
-      last4: "1234",
-      brand: "VISA" as const,
-      closingDay: 25,
-      dueDay: 5,
-      currency: "ARS",
-      limitMode: "MONTHLY" as const,
-      limitAmount: 30000000,
+      ...creditCard(),
       charges: [
         {
           amount: 1000,
@@ -49,6 +43,14 @@ const LOADED = {
           status: "PLANNED" as const,
         },
       ],
+    },
+  ],
+  accounts: [
+    {
+      id: "acc_1",
+      currency: "ARS",
+      label: "Banco Galicia · Caja de ahorro",
+      archived: false,
     },
   ],
   recurring: {
@@ -98,6 +100,7 @@ describe("loadExpensesView", () => {
     const view = start();
 
     expect(Object.keys(view).sort()).toEqual([
+      "accounts",
       "cards",
       "categories",
       "currencies",
@@ -244,14 +247,21 @@ describe("loadExpensesView", () => {
 
     expect(card).toMatchObject({
       id: "card_1",
+      kind: "CREDIT",
       title: "Visa •••• 1234",
-      currency: "ARS",
+      currencies: ["ARS"],
       closingDay: 25,
       dueDay: 5,
       limitMode: "MONTHLY",
-      limitAmount: 30000000,
+      limits: [{ currency: "ARS", amount: 30000000 }],
     });
     expect(card.charges).toEqual(LOADED.cards[0].charges);
+  });
+
+  it("hands the forms the user's accounts as they were read", async () => {
+    pageData.loadExpensesPageData.mockResolvedValue(LOADED);
+
+    expect(await start().accounts).toEqual(LOADED.accounts);
   });
 
   it("hands the shared category components a neutral count", async () => {

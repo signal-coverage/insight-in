@@ -10,3 +10,6 @@ export const LAST4_LENGTH = 4;
 
 // What stands for a day not typed yet.
 export const MISSING_DAY = "—";
+
+// Said instead of the cycle on a debit or prepaid card.
+export const NO_CYCLE_TEXT = "Débito o prepago";

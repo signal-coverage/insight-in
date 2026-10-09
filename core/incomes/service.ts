@@ -1,3 +1,6 @@
+import { labelOfAccount, WITH_ACCOUNT_LABEL } from "@/core/accounts/label";
+import type { AccountWithBank } from "@/core/accounts/label";
+import { assertUsableAccount } from "@/core/accounts/usable";
 import { prisma } from "@/infrastructure/db/client";
 import type {
   Income as IncomeRow,
@@ -15,7 +18,10 @@ import {
   buildEntriesWhere,
   foldCurrencyTotals,
 } from "@/core/entries/listing";
-import { CoveredNotAllowedError } from "@/core/entries/errors";
+import {
+  CoveredNotAllowedError,
+  InstallmentCurrencyLockedError,
+} from "@/core/entries/errors";
 import type { EntryStatus } from "@/core/entries/status";
 
 import { dateToIsoDate, isoDateToDate } from "./dates";
@@ -43,6 +49,7 @@ import type {
 
 type IncomeWithCategory = IncomeRow & {
   category: { name: string };
+  account: AccountWithBank;
   // The expense the income pays back, when it pays one back.
   reimbursesExpense?: { description: string } | null;
 };
@@ -54,6 +61,7 @@ const WITH_CATEGORY_NAME = { category: { select: { name: true } } } as const;
 // expense it pays back, in the same query.
 const WITH_DETAILS = {
   ...WITH_CATEGORY_NAME,
+  ...WITH_ACCOUNT_LABEL,
   reimbursesExpense: { select: { description: true } },
 } as const;
 
@@ -67,7 +75,8 @@ const toIncome = (row: IncomeWithCategory): Income => ({
   categoryName: row.category.name,
   notes: row.notes,
   status: row.status,
-  medium: row.medium,
+  accountId: row.accountId,
+  accountLabel: labelOfAccount(row.account),
   originCurrency: row.originCurrency,
   originAmount:
     row.originAmount === null ? null : minorUnitsToNumber(row.originAmount),
@@ -92,7 +101,7 @@ const toWritableData = (input: IncomeInput) => ({
   categoryId: input.categoryId,
   notes: input.notes,
   status: input.status,
-  medium: input.medium,
+  accountId: input.accountId,
   // Written as a pair; nulls clear a previous origin on update.
   originCurrency: input.originCurrency,
   originAmount: input.originAmount === null ? null : BigInt(input.originAmount),
@@ -207,6 +216,11 @@ export const createIncome = async (
 ): Promise<Income> => {
   assertNotCovered(input.status);
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: null,
+  });
   await assertReimbursementLink(userId, input);
 
   const row = await prisma.income.create({
@@ -217,7 +231,7 @@ export const createIncome = async (
   return toIncome(row);
 };
 
-// Returns false when no record with that id belongs to the user.
+// Returns false when no record with that id belongs to the user (nothing else is checked then).
 export const updateIncome = async (
   userId: string,
   id: string,
@@ -225,6 +239,27 @@ export const updateIncome = async (
 ): Promise<boolean> => {
   assertNotCovered(input.status);
   await assertCategoryOwnedBy(userId, input.categoryId);
+
+  const current = await prisma.income.findFirst({
+    where: { id, userId },
+    select: { accountId: true, installmentPlanId: true, currency: true },
+  });
+
+  if (!current) {
+    return false;
+  }
+
+  // A row of a repayment plan keeps the currency of its plan.
+  if (current.installmentPlanId && input.currency !== current.currency) {
+    throw new InstallmentCurrencyLockedError();
+  }
+
+  // The edit may keep the account the income already has, even if it was archived since.
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: current.accountId,
+  });
   await assertReimbursementLink(userId, input);
 
   const { count } = await prisma.income.updateMany({
@@ -488,7 +523,7 @@ const toRecurringIncome = (row: RecurringWithCategory): RecurringIncome => ({
   categoryId: row.categoryId,
   categoryName: row.category.name,
   notes: row.notes,
-  medium: row.medium,
+  accountId: row.accountId,
   frequency: row.frequency,
   startDate: dateToIsoDate(row.startDate),
   endDate: row.endDate ? dateToIsoDate(row.endDate) : null,
@@ -501,7 +536,7 @@ const toRecurringWritableData = (input: RecurringIncomeInput) => ({
   currency: input.currency,
   categoryId: input.categoryId,
   notes: input.notes,
-  medium: input.medium,
+  accountId: input.accountId,
   frequency: input.frequency,
   startDate: isoDateToDate(input.startDate),
   endDate: input.endDate ? isoDateToDate(input.endDate) : null,
@@ -524,6 +559,11 @@ export const createRecurringIncome = async (
   input: RecurringIncomeInput,
 ): Promise<RecurringIncome> => {
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: null,
+  });
 
   const row = await prisma.recurringIncome.create({
     data: { userId, ...toRecurringWritableData(input) },
@@ -541,6 +581,22 @@ export const updateRecurringIncome = async (
   input: RecurringIncomeInput,
 ): Promise<boolean> => {
   await assertCategoryOwnedBy(userId, input.categoryId);
+
+  const current = await prisma.recurringIncome.findFirst({
+    where: { id, userId },
+    select: { accountId: true },
+  });
+
+  if (!current) {
+    return false;
+  }
+
+  // The template may keep the account it has, even if it was archived since.
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: current.accountId,
+  });
 
   const { count } = await prisma.recurringIncome.updateMany({
     where: { id, userId },
@@ -613,7 +669,8 @@ export const materializeRecurringIncomes = async (
         currency: template.currency,
         categoryId: template.categoryId,
         notes: template.notes,
-        medium: template.medium,
+        // Every occurrence goes to the template's account.
+        accountId: template.accountId,
         date: isoDateToDate(date),
         recurringIncomeId: template.id,
         // A generated occurrence still has to be confirmed as collected.

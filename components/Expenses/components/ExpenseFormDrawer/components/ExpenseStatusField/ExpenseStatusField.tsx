@@ -1,6 +1,7 @@
 import { Description, Label, Radio, RadioGroup } from "@heroui/react";
 
 import { FIELD_CLASS_NAME } from "@/components/Entries/styles";
+import type { EntryStatus } from "@/core/entries/status";
 
 import {
   COVERED_HINT,
@@ -13,7 +14,10 @@ import type { ExpenseStatusFieldProps } from "./types";
 // The status of an expense: pending, paid, or covered by someone else (counts as done but never
 // moves the user's money). A radio group submits the chosen value with the form on its own, so
 // there is nothing to wire up.
-export function ExpenseStatusField({ defaultStatus }: ExpenseStatusFieldProps) {
+export function ExpenseStatusField({
+  defaultStatus,
+  onChange,
+}: ExpenseStatusFieldProps) {
   return (
     <RadioGroup
       className={FIELD_CLASS_NAME}
@@ -21,6 +25,7 @@ export function ExpenseStatusField({ defaultStatus }: ExpenseStatusFieldProps) {
       orientation="horizontal"
       variant="secondary"
       defaultValue={defaultStatus}
+      onChange={(value) => onChange?.(value as EntryStatus)}
     >
       <Label>{STATUS_LABEL}</Label>
       {STATUS_OPTIONS.map(({ value, label }) => (

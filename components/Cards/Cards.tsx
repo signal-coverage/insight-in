@@ -31,7 +31,7 @@ import {
 import { NOTE_CLASS_NAME } from "./styles";
 import type { CardRow, CardsProps, CardsTableData, FormTarget } from "./types";
 
-export function Cards({ table }: CardsProps) {
+export function Cards({ table, banks }: CardsProps) {
   const router = useRouter();
   // The rows ticked, and the rows a delete is working on until the refreshed rows arrive.
   const selection = useRowSelection();
@@ -116,12 +116,18 @@ export function Cards({ table }: CardsProps) {
         {renderTable}
       </Await>
 
-      <CardFormDrawer
-        isOpen={formState.isOpen}
-        onOpenChange={formState.setOpen}
-        onClose={formState.close}
-        target={formTarget}
-      />
+      {/* The form mounts once the banks it offers are here. */}
+      <Await source={banks} fallback={null}>
+        {(loadedBanks) => (
+          <CardFormDrawer
+            isOpen={formState.isOpen}
+            onOpenChange={formState.setOpen}
+            onClose={formState.close}
+            target={formTarget}
+            banks={loadedBanks}
+          />
+        )}
+      </Await>
 
       <DeleteCardDialog
         isOpen={deleteState.isOpen}

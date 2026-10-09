@@ -3,7 +3,6 @@ import { Button, Skeleton } from "@heroui/react";
 
 import { DataTable } from "@/components/DataTable";
 import type { DataTableColumn } from "@/components/DataTable";
-import { CashMarker } from "@/components/Entries/components/CashMarker";
 import { EntriesEmptyState } from "@/components/Entries/components/EntriesEmptyState";
 import { InstallmentMarker } from "@/components/Entries/components/InstallmentMarker";
 import { MarkerIcon } from "@/components/Entries/components/MarkerIcon";
@@ -18,6 +17,8 @@ import {
   selectLabel,
 } from "@/components/Entries/consts";
 import {
+  ACCOUNT_CLASS_NAME,
+  ACCOUNT_COLUMN_CLASS_NAME,
   ACTIONS_CLASS_NAME,
   ACTIONS_COLUMN_CLASS_NAME,
   ACTION_ICON_CLASS_NAME,
@@ -46,6 +47,7 @@ import {
 } from "../../consts";
 import type { ExpenseRow } from "../../types";
 import {
+  ACCOUNT_HEADER,
   ACTIONS_HEADER,
   AMOUNT_HEADER,
   CATEGORY_HEADER,
@@ -154,7 +156,6 @@ export function ExpensesTable({
           <TruncatedText className={DESCRIPTION_CLASS_NAME}>
             {row.description}
           </TruncatedText>
-          {row.medium === "CASH" ? <CashMarker /> : null}
           {row.installmentPlanId !== null ? <InstallmentMarker /> : null}
           {row.isRecurring ? (
             <MarkerIcon
@@ -191,6 +192,17 @@ export function ExpensesTable({
       className: CATEGORY_COLUMN_CLASS_NAME,
       sortable: true,
       cell: (row) => row.categoryName,
+      loadingCell: <Skeleton className="h-4 w-3/4" />,
+    },
+    {
+      key: "account",
+      header: ACCOUNT_HEADER,
+      className: ACCOUNT_COLUMN_CLASS_NAME,
+      cell: (row) => (
+        <TruncatedText className={ACCOUNT_CLASS_NAME}>
+          {row.accountLabel}
+        </TruncatedText>
+      ),
       loadingCell: <Skeleton className="h-4 w-3/4" />,
     },
     {

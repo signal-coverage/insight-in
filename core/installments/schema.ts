@@ -1,21 +1,17 @@
 import { z } from "zod";
 
 import {
+  accountIdField,
   categoryIdField,
-  currencyField,
-  mediumField,
+  legalTenderCurrencyField,
   type IssueContext,
   notesField,
   requiredText,
 } from "@/core/entries/fields";
-import {
-  DESCRIPTION_MAX_LENGTH,
-  SUPPORTED_CURRENCY_CODES,
-} from "@/core/incomes/consts";
+import { DESCRIPTION_MAX_LENGTH } from "@/core/incomes/consts";
 import { isValidIsoDate } from "@/core/incomes/dates";
+import { isLegalTenderCode } from "@/core/incomes/money";
 import { isSupportedMonth, monthOf } from "@/core/summary/month";
-
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 
 import {
   AMOUNT_MODES,
@@ -36,8 +32,6 @@ import type {
   InstallmentCountInput,
   InstallmentPlanInput,
 } from "./types";
-
-const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
 
 const productField = requiredText(
   "El producto",
@@ -88,7 +82,7 @@ interface PlanShape {
 const checkTotalAndLastMonth = (value: PlanShape, ctx: IssueContext): void => {
   // An unsupported currency is already reported on its own field.
   if (
-    SUPPORTED_CURRENCY_SET.has(value.currency) &&
+    isLegalTenderCode(value.currency) &&
     planTotal(
       value.amount,
       value.amountMode,
@@ -124,8 +118,8 @@ export const installmentPlanSchema = z
   .object({
     description: productField,
     categoryId: categoryIdField,
-    currency: currencyField,
-    medium: mediumField,
+    currency: legalTenderCurrencyField,
+    accountId: accountIdField,
     notes: notesField,
     amount: z.string({ error: "El monto es obligatorio." }),
     amountMode: z.enum(AMOUNT_MODES, {
@@ -194,9 +188,6 @@ export const installmentPlanSchema = z
       ...value
     }): InstallmentPlanInput => ({
       ...value,
-      // A credit card is always digital money, so an own card forces it whatever came with it. A
-      // borrowed card keeps the medium: it is how the user repays the lender.
-      medium: cardOwnership === "own" ? DEFAULT_PAYMENT_MEDIUM : value.medium,
       totalAmount: planTotal(
         amount,
         amountMode,
@@ -221,8 +212,8 @@ export const incomeInstallmentPlanSchema = z
     kind: z.literal("income"),
     description: conceptField,
     categoryId: categoryIdField,
-    currency: currencyField,
-    medium: mediumField,
+    currency: legalTenderCurrencyField,
+    accountId: accountIdField,
     notes: notesField,
     amount: z.string({ error: "El monto es obligatorio." }),
     amountMode: z.enum(AMOUNT_MODES, {
@@ -236,7 +227,7 @@ export const incomeInstallmentPlanSchema = z
     description: value.description,
     categoryId: value.categoryId,
     currency: value.currency,
-    medium: value.medium,
+    accountId: value.accountId,
     notes: value.notes,
     totalCuotas: value.totalCuotas,
     totalAmount: planTotal(

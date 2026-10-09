@@ -12,6 +12,7 @@ export function RepaymentPlannerDrawer({
   sessionKey,
   defaultDate,
   categories,
+  accounts,
 }: RepaymentPlannerDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -20,6 +21,7 @@ export function RepaymentPlannerDrawer({
           <RepaymentPlannerContent
             key={sessionKey}
             categories={categories}
+            accounts={accounts}
             defaultDate={defaultDate}
             onClose={onClose}
           />

@@ -1,0 +1,1 @@
+export { TransfersTable } from "./TransfersTable";

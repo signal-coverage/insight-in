@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { AccountChoice } from "@/core/accounts/types";
+
 import type { RepaymentValues } from "./types";
 import {
   initialValues,
@@ -7,13 +9,23 @@ import {
   previewText,
   toPayload,
   toTicketLines,
+  withRepaymentChange,
 } from "./utils";
+
+const ACCOUNTS: AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+];
 
 const values = (patch: Partial<RepaymentValues> = {}): RepaymentValues => ({
   description: "Préstamo a Juan",
   categoryId: "cat_1",
   currency: "ARS",
-  medium: "CASH",
+  accountId: "acc_1",
   amountMode: "total",
   amount: "600000",
   totalCuotas: 6,
@@ -23,12 +35,12 @@ const values = (patch: Partial<RepaymentValues> = {}): RepaymentValues => ({
 });
 
 describe("initialValues", () => {
-  it("starts empty, in pesos, digital, a year of installments, the first one today", () => {
+  it("starts empty, in pesos, with no account, a year of installments, the first one today", () => {
     expect(initialValues("2026-10-01")).toEqual({
       description: "",
       categoryId: null,
       currency: "ARS",
-      medium: "DIGITAL",
+      accountId: null,
       amountMode: "total",
       amount: "",
       totalCuotas: 12,
@@ -40,12 +52,12 @@ describe("initialValues", () => {
 
 describe("toPayload", () => {
   it("sends what the form holds, as an income plan, with nothing about cards", () => {
-    expect(toPayload(values())).toEqual({
+    expect(toPayload(values(), ACCOUNTS)).toEqual({
       kind: "income",
       description: "Préstamo a Juan",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "CASH",
+      accountId: "acc_1",
       notes: "",
       amount: "600000",
       amountMode: "total",
@@ -58,6 +70,7 @@ describe("toPayload", () => {
     expect(
       toPayload(
         values({ categoryId: null, firstDate: null, totalCuotas: null }),
+        ACCOUNTS,
       ),
     ).toMatchObject({
       categoryId: "",
@@ -69,11 +82,11 @@ describe("toPayload", () => {
 
 describe("parseRepayment", () => {
   it("is the repayment as the server will read it, with the total in minor units", () => {
-    expect(parseRepayment(values())?.input).toEqual({
+    expect(parseRepayment(values(), ACCOUNTS)?.input).toEqual({
       description: "Préstamo a Juan",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "CASH",
+      accountId: "acc_1",
       notes: null,
       totalCuotas: 6,
       totalAmount: 60000000,
@@ -83,13 +96,15 @@ describe("parseRepayment", () => {
 
   it("multiplies the amount of one installment when that is what was typed", () => {
     expect(
-      parseRepayment(values({ amount: "100000", amountMode: "perInstallment" }))
-        ?.input.totalAmount,
+      parseRepayment(
+        values({ amount: "100000", amountMode: "perInstallment" }),
+        ACCOUNTS,
+      )?.input.totalAmount,
     ).toBe(60000000);
   });
 
   it("works out the amount of an installment, exact when the total divides evenly", () => {
-    expect(parseRepayment(values())).toMatchObject({
+    expect(parseRepayment(values(), ACCOUNTS)).toMatchObject({
       installmentAmount: 10000000,
       isApproximate: false,
     });
@@ -97,7 +112,7 @@ describe("parseRepayment", () => {
 
   it("marks the amount of an installment as approximate when the total does not divide evenly", () => {
     expect(
-      parseRepayment(values({ amount: "100000.01", totalCuotas: 3 })),
+      parseRepayment(values({ amount: "100000.01", totalCuotas: 3 }), ACCOUNTS),
     ).toMatchObject({
       installmentAmount: 3333334,
       isApproximate: true,
@@ -105,7 +120,29 @@ describe("parseRepayment", () => {
   });
 
   it("knows the month of the last installment", () => {
-    expect(parseRepayment(values())?.lastMonth).toBe("2027-03");
+    expect(parseRepayment(values(), ACCOUNTS)?.lastMonth).toBe("2027-03");
+  });
+
+  it("is not valid without an account", () => {
+    expect(parseRepayment({ ...values(), accountId: null }, [])).toBeNull();
+  });
+
+  it("is not valid without the accounts to resolve it, even if one was chosen", () => {
+    expect(parseRepayment(values())).toBeNull();
+    expect(parseRepayment(values(), [])).toBeNull();
+  });
+
+  it("takes the only account of the currency when none was chosen", () => {
+    expect(
+      parseRepayment({ ...values(), accountId: null }, ACCOUNTS)?.input
+        .accountId,
+    ).toBe("acc_1");
+  });
+
+  it("names the account in the summary", () => {
+    expect(parseRepayment(values(), ACCOUNTS)?.accountLabel).toBe(
+      "Banco Galicia · Caja de ahorro",
+    );
   });
 
   it.each([
@@ -123,13 +160,28 @@ describe("parseRepayment", () => {
       { firstDate: "2099-12-15", totalCuotas: 2 },
     ],
   ])("is null with %s", (_name, patch) => {
-    expect(parseRepayment(values(patch))).toBeNull();
+    expect(parseRepayment(values(patch), ACCOUNTS)).toBeNull();
+  });
+});
+
+describe("withRepaymentChange", () => {
+  it("drops the account when the currency changes", () => {
+    expect(
+      withRepaymentChange(
+        { ...values(), accountId: "acc_1" },
+        { currency: "USD" },
+      ).accountId,
+    ).toBeNull();
+    expect(
+      withRepaymentChange({ ...values(), accountId: "acc_1" }, { notes: "x" })
+        .accountId,
+    ).toBe("acc_1");
   });
 });
 
 describe("previewText", () => {
   it("says how many installments of how much, and the total", () => {
-    const summary = parseRepayment(values());
+    const summary = parseRepayment(values(), ACCOUNTS);
 
     expect(previewText(summary!)).toMatch(
       /^6 cuotas de \$\s100\.000,00 · total \$\s600\.000,00$/,
@@ -139,6 +191,7 @@ describe("previewText", () => {
   it("puts ≈ before the amount of an installment only when the total does not divide evenly", () => {
     const summary = parseRepayment(
       values({ amount: "100000.01", totalCuotas: 3 }),
+      ACCOUNTS,
     );
 
     expect(previewText(summary!)).toMatch(
@@ -149,7 +202,7 @@ describe("previewText", () => {
 
 describe("toTicketLines", () => {
   const lines = (patch: Partial<RepaymentValues> = {}) =>
-    toTicketLines(parseRepayment(values(patch))!, "Préstamos");
+    toTicketLines(parseRepayment(values(patch), ACCOUNTS)!, "Préstamos");
 
   it("lists the repayment the way a receipt would, in order", () => {
     expect(lines().map(({ label }) => label)).toEqual([
@@ -160,7 +213,7 @@ describe("toTicketLines", () => {
       "Monto total",
       "Primera cuota",
       "Última cuota estimada",
-      "Medio",
+      "Cuenta",
     ]);
   });
 
@@ -176,14 +229,7 @@ describe("toTicketLines", () => {
     expect(byLabel["Monto total"]).toMatch(/^\$\s600\.000,00$/);
     expect(byLabel["Primera cuota"]).toContain("2026");
     expect(byLabel["Última cuota estimada"]).toBe("Marzo de 2027");
-    expect(byLabel["Medio"]).toBe("Efectivo");
-  });
-
-  it("names the digital medium too", () => {
-    expect(
-      lines({ medium: "DIGITAL" }).find(({ label }) => label === "Medio")
-        ?.value,
-    ).toBe("Digital");
+    expect(byLabel["Cuenta"]).toBe("Banco Galicia · Caja de ahorro");
   });
 
   it("shows the amount of an installment as approximate when the total does not divide evenly", () => {

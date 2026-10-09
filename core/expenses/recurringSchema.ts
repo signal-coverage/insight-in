@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 import {
+  accountIdField,
   amountField,
   categoryIdField,
   checkAmount,
   currencyField,
   descriptionField,
-  mediumField,
   notesField,
   toAmount,
 } from "@/core/entries/fields";
@@ -52,7 +52,7 @@ export const recurringExpenseInputSchema = z
     currency: currencyField,
     categoryId: categoryIdField,
     notes: notesField,
-    medium: mediumField,
+    accountId: accountIdField,
     originCurrency: originCurrencyField,
     originAmount: originAmountField,
     dayOfMonth: dayOfMonthField,

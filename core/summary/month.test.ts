@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatMonth,
+  formatShortMonth,
   isSupportedMonth,
   isValidMonth,
   monthOf,
@@ -138,5 +139,17 @@ describe("formatMonth", () => {
 
   it("does not shift the month with the machine's time zone", () => {
     expect(formatMonth("2026-12")).toBe("Diciembre de 2026");
+  });
+});
+
+describe("formatShortMonth", () => {
+  it("writes a short month and year for the axis of a chart", () => {
+    expect(formatShortMonth("2026-09")).toMatch(/^sep/i);
+    expect(formatShortMonth("2026-09")).toMatch(/26/);
+  });
+
+  it("tells two months apart", () => {
+    expect(formatShortMonth("2026-08")).not.toBe(formatShortMonth("2026-09"));
+    expect(formatShortMonth("2026-08")).toMatch(/^ago/i);
   });
 });

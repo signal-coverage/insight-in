@@ -1,7 +1,11 @@
+import { assertUsableAccount } from "@/core/accounts/usable";
 import { firstInstallmentDate } from "@/core/cards/cycle";
-import { CardCurrencyMismatchError } from "@/core/cards/errors";
+import {
+  CardCurrencyMismatchError,
+  CardKindNotAllowedError,
+} from "@/core/cards/errors";
+import { isCreditCard, limitIn } from "@/core/cards/kinds";
 import { findOwnedCard } from "@/core/cards/service";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 import { assertCategoryOwnedBy } from "@/core/expenses/service";
 import { dayOfMonthOf } from "@/core/expenses/recurrence";
 import { dateToIsoDate, isoDateToDate } from "@/core/incomes/dates";
@@ -26,10 +30,10 @@ interface Schedule {
 }
 
 // When the first installment falls. With no card of the user's (a borrowed one) it is the date the
-// user typed. With one of the user's cards the
-// client only sends the card id and the purchase day, so neither is trusted: the card must be the
-// user's and in the currency of the purchase, and the first installment is worked out here from its
-// billing cycle (the date the client computed is ignored).
+// user typed. With one of the user's cards the client only sends the card id and the purchase day,
+// so neither is trusted: the card must be the user's, a credit card with a cap in the currency of
+// the purchase, and the first installment is worked out here from its billing cycle (the date the
+// client computed is ignored).
 const resolveSchedule = async (
   userId: string,
   input: InstallmentPlanInput,
@@ -40,7 +44,12 @@ const resolveSchedule = async (
 
   const card = await findOwnedCard(userId, input.cardId);
 
-  if (card.currency !== input.currency) {
+  // A purchase in installments is paid with a credit card that has a cap in its currency.
+  if (!isCreditCard(card)) {
+    throw new CardKindNotAllowedError();
+  }
+
+  if (!limitIn(card, input.currency)) {
     throw new CardCurrencyMismatchError();
   }
 
@@ -68,14 +77,16 @@ export const createInstallmentPlan = async (
   input: InstallmentPlanInput,
 ): Promise<{ id: string }> => {
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: null,
+  });
 
   const { cardId, purchaseDate, firstDate } = await resolveSchedule(
     userId,
     input,
   );
-  // A credit card is always digital money: the schema already forces it, and this is the last line of
-  // defence, so a plan with a card is never stored as cash whoever calls the service.
-  const medium = cardId ? DEFAULT_PAYMENT_MEDIUM : input.medium;
   const installments = buildInstallments({
     description: input.description,
     totalAmount: input.totalAmount,
@@ -91,7 +102,7 @@ export const createInstallmentPlan = async (
         totalCuotas: input.totalCuotas,
         totalAmount: BigInt(input.totalAmount),
         currency: input.currency,
-        medium,
+        accountId: input.accountId,
         categoryId: input.categoryId,
         notes: input.notes,
         dayOfMonth: dayOfMonthOf(firstDate),
@@ -111,7 +122,8 @@ export const createInstallmentPlan = async (
         notes: input.notes,
         // Created ahead of time: it still has to be paid.
         status: "PLANNED" as const,
-        medium,
+        // Every installment is paid from the plan's account.
+        accountId: input.accountId,
         isRecurring: false,
         installmentPlanId: plan.id,
         installmentNumber: number,

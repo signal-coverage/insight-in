@@ -14,10 +14,27 @@ vi.mock("@/core/expenses/actions", () => ({
   createCategoryAction: actions.createCategoryAction,
 }));
 
+import type { AccountChoice } from "@/core/accounts/types";
+
 import type { RecurringRow } from "../../../../types";
 import { TemplateFormDrawer } from "./TemplateFormDrawer";
 
 const CATEGORIES = [{ id: "c1", name: "Servicios" }];
+
+const ACCOUNTS: readonly AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
 
 // A subscription of 20 USD that really costs 35.000 ARS.
 const TEMPLATE: RecurringRow = {
@@ -28,7 +45,7 @@ const TEMPLATE: RecurringRow = {
   categoryId: "c1",
   categoryName: "Servicios",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -56,6 +73,7 @@ const renderForm = (template: RecurringRow) => {
       onClose={() => {}}
       target={{ key: 1, template }}
       categories={CATEGORIES}
+      accounts={ACCOUNTS}
     />,
   );
 };

@@ -15,7 +15,8 @@ const ROW: ExpenseRow = {
   categoryName: "Alquiler",
   notes: "Paid by transfer",
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   isRecurring: false,
   installmentPlanId: null,
   installmentNumber: null,
@@ -78,6 +79,7 @@ describe("ExpensesTable columns", () => {
       "Estado",
       "Descripción",
       "Categoría",
+      "Cuenta",
       "Fecha",
       "Monto",
       "Notas",
@@ -91,6 +93,7 @@ describe("ExpensesTable columns", () => {
 
     expect(first).toHaveTextContent("Monthly rent");
     expect(first).toHaveTextContent("Alquiler");
+    expect(first).toHaveTextContent("Banco Galicia · Caja de ahorro");
     expect(first).toHaveTextContent("5 sept 2026");
     expect(first).toHaveTextContent("$ 350.000,50");
     expect(first).toHaveTextContent("Paid by transfer");
@@ -123,7 +126,7 @@ describe("ExpensesTable column widths", () => {
 
     expect(screen.getByRole("grid")).toHaveClass(
       "table-fixed",
-      "min-w-[48rem]",
+      "min-w-[59rem]",
     );
   });
 
@@ -344,40 +347,29 @@ describe("ExpensesTable installment marker", () => {
       screen.queryByRole("img", { name: "Recurrente" }),
     ).not.toBeInTheDocument();
   });
-
-  it("can sit beside the cash marker on an installment paid in cash", () => {
-    renderTable([{ ...INSTALLMENT, medium: "CASH" }]);
-
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: "Compra en cuotas" }),
-    ).toBeInTheDocument();
-  });
 });
 
-describe("ExpensesTable cash marker", () => {
-  it("marks the expenses paid in cash, next to their description", () => {
-    renderTable([{ ...ROW, medium: "CASH" }]);
-
-    const marker = screen.getByRole("img", { name: "Efectivo" });
-
-    expect(marker.querySelector("title")).toBeNull();
-    expect(marker.parentElement).toHaveTextContent("Monthly rent");
-  });
-
-  it("shows no marker for digital expenses", () => {
+describe("ExpensesTable account column", () => {
+  it("names the account of each expense as 'Banco · Cuenta', cut with an ellipsis when long", () => {
     renderTable();
 
+    const header = screen.getByRole("columnheader", { name: "Cuenta" });
+
+    expect(header).toHaveClass("w-44", "overflow-hidden", "text-ellipsis");
     expect(
-      screen.queryByRole("img", { name: "Efectivo" }),
-    ).not.toBeInTheDocument();
+      within(bodyRows()[0]).getByText("Banco Galicia · Caja de ahorro"),
+    ).toBeInTheDocument();
   });
 
-  it("can show both markers on a recurring cash expense", () => {
-    renderTable([{ ...ROW, medium: "CASH", isRecurring: true }]);
+  it("no longer draws a cash marker beside the description", () => {
+    renderTable([{ ...ROW, accountLabel: "Efectivo · Efectivo" }]);
 
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
+    expect(
+      within(bodyRows()[0]).getByText("Efectivo · Efectivo"),
+    ).toBeInTheDocument();
+    expect(
+      within(bodyRows()[0]).queryByRole("img", { name: "Efectivo" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -400,10 +392,10 @@ describe("ExpensesTable while rows are on their way", () => {
     const cells = Array.from(
       container.querySelectorAll("tbody tr:first-child td"),
     );
-    // Status and actions hold fixed-size controls; the other five hold text.
+    // Status and actions hold fixed-size controls; the other six hold text.
     const textCells = cells.slice(2);
 
-    expect(textCells).toHaveLength(5);
+    expect(textCells).toHaveLength(6);
     textCells.forEach((cell) => {
       expect(cell.querySelector(".skeleton")?.className).toMatch(
         /\bw-(\d+\/\d+|full)\b/,
@@ -500,7 +492,7 @@ describe("ExpensesTable tooltips", () => {
   });
 
   it("gives the markers a tooltip with their own text", () => {
-    renderTable([{ ...ROW, medium: "CASH", isRecurring: true }]);
+    renderTable([{ ...ROW, isRecurring: true }]);
 
     focusWithKeyboard(screen.getByRole("img", { name: "Recurrente" }));
 
@@ -665,9 +657,8 @@ describe("ExpensesTable origin marker", () => {
   });
 
   it("can show it next to the other markers", () => {
-    renderTable([{ ...QUOTED_IN_USD, medium: "CASH", isRecurring: true }]);
+    renderTable([{ ...QUOTED_IN_USD, isRecurring: true }]);
 
-    expect(screen.getByRole("img", { name: "Efectivo" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Recurrente" })).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Se cotizó en 20 USD" }),

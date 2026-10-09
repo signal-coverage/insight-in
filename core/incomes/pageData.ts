@@ -1,3 +1,4 @@
+import { listAccountChoices } from "@/core/accounts/choices";
 import type { EntriesQuery } from "@/core/entries/query";
 import { listIncomeInstallmentPlans } from "@/core/installments/incomeService";
 import { distinctPlanIds } from "@/core/installments/planProgress";
@@ -40,10 +41,11 @@ export const loadIncomesPageData = async (
   const month = monthOf(today);
   // The expenses an income can pay back do not change when recurring incomes are generated, so they
   // are read once, with the first reads.
-  const [created, firstReads, reimbursables] = await Promise.all([
+  const [created, firstReads, reimbursables, accounts] = await Promise.all([
     materializeRecurringIncomes(userId, today),
     readAll(userId, query, month),
     listReimbursableExpenses(userId),
+    listAccountChoices(userId),
   ]);
   const [page, totals, categories, currencies, recurring, plans] =
     created > 0 ? await readAll(userId, query, month) : firstReads;
@@ -64,5 +66,6 @@ export const loadIncomesPageData = async (
     recurring,
     repayments: { month, plans },
     reimbursables,
+    accounts,
   };
 };

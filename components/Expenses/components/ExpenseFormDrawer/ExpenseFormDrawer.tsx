@@ -12,6 +12,7 @@ export function ExpenseFormDrawer({
   target,
   categories,
   cards,
+  accounts,
 }: ExpenseFormDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -22,6 +23,7 @@ export function ExpenseFormDrawer({
             target={target}
             categories={categories}
             cards={cards}
+            accounts={accounts}
             onClose={onClose}
           />
         </Drawer.Dialog>

@@ -28,6 +28,40 @@ const usdc = (units: number) => units * 1_000_000;
 const ars = (units: number) => units * 100;
 
 describe("summarizePairs", () => {
+  it("orders the pairs by the registry order of the crypto origins, not alphabetically", () => {
+    const entries = ["DAI", "USDT", "USDC"].map((originCurrency) =>
+      entry({
+        date: "2026-09-05",
+        amount: ars(1_200_000),
+        originAmount: usdc(1000),
+        originCurrency,
+      }),
+    );
+
+    expect(
+      summarizePairs(entries, "income", "2026-09").map(
+        (pair) => pair.originCurrency,
+      ),
+    ).toEqual(["USDC", "USDT", "DAI"]);
+  });
+
+  it("keeps legal tender first, by code, then the crypto", () => {
+    const entries = ["USDC", "USD", "EUR"].map((originCurrency) =>
+      entry({
+        date: "2026-09-05",
+        amount: ars(1_200_000),
+        originAmount: 1000,
+        originCurrency,
+      }),
+    );
+
+    expect(
+      summarizePairs(entries, "income", "2026-09").map(
+        (pair) => pair.originCurrency,
+      ),
+    ).toEqual(["EUR", "USD", "USDC"]);
+  });
+
   it("returns nothing when no entry belongs to the month", () => {
     const entries = [
       entry({

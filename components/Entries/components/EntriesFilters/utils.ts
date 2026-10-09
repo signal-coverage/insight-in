@@ -1,3 +1,4 @@
+import { compareCurrencyCodes } from "@/core/currencies/crypto";
 import { isValidIsoDate } from "@/core/incomes/dates";
 
 import { MIN_FILTER_YEAR, PLANNED_LABEL } from "./consts";
@@ -25,5 +26,5 @@ export const buildCurrencyOptions = (
   active: string | null,
 ): FilterOption[] =>
   Array.from(new Set(active ? [...currencies, active] : currencies))
-    .sort((a, b) => a.localeCompare(b))
+    .sort(compareCurrencyCodes)
     .map((code) => ({ id: code, label: code }));

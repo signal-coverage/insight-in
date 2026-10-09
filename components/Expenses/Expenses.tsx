@@ -20,6 +20,7 @@ import { withPlanRows } from "@/components/Entries/utils";
 import { useOptimisticStatus } from "@/components/Entries/useOptimisticStatus";
 import { useRowSelection } from "@/components/Entries/useRowSelection";
 import { Await } from "@/components/shared/Await";
+import { InlineAlert } from "@/components/shared/InlineAlert";
 import {
   clearFilters,
   hasActiveFilters,
@@ -73,13 +74,16 @@ export function Expenses({
   table,
   recurring,
   cards,
+  accounts,
 }: ExpensesProps) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
   // The checkbox answers at once, and keeps the status it was given until the refreshed rows arrive.
-  const { toggle: toggleStatus, apply: withNewStatus } = useOptimisticStatus(
-    setExpenseStatusAction,
-  );
+  const {
+    toggle: toggleStatus,
+    apply: withNewStatus,
+    refusal: statusRefusal,
+  } = useOptimisticStatus(setExpenseStatusAction);
   // The rows ticked, and the rows a delete is working on until the refreshed rows arrive.
   const selection = useRowSelection();
   const { deletingIds, markDeleting, deletingPlanIds, markDeletingPlan } =
@@ -261,22 +265,32 @@ export function Expenses({
               onResolve={openRecurring}
             />
 
-            {/* Editing a template needs the categories too, which load on their own. */}
+            {/* Editing a template needs the categories and the accounts too, which load on their own. */}
             <Await source={categories} fallback={null}>
               {(loadedCategories) => (
-                <RecurringExpensesDrawer
-                  isOpen={recurringState.isOpen}
-                  onOpenChange={recurringState.setOpen}
-                  onClose={recurringState.close}
-                  sessionKey={recurringSession}
-                  data={data}
-                  categories={loadedCategories}
-                />
+                <Await source={accounts} fallback={null}>
+                  {(loadedAccounts) => (
+                    <RecurringExpensesDrawer
+                      isOpen={recurringState.isOpen}
+                      onOpenChange={recurringState.setOpen}
+                      onClose={recurringState.close}
+                      sessionKey={recurringSession}
+                      data={data}
+                      categories={loadedCategories}
+                      accounts={loadedAccounts}
+                    />
+                  )}
+                </Await>
               )}
             </Await>
           </>
         )}
       </Await>
+
+      {/* Why the last tick of a checkbox was refused: a debit card's account without the money. */}
+      {statusRefusal ? (
+        <InlineAlert variant="error">{statusRefusal}</InlineAlert>
+      ) : null}
 
       <Await source={table} fallback={renderTable(null)}>
         {renderTable}
@@ -290,24 +304,32 @@ export function Expenses({
             <Await source={cards} fallback={null}>
               {(loadedCards) => (
                 <>
-                  <ExpenseFormDrawer
-                    isOpen={formState.isOpen}
-                    onOpenChange={formState.setOpen}
-                    onClose={formState.close}
-                    target={formTarget}
-                    categories={loadedCategories}
-                    cards={loadedCards}
-                  />
+                  <Await source={accounts} fallback={null}>
+                    {(loadedAccounts) => (
+                      <>
+                        <ExpenseFormDrawer
+                          isOpen={formState.isOpen}
+                          onOpenChange={formState.setOpen}
+                          onClose={formState.close}
+                          target={formTarget}
+                          categories={loadedCategories}
+                          cards={loadedCards}
+                          accounts={loadedAccounts}
+                        />
 
-                  <InstallmentPlannerDrawer
-                    isOpen={plannerState.isOpen}
-                    onOpenChange={plannerState.setOpen}
-                    onClose={plannerState.close}
-                    sessionKey={planner.key}
-                    defaultDate={planner.defaultDate}
-                    categories={loadedCategories}
-                    cards={loadedCards}
-                  />
+                        <InstallmentPlannerDrawer
+                          isOpen={plannerState.isOpen}
+                          onOpenChange={plannerState.setOpen}
+                          onClose={plannerState.close}
+                          sessionKey={planner.key}
+                          defaultDate={planner.defaultDate}
+                          categories={loadedCategories}
+                          cards={loadedCards}
+                          accounts={loadedAccounts}
+                        />
+                      </>
+                    )}
+                  </Await>
                 </>
               )}
             </Await>

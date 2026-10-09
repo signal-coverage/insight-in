@@ -16,6 +16,10 @@ const actions = vi.hoisted(() => ({
 
 vi.mock("@/core/expenses/actions", () => actions);
 
+import { CRYPTO_CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import type { AccountChoice } from "@/core/accounts/types";
+
+import { creditOption } from "../../testCards";
 import type { CardOption, ExpenseRow, FormTarget } from "../../types";
 import { ExpenseFormDrawer } from "./ExpenseFormDrawer";
 
@@ -25,27 +29,30 @@ const CATEGORIES = [
 ];
 
 // Closes on the 25th and is paid on the 5th.
-const CARD: CardOption = {
-  id: "card_1",
-  title: "Visa •••• 1234",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  charges: [],
-};
+const CARD: CardOption = creditOption();
 
-const DOLLAR_CARD: CardOption = {
-  ...CARD,
+const DOLLAR_CARD: CardOption = creditOption({
   id: "card_2",
   title: "Mastercard •••• 9999",
   brand: "MASTERCARD",
   last4: "9999",
   currency: "USD",
-};
+});
+
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
 
 const EXPENSE: ExpenseRow = {
   id: "exp_1",
@@ -57,7 +64,8 @@ const EXPENSE: ExpenseRow = {
   categoryName: "Alquiler",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   isRecurring: true,
   installmentPlanId: null,
   installmentNumber: null,
@@ -90,6 +98,7 @@ const INSTALLMENT: ExpenseRow = {
 const renderForm = (
   expense: ExpenseRow | null,
   cards: readonly CardOption[] = [],
+  accounts: readonly AccountChoice[] = ACCOUNTS,
 ) => {
   const onClose = vi.fn();
   const target: FormTarget = { key: 1, expense, defaultDate: "2026-09-29" };
@@ -102,6 +111,7 @@ const renderForm = (
       target={target}
       categories={CATEGORIES}
       cards={cards}
+      accounts={accounts}
     />,
   );
 
@@ -242,22 +252,106 @@ describe("create mode", () => {
   });
 });
 
-describe("medium field", () => {
-  it("offers Digital and Efectivo, with Digital chosen for a new expense", () => {
+describe("account field", () => {
+  const accountTrigger = () => screen.getByRole("button", { name: /Cuenta/ });
+
+  const pickCurrency = async (label: RegExp) => {
+    fireEvent.keyDown(screen.getByRole("button", { name: /Moneda/ }), {
+      key: "ArrowDown",
+    });
+
+    const option = await screen.findByRole("option", { name: label });
+
+    fireEvent.keyDown(option, { key: "Enter" });
+    fireEvent.keyUp(option, { key: "Enter" });
+  };
+
+  it("replaces the Medio radio: there is no Digital/Efectivo choice any more", () => {
     renderForm(null);
 
-    expect(screen.getByRole("radiogroup", { name: "Medio" })).toBeVisible();
-    expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Efectivo" })).not.toBeChecked();
+    expect(
+      screen.queryByRole("radiogroup", { name: "Medio" }),
+    ).not.toBeInTheDocument();
+    expect(accountTrigger()).toBeInTheDocument();
   });
 
-  it("keeps the stored medium of the expense being edited", () => {
-    renderForm({ ...EXPENSE, medium: "CASH" });
+  it("preselects the only account of the currency for a new expense", () => {
+    renderForm(null);
 
-    expect(screen.getByRole("radio", { name: "Efectivo" })).toBeChecked();
+    expect(accountTrigger()).toHaveTextContent(
+      "Banco Galicia · Caja de ahorro",
+    );
   });
 
-  it("sends the chosen medium with the rest of the form", async () => {
+  it("starts on the account of the expense being edited", () => {
+    renderForm(
+      { ...EXPENSE, accountId: "acc_2" },
+      [],
+      [
+        ...ACCOUNTS,
+        {
+          id: "acc_2",
+          currency: "ARS",
+          label: "Efectivo · Efectivo",
+          archived: false,
+        },
+      ],
+    );
+
+    expect(accountTrigger()).toHaveTextContent("Efectivo · Efectivo");
+  });
+
+  it("keeps an archived account the expense already has, marked as archived", () => {
+    renderForm(
+      { ...EXPENSE, accountId: "acc_old" },
+      [],
+      [
+        ...ACCOUNTS,
+        {
+          id: "acc_old",
+          currency: "ARS",
+          label: "Banco Nación · Vieja",
+          archived: true,
+        },
+      ],
+    );
+
+    expect(accountTrigger()).toHaveTextContent(
+      "Banco Nación · Vieja (archivada)",
+    );
+  });
+
+  it("follows a currency change: the account of the old currency goes, the only one of the new comes", async () => {
+    renderForm(null);
+
+    await pickCurrency(/^USD - /);
+
+    expect(accountTrigger()).toHaveTextContent(
+      "Banco Galicia · Cuenta en dólares",
+    );
+  });
+
+  it("asks for an account again when the new currency has several", async () => {
+    renderForm(
+      null,
+      [],
+      [
+        ...ACCOUNTS,
+        {
+          id: "acc_usd_2",
+          currency: "USD",
+          label: "Efectivo · Dólares",
+          archived: false,
+        },
+      ],
+    );
+
+    await pickCurrency(/^USD - /);
+
+    expect(accountTrigger()).toHaveTextContent("Elegí una cuenta");
+  });
+
+  it("sends the chosen account with the rest of the form", async () => {
     actions.createExpenseAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderForm(null);
 
@@ -268,25 +362,33 @@ describe("medium field", () => {
       target: { value: "10" },
     });
     await pickCategory("Comida");
-    fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
     fireEvent.click(screen.getByRole("button", { name: "Agregar gasto" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
 
-    expect(createdForm().get("medium")).toBe("CASH");
+    expect(createdForm().get("accountId")).toBe("acc_1");
+    expect(createdForm().has("medium")).toBe(false);
   });
 
-  it("sends digital when nothing was changed", async () => {
-    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
-    const { onClose } = renderForm(EXPENSE);
+  it("shows the error the server found for the account", async () => {
+    actions.updateExpenseAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: {
+        accountId: [
+          "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+        ],
+      },
+    });
+    renderForm(EXPENSE);
 
     fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
-
     expect(
-      (actions.updateExpenseAction.mock.calls[0][1] as FormData).get("medium"),
-    ).toBe("DIGITAL");
+      await screen.findByText(
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 
@@ -420,6 +522,27 @@ describe("the Estado field", () => {
     expect(actions.updateExpenseAction.mock.calls[0][0]).toBe("exp_9");
     expect(sent.get("status")).toBe("COVERED");
     expect(sent.get("description")).toBe("Heladera (3/12)");
+  });
+
+  it("locks the currency of an installment but still sends the plan's", async () => {
+    actions.updateExpenseAction.mockResolvedValue({ status: "success" });
+    const { onClose } = renderForm(INSTALLMENT);
+
+    expect(screen.getByRole("button", { name: /Moneda$/ })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+
+    const sent = actions.updateExpenseAction.mock.calls[0][1] as FormData;
+
+    expect(sent.get("currency")).toBe("ARS");
+  });
+
+  it("keeps the currency open for an ordinary expense", () => {
+    renderForm({ ...EXPENSE, isRecurring: false });
+
+    expect(screen.getByRole("button", { name: /Moneda$/ })).toBeEnabled();
   });
 
   it("keeps the recurring switch for a new and an ordinary expense", () => {
@@ -578,7 +701,7 @@ describe("the card", () => {
     });
 
     const option = await screen.findByRole("option", {
-      name: new RegExp(`^${code}`),
+      name: new RegExp(`^${code} - `),
     });
 
     fireEvent.keyDown(option, { key: "Enter" });
@@ -778,5 +901,55 @@ describe("the card", () => {
     expect(
       await screen.findByText("No se encontró la tarjeta."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("the currency and the crypto currencies", () => {
+  const CRYPTO_LABELS = CRYPTO_CURRENCY_OPTIONS.map(({ label }) => label);
+  const currencyButton = () => screen.getByRole("button", { name: /Moneda$/ });
+
+  it("lists the legal-tender currencies first and then the crypto ones, under 'Criptomonedas'", async () => {
+    renderForm(null);
+
+    fireEvent.keyDown(currencyButton(), { key: "ArrowDown" });
+
+    const listbox = await screen.findByRole("listbox");
+    const options = within(listbox)
+      .getAllByRole("option")
+      .map((option) => option.textContent ?? "");
+
+    expect(within(listbox).getByText("Criptomonedas")).toBeInTheDocument();
+    expect(options[0]).toMatch(/^ARS - /);
+    expect(options.slice(-CRYPTO_LABELS.length)).toEqual(CRYPTO_LABELS);
+  });
+
+  it("takes a crypto currency and the wallet account in it", async () => {
+    renderForm(
+      null,
+      [],
+      [
+        ...ACCOUNTS,
+        {
+          id: "acc_usdc",
+          currency: "USDC",
+          label: "Mercado Pago · USDC",
+          archived: false,
+        },
+      ],
+    );
+
+    fireEvent.keyDown(currencyButton(), { key: "ArrowDown" });
+
+    const option = await screen.findByRole("option", {
+      name: "USDC - USD Coin",
+    });
+
+    fireEvent.keyDown(option, { key: "Enter" });
+    fireEvent.keyUp(option, { key: "Enter" });
+
+    expect(currencyButton()).toHaveTextContent("USDC - USD Coin");
+    expect(screen.getByRole("button", { name: /Cuenta$/ })).toHaveTextContent(
+      "Mercado Pago · USDC",
+    );
   });
 });

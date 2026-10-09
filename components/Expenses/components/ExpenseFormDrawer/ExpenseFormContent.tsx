@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   Label,
-  ListBox,
   Select,
   TextArea,
   TextField,
@@ -15,14 +14,17 @@ import {
 import { useState, useTransition } from "react";
 import type { FormEvent } from "react";
 
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { CardField } from "@/components/Entries/components/CardField";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
-import { MediumField } from "@/components/Entries/components/MediumField";
 import { OriginSection } from "@/components/Entries/components/OriginSection";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
+import { useServerFieldErrors } from "@/components/Entries/useServerFieldErrors";
 import { DEFAULT_ENTRY_STATUS } from "@/core/entries/status";
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import { CurrencyListBox } from "@/components/Entries/components/CurrencyListBox";
 import {
   AMOUNT_HINT,
   AMOUNT_LABEL,
@@ -64,6 +66,7 @@ import {
   RECURRING_LOCKED_HINT,
   RECURRING_SWITCH_LABEL,
 } from "../../consts";
+import { DebitAccountLine } from "./components/DebitAccountLine";
 import { ExpectedReimbursementField } from "./components/ExpectedReimbursementField";
 import { ExpenseStatusField } from "./components/ExpenseStatusField";
 import { RecurringSwitch } from "./components/RecurringSwitch";
@@ -80,19 +83,22 @@ import {
   FORM_ID,
 } from "./consts";
 import type { ExpenseFormContentProps } from "./types";
-import { chargeLineFor } from "./utils";
+import { chargeLineFor, debitAccountLabel, keepsOwnCard } from "./utils";
 
 // Mounted with a fresh key on every opening, so field defaults and errors always reset.
 export function ExpenseFormContent({
   target,
   categories,
   cards,
+  accounts,
   onClose,
 }: ExpenseFormContentProps) {
   const { expense, defaultDate } = target;
   const isInstallment = expense !== null && expense.installmentPlanId !== null;
   const [isPending, startTransition] = useTransition();
-  const [fieldErrors, setFieldErrors] = useState<ExpenseFieldErrors>({});
+  // The refusals of the server stay until the input that caused them changes: see clearFieldErrors.
+  const { fieldErrors, setFieldErrors, clearFieldErrors } =
+    useServerFieldErrors<ExpenseFieldErrors>();
   const [formError, setFormError] = useState<string | null>(null);
   // Kept in state because the card choice depends on the currency, and the date field and the
   // charge line depend on the card. An expense with a card shows the day it was bought, not the day
@@ -102,25 +108,62 @@ export function ExpenseFormContent({
     expense?.currency ?? DEFAULT_CURRENCY_CODE,
   );
   const [cardId, setCardId] = useState<string | null>(expense?.cardId ?? null);
+  // The account the money leaves. A currency change drops it (the field then preselects the only
+  // account of the new currency, if there is exactly one); an edit keeps the expense's own account
+  // even if it was archived since.
+  const keepAccountId = expense?.accountId ?? null;
+  const [accountId, setAccountId] = useState<string | null>(keepAccountId);
+  const account = resolveAccountId(
+    accounts,
+    currency,
+    accountId,
+    keepAccountId,
+  );
   const [date, setDate] = useState<string | null>(
     expense?.purchaseDate ?? expense?.date ?? defaultDate,
   );
   // An installment keeps the card of its plan, so the form never offers one for it. A card that is
-  // gone, or in another currency than the expense, counts as no card.
+  // gone, or that cannot pay in the currency of the expense, counts as no card.
   const card = isInstallment
     ? undefined
     : cards.find(
-        (option) => option.id === cardId && option.currency === currency,
+        (option) =>
+          option.id === cardId &&
+          (option.currencies.includes(currency) ||
+            keepsOwnCard(expense, option.id, currency)),
       );
 
   const hasOriginErrors = Boolean(
     fieldErrors.originCurrency || fieldErrors.originAmount,
   );
 
+  // The card, the account, the currency, the status and the date can all change the server's
+  // verdict (funds, the card's account, the date rule), so changing any of them drops the refusals.
+  const handleCardChange = (next: string | null) => {
+    setCardId(next);
+    clearFieldErrors();
+  };
+
+  const handleAccountChange = (next: string | null) => {
+    setAccountId(next);
+    clearFieldErrors();
+  };
+
+  const handleDateChange = (next: string | null) => {
+    setDate(next);
+    clearFieldErrors();
+  };
+
   const handleCurrencyChange = (next: string) => {
     setCurrency(next);
+    setAccountId(null);
+    clearFieldErrors();
 
-    if (card && card.currency !== next) {
+    if (
+      card &&
+      !card.currencies.includes(next) &&
+      !keepsOwnCard(expense, card.id, next)
+    ) {
       setCardId(null);
     }
   };
@@ -203,7 +246,8 @@ export function ExpenseFormContent({
               isRequired
               variant={FIELD_VARIANT}
               className={FIELD_CLASS_NAME}
-              name="currency"
+              name={isInstallment ? undefined : "currency"}
+              isDisabled={isInstallment}
               placeholder={CURRENCY_PLACEHOLDER}
               value={currency}
               onChange={(value) => {
@@ -218,17 +262,14 @@ export function ExpenseFormContent({
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover>
-                <ListBox>
-                  {CURRENCY_OPTIONS.map(({ code, label }) => (
-                    <ListBox.Item key={code} id={code} textValue={label}>
-                      {label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
+                <CurrencyListBox includeCrypto />
               </Select.Popover>
               <FieldError />
             </Select>
+            {/* A disabled select sends nothing, so the plan's currency travels in a hidden field. */}
+            {isInstallment ? (
+              <input type="hidden" name="currency" value={currency} />
+            ) : null}
           </div>
 
           {/* What the user expects to be paid back for it. An installment belongs to its plan, which has
@@ -252,26 +293,30 @@ export function ExpenseFormContent({
             />
           )}
 
-          {/* Only the cards in the currency of the expense are offered, and an installment never
-              offers one. The choice travels in a hidden input: "Sin tarjeta" sends nothing. */}
+          {/* Only the cards that can pay in the currency of the expense are offered, and an installment
+              never offers one. The choice travels in a hidden input: "Sin tarjeta" sends nothing. */}
           {cards.length > 0 && !isInstallment ? (
             <CardField
               cards={cards}
               currency={currency}
               value={card?.id ?? null}
-              onChange={setCardId}
+              onChange={handleCardChange}
               errorMessage={fieldErrors.cardId?.[0]}
+              keepCardId={
+                expense && expense.currency === currency ? expense.cardId : null
+              }
             />
           ) : null}
           <input type="hidden" name="cardId" value={card?.id ?? ""} />
 
-          {/* With a card the date is the purchase day, and the card works out when it charges it. */}
+          {/* With a credit card the date is the purchase day, and the card works out when it
+              charges it. */}
           <DatePickerField
             isRequired
             name="date"
-            label={card ? PURCHASE_DATE_LABEL : DATE_LABEL}
+            label={card?.kind === "CREDIT" ? PURCHASE_DATE_LABEL : DATE_LABEL}
             value={date}
-            onChange={setDate}
+            onChange={handleDateChange}
             description={chargeLineFor(card, date) ?? undefined}
           />
 
@@ -281,13 +326,27 @@ export function ExpenseFormContent({
             onCreate={createCategoryAction}
           />
 
-          <MediumField
-            defaultMedium={expense?.medium ?? DEFAULT_PAYMENT_MEDIUM}
-          />
+          {/* A debit card decides the account on the server: the form shows it instead of asking. */}
+          {card?.kind === "DEBIT" ? (
+            <DebitAccountLine
+              label={debitAccountLabel(card, currency, expense)}
+              errorMessage={fieldErrors.accountId?.[0]}
+            />
+          ) : (
+            <AccountField
+              accounts={accounts}
+              currency={currency}
+              value={account}
+              keepAccountId={keepAccountId}
+              onChange={handleAccountChange}
+              errorMessage={fieldErrors.accountId?.[0]}
+            />
+          )}
 
           {/* Any expense can be pending, paid, or covered by someone else. A new one starts paid. */}
           <ExpenseStatusField
             defaultStatus={expense ? expense.status : DEFAULT_ENTRY_STATUS}
+            onChange={clearFieldErrors}
           />
 
           {/* An installment never repeats on its own: its plan already spreads it over the months.

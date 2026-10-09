@@ -8,8 +8,14 @@ import {
 } from "@/core/entries/actionHelpers";
 
 import { OVERVIEW_PATH, SETTINGS_PATH } from "./consts";
-import { includeExpectedIncomesSchema } from "./schema";
-import { saveIncludeExpectedIncomes } from "./service";
+import {
+  hiddenSummaryCurrenciesSchema,
+  includeExpectedIncomesSchema,
+} from "./schema";
+import {
+  saveHiddenSummaryCurrencies,
+  saveIncludeExpectedIncomes,
+} from "./service";
 import type { SettingsActionResult } from "./types";
 
 // The owner always comes from the Clerk session; see runAuthenticated in the helpers.
@@ -32,6 +38,25 @@ export async function saveIncludeExpectedIncomesAction(
     await saveIncludeExpectedIncomes(userId, parsed.data);
     revalidatePath(OVERVIEW_PATH);
     revalidatePath(SETTINGS_PATH);
+
+    return { status: "success" };
+  });
+}
+
+// The currencies the user hides from the summary tabs. Display only: nothing else changes, so only
+// the summary is refreshed.
+export async function saveHiddenSummaryCurrenciesAction(
+  value: unknown,
+): Promise<SettingsActionResult> {
+  return runAuthenticated<SettingsActionResult>(async (userId) => {
+    const parsed = hiddenSummaryCurrenciesSchema.safeParse(value);
+
+    if (!parsed.success) {
+      return failure(parsed.error.issues[0].message);
+    }
+
+    await saveHiddenSummaryCurrencies(userId, parsed.data);
+    revalidatePath(OVERVIEW_PATH);
 
     return { status: "success" };
   });

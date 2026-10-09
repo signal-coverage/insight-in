@@ -1,12 +1,15 @@
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { AmountCurrencyFields } from "@/components/Entries/components/AmountCurrencyFields";
 import { AmountModeField } from "@/components/Entries/components/AmountModeField";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { CuotasCountField } from "@/components/Entries/components/CuotasCountField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
 import { InstallmentPreview } from "@/components/Entries/components/InstallmentPreview";
-import { MediumField } from "@/components/Entries/components/MediumField";
 import {
   NOTES_LABEL,
   NOTES_PLACEHOLDER,
@@ -30,10 +33,11 @@ import type { RepaymentFormProps } from "./types";
 
 // The first step: the data of the repayment. Everything lives in the parent, so going to the ticket
 // and coming back finds every field as it was left. Like a purchase but with no card: the money
-// arrives in an account or as cash, on the dates the user types.
+// arrives in an account, on the dates the user types.
 export function RepaymentForm({
   values,
   categories,
+  accounts,
   preview,
   onChange,
 }: RepaymentFormProps) {
@@ -72,10 +76,12 @@ export function RepaymentForm({
         onChange={onChange}
       />
 
-      {/* How the money arrives: in an account or as cash. */}
-      <MediumField
-        defaultMedium={values.medium}
-        onChange={(medium) => onChange({ medium })}
+      {/* The account the money arrives in. */}
+      <AccountField
+        accounts={accounts}
+        currency={values.currency}
+        value={resolveAccountId(accounts, values.currency, values.accountId)}
+        onChange={(accountId) => onChange({ accountId })}
       />
 
       <div className={AMOUNT_ROW_CLASS_NAME}>

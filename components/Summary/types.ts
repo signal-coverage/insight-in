@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 
 import type { Source } from "@/components/shared/Await";
+import type { AttentionKind, AttentionSeverity } from "@/core/summary/types";
 
 import type { OpeningBalanceData } from "./components/OpeningBalanceDrawer";
 
@@ -16,18 +17,40 @@ export interface SummaryRow {
   currency: string;
   incomes: SideRow;
   expenses: SideRow;
-  // What was left in the accounts by the earlier months.
+  // What the accounts held when the month began.
   previous: string;
-  // What is in the accounts right now.
+  // What the accounts hold after the month's movements.
   current: string;
   // Where the month would end if nothing else changed.
   target: string;
-  // The cash in hand.
-  wallet: string;
-  // Accounts and wallet together: what the user has today.
-  available: string;
   // What is still expected back from expenses and not yet registered as income. Only informational.
   reimbursements: string;
+  // What share of the expenses' total is already paid, 0..100 (the bar under Gastos).
+  paidPercent: number;
+}
+
+// One account of the "Por cuenta" card, its balance already formatted in its currency.
+export interface AccountLine {
+  accountId: string;
+  name: string;
+  balanceLabel: string;
+  // Negative balances are shown in red, never blocked.
+  isNegative: boolean;
+  isArchived: boolean;
+}
+
+export interface BankLines {
+  bankId: string;
+  bankName: string;
+  accounts: AccountLine[];
+}
+
+// One currency's card: its total and its banks.
+export interface CurrencyAccountsRow {
+  currency: string;
+  totalLabel: string;
+  isTotalNegative: boolean;
+  banks: BankLines[];
 }
 
 export interface SummaryProps {
@@ -44,6 +67,15 @@ export interface SummaryProps {
   // Whether the target remainder counts the incomes still to collect (the saved setting), or a
   // promise of it while it loads.
   includeExpectedIncomes: Source<boolean>;
+  // The currencies the user hides from the month block's tabs (display only), or a promise of them
+  // while they load.
+  hiddenCurrencies: Source<readonly string[]>;
+  // What each account holds today, per currency and bank, or a promise of it while it loads.
+  accountBalances: Source<readonly CurrencyAccountsRow[]>;
+  // What needs attention today, or an error result when it could not be read.
+  attention: Source<BlockResult<readonly AttentionGroupRow[]>>;
+  // The charts of every currency of the month, or an error result when they could not be read.
+  charts: Source<BlockResult<readonly CurrencyChartsRow[]>>;
 }
 
 // What a row of cards is about: money coming in, money going out, or what is left.
@@ -58,8 +90,6 @@ export interface SummaryCardSpec {
     | "current"
     | "target"
     | "previous"
-    | "wallet"
-    | "available"
     | "reimbursements";
   label: string;
   // Makes this one card stand out even when its row does not.
@@ -71,7 +101,7 @@ export interface SummaryCardSpec {
 // A row of a currency's section, described once so the real section and its loading placeholder
 // are always made of the same rows.
 export interface SummaryRowSpec {
-  id: "incomes" | "expenses" | "remainders" | "balances";
+  id: "incomes" | "expenses" | "remainders";
   title: string;
   tone: RowTone;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
@@ -79,3 +109,73 @@ export interface SummaryRowSpec {
   emphasis: boolean;
   cards: readonly SummaryCardSpec[];
 }
+
+// A block of the page that loads on its own: when its read fails the page shows a short error in its
+// place instead of going down.
+export type BlockResult<T> = { status: "ok"; value: T } | { status: "error" };
+
+// One month of the income-against-expenses chart: the amounts for the geometry, the labels for the text.
+export interface MonthlyChartRow {
+  month: string;
+  monthLabel: string;
+  incomes: number;
+  expenses: number;
+  incomesLabel: string;
+  expensesLabel: string;
+}
+
+// One bar of the category chart.
+export interface CategoryChartRow {
+  key: string;
+  name: string;
+  amount: number;
+  amountLabel: string;
+  // "45 %": its share of the month's expenses.
+  shareLabel: string;
+  // The bar that folds the smallest categories ("Otras").
+  isOther: boolean;
+}
+
+// One day of the balance chart.
+export interface DailyChartPoint {
+  date: string;
+  // "08/10".
+  dayLabel: string;
+  balance: number;
+  balanceLabel: string;
+  isNegative: boolean;
+}
+
+// The three charts of one currency.
+export interface CurrencyChartsRow {
+  currency: string;
+  monthly: MonthlyChartRow[];
+  categories: CategoryChartRow[];
+  daily: DailyChartPoint[];
+}
+
+// A line of the attention block, every amount already formatted in its own currency.
+export interface AttentionItemRow {
+  id: string;
+  title: string;
+  amountLabel: string;
+  // The cap of a card ("usado X de Y"); null for everything else.
+  limitLabel: string | null;
+  // When it is due or was dated; null for accounts and cards.
+  dateLabel: string | null;
+  severity: AttentionSeverity;
+}
+
+// A group of the attention block: what it is, where it is resolved and its lines.
+export interface AttentionGroupRow {
+  kind: AttentionKind;
+  title: string;
+  linkLabel: string;
+  href: string;
+  items: AttentionItemRow[];
+  hiddenCount: number;
+}
+
+// What a currency's panels draw: the month in detail (only the figures) or the last six months (the
+// three charts).
+export type SummaryView = "month" | "history";

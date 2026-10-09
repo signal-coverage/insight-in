@@ -43,7 +43,8 @@ const ROW: IncomeRow = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   recurringIncomeId: null,
   installmentPlanId: null,
   installmentNumber: null,
@@ -63,6 +64,22 @@ const ROW: IncomeRow = {
 
 const GIG: IncomeRow = { ...ROW, id: "inc_2", description: "Side gig" };
 const BONUS: IncomeRow = { ...ROW, id: "inc_3", description: "Bonus" };
+
+// Accounts as the forms receive them: one per currency, so each is preselected.
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
 
 const TABLE: IncomesTableData = {
   rows: [ROW, GIG, BONUS],
@@ -86,6 +103,7 @@ const renderIncomes = (table: IncomesTableData = TABLE) =>
         plans: [],
       }}
       reimbursables={[]}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -179,6 +197,7 @@ describe("Incomes selection", () => {
           plans: [],
         }}
         reimbursables={[]}
+        accounts={ACCOUNTS}
       />,
     );
 

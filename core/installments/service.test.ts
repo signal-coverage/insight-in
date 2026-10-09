@@ -10,12 +10,19 @@ const db = vi.hoisted(() => ({
   card: { findFirst: vi.fn() },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import { AccountArchivedError } from "@/core/accounts/errors";
 import {
   CardCurrencyMismatchError,
+  CardKindNotAllowedError,
   CardNotFoundError,
 } from "@/core/cards/errors";
+import { WITH_CARD_DETAILS } from "@/core/cards/service";
+import { creditCardRecord, debitCardRecord } from "@/core/cards/testFixtures";
 import { CategoryNotFoundError } from "@/core/incomes/errors";
 
 import { InstallmentOutOfRangeError } from "./errors";
@@ -34,7 +41,7 @@ const input: InstallmentPlanInput = {
   description: "Heladera",
   categoryId: "cat_1",
   currency: "ARS",
-  medium: "CASH",
+  accountId: "acc_1",
   notes: "Garantía 12 meses",
   totalCuotas: 3,
   totalAmount: 100000,
@@ -72,6 +79,21 @@ describe("createInstallmentPlan", () => {
     expect(expense.createMany).not.toHaveBeenCalled();
   });
 
+  it("checks the account before writing anything, and writes nothing when it is refused", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(createInstallmentPlan(USER_ID, input)).rejects.toBeInstanceOf(
+      AccountArchivedError,
+    );
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_1",
+      currency: input.currency,
+      keepAccountId: null,
+    });
+    expect(installmentPlan.create).not.toHaveBeenCalled();
+    expect(expense.createMany).not.toHaveBeenCalled();
+  });
+
   it("stores the plan for the user, with the day of its first installment", async () => {
     await createInstallmentPlan(USER_ID, input);
 
@@ -82,7 +104,7 @@ describe("createInstallmentPlan", () => {
         totalCuotas: 3,
         totalAmount: BigInt(100000),
         currency: "ARS",
-        medium: "CASH",
+        accountId: "acc_1",
         categoryId: "cat_1",
         notes: "Garantía 12 meses",
         dayOfMonth: 31,
@@ -98,7 +120,7 @@ describe("createInstallmentPlan", () => {
       currency: "ARS",
       categoryId: "cat_1",
       notes: "Garantía 12 meses",
-      medium: "CASH",
+      accountId: "acc_1",
       status: "PLANNED",
       isRecurring: false,
       installmentPlanId: "plan_1",
@@ -186,23 +208,8 @@ describe("createInstallmentPlan", () => {
       purchaseDate: "2026-10-10",
     };
 
-    // Closes on the 25th and is paid on the 5th: a purchase of October 10 is in the statement that
-    // closes on October 25, paid on November 5.
-    const cardRow = (patch: Record<string, unknown> = {}) => ({
-      id: "card_1",
-      userId: USER_ID,
-      last4: "1234",
-      brand: "VISA",
-      closingDay: 25,
-      dueDay: 5,
-      currency: "ARS",
-      limitMode: "MONTHLY",
-      limitAmount: BigInt(30000000),
-      ...patch,
-    });
-
     beforeEach(() => {
-      db.card.findFirst.mockResolvedValue(cardRow());
+      db.card.findFirst.mockResolvedValue(creditCardRecord());
     });
 
     it("verifies the card belongs to the user before writing anything", async () => {
@@ -210,6 +217,7 @@ describe("createInstallmentPlan", () => {
 
       expect(db.card.findFirst).toHaveBeenCalledWith({
         where: { id: "card_1", userId: USER_ID },
+        include: WITH_CARD_DETAILS,
       });
     });
 
@@ -248,12 +256,38 @@ describe("createInstallmentPlan", () => {
     });
 
     it("writes nothing when the card is in another currency than the purchase", async () => {
-      db.card.findFirst.mockResolvedValue(cardRow({ currency: "USD" }));
+      db.card.findFirst.mockResolvedValue(
+        creditCardRecord({ currency: "USD" }),
+      );
 
       await expect(
         createInstallmentPlan(USER_ID, withCard),
       ).rejects.toBeInstanceOf(CardCurrencyMismatchError);
       expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("writes nothing when the card is a debit card: installments are paid with a credit card", async () => {
+      db.card.findFirst.mockResolvedValue(debitCardRecord({ id: "card_1" }));
+
+      await expect(
+        createInstallmentPlan(USER_ID, withCard),
+      ).rejects.toBeInstanceOf(CardKindNotAllowedError);
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("takes a credit card that has a cap in the currency of the purchase among others", async () => {
+      db.card.findFirst.mockResolvedValue(
+        creditCardRecord({
+          limits: [
+            { id: "l1", cardId: "card_1", currency: "USD", amount: BigInt(1) },
+            { id: "l2", cardId: "card_1", currency: "ARS", amount: BigInt(1) },
+          ],
+        }),
+      );
+
+      await createInstallmentPlan(USER_ID, withCard);
+
+      expect(db.$transaction).toHaveBeenCalledTimes(1);
     });
 
     it("writes nothing when the last installment would fall outside the months the app can show", async () => {
@@ -285,23 +319,34 @@ describe("createInstallmentPlan", () => {
       });
     });
 
-    it("stores the plan and every installment as digital money, whatever medium came with it: a credit card is never cash", async () => {
-      await createInstallmentPlan(USER_ID, { ...withCard, medium: "CASH" });
+    it("stores the plan and every installment in the account chosen, with or without a card", async () => {
+      await createInstallmentPlan(USER_ID, {
+        ...withCard,
+        accountId: "acc_cash",
+      });
 
-      expect(installmentPlan.create.mock.calls[0][0].data.medium).toBe(
-        "DIGITAL",
+      expect(installmentPlan.create.mock.calls[0][0].data.accountId).toBe(
+        "acc_cash",
       );
       expect(
         expense.createMany.mock.calls[0][0].data.every(
-          ({ medium }: { medium: string }) => medium === "DIGITAL",
+          ({ accountId }: { accountId: string }) => accountId === "acc_cash",
         ),
       ).toBe(true);
-    });
 
-    it("keeps the medium of a purchase with no card of the user's (a borrowed one)", async () => {
-      await createInstallmentPlan(USER_ID, { ...input, medium: "CASH" });
+      installmentPlan.create.mockClear();
+      expense.createMany.mockClear();
 
-      expect(installmentPlan.create.mock.calls[0][0].data.medium).toBe("CASH");
+      await createInstallmentPlan(USER_ID, { ...input, accountId: "acc_cash" });
+
+      expect(installmentPlan.create.mock.calls[0][0].data.accountId).toBe(
+        "acc_cash",
+      );
+      expect(
+        expense.createMany.mock.calls[0][0].data.every(
+          ({ accountId }: { accountId: string }) => accountId === "acc_cash",
+        ),
+      ).toBe(true);
     });
 
     it("does not look for a card, nor store one, when none is given", async () => {

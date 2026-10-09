@@ -49,4 +49,21 @@ describe("AmountCurrencyFields", () => {
 
     expect(onChange).toHaveBeenCalledWith({ currency: "USD" });
   });
+
+  it("offers only legal tender: a plan in installments never takes a crypto currency", async () => {
+    render(
+      <AmountCurrencyFields amount="" currency="ARS" onChange={() => {}} />,
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: /Moneda/ }), {
+      key: "ArrowDown",
+    });
+
+    expect(
+      await screen.findByRole("option", { name: /^USD - / }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "USDC - USD Coin" }),
+    ).toBeNull();
+    expect(screen.queryByText("Criptomonedas")).toBeNull();
+  });
 });

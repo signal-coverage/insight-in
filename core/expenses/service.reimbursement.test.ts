@@ -15,7 +15,10 @@ const db = vi.hoisted(() => ({
   expenseCategory: { findFirst: vi.fn() },
 }));
 
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
+
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
 
 import {
   ExpenseCurrencyLockedError,
@@ -28,6 +31,10 @@ import type { ExpenseInput } from "./types";
 const { expense, income, recurringExpense } = db;
 
 const USER_ID = "user_123";
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
 
 const input: ExpenseInput = {
   description: "Dentista",
@@ -37,7 +44,7 @@ const input: ExpenseInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   isRecurring: false,
   cardId: null,
   originCurrency: null,
@@ -56,7 +63,8 @@ const row = {
   category: { name: "Salud" },
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   isRecurring: false,
   originCurrency: null,
   originAmount: null,
@@ -117,6 +125,11 @@ describe("updateExpense and the expected reimbursement", () => {
     installmentPlanId: null,
     currency: "ARS",
     expectedReimbursement: BigInt(400000),
+    accountId: "acc_1",
+    cardId: null,
+    amount: BigInt(1000000),
+    date: new Date("2026-09-12T00:00:00.000Z"),
+    status: "SETTLED",
   };
 
   beforeEach(() => {

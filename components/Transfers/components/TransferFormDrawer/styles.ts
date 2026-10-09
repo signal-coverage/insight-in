@@ -1,0 +1,14 @@
+import {
+  AMOUNT_ROW_CLASS_NAME,
+  DRAWER_DESCRIPTION_CLASS_NAME,
+  DRAWER_DIALOG_CLASS_NAME,
+  FIELD_CLASS_NAME,
+  FORM_CLASS_NAME,
+} from "@/components/Entries/styles";
+
+// The transfer form uses the drawers' shared look.
+export const DIALOG_CLASS_NAME = DRAWER_DIALOG_CLASS_NAME;
+
+export const DESCRIPTION_CLASS_NAME = DRAWER_DESCRIPTION_CLASS_NAME;
+
+export { AMOUNT_ROW_CLASS_NAME, FIELD_CLASS_NAME, FORM_CLASS_NAME };

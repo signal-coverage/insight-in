@@ -9,3 +9,12 @@ export class CoveredNotAllowedError extends Error {
     this.name = "CoveredNotAllowedError";
   }
 }
+
+// An installment (of a purchase or of a repayment) was edited into another currency: it keeps the
+// currency of its plan.
+export class InstallmentCurrencyLockedError extends Error {
+  constructor() {
+    super("An installment keeps the currency of its plan");
+    this.name = "InstallmentCurrencyLockedError";
+  }
+}

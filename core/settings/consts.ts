@@ -11,6 +11,12 @@ export const SETTINGS_PATH = "/dashboard/settings";
 // behaviour the target remainder always had.
 export const DEFAULT_SETTINGS: UserSettings = {
   includeExpectedIncomes: true,
+  hiddenSummaryCurrencies: [],
 };
 
 export const INVALID_SETTING_MESSAGE = "No se pudo guardar la preferencia.";
+
+export const INVALID_CURRENCIES_MESSAGE =
+  "No se pudo guardar la selección de monedas.";
+export const UNSUPPORTED_CURRENCY_MESSAGE =
+  "Elegí solo monedas que la app soporta.";

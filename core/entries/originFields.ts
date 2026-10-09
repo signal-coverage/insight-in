@@ -7,8 +7,8 @@ import {
 import {
   ORIGIN_AMOUNT_MESSAGE,
   ORIGIN_CURRENCY_MESSAGE,
-  SUPPORTED_CURRENCY_CODES,
 } from "@/core/incomes/consts";
+import { isSupportedCurrencyCode } from "@/core/incomes/money";
 
 import type { IssueContext } from "./fields";
 
@@ -24,8 +24,6 @@ export const originCurrencyField = optionalText;
 
 export const originAmountField = optionalText;
 
-const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
-
 interface OriginFields {
   currency: string;
   originCurrency: string | null;
@@ -40,7 +38,7 @@ export const checkOrigin = (value: OriginFields, ctx: IssueContext): void => {
 
   if (
     (originCurrency === null && originAmount === null) ||
-    !SUPPORTED_CURRENCY_SET.has(value.currency)
+    !isSupportedCurrencyCode(value.currency)
   ) {
     return;
   }

@@ -1,5 +1,7 @@
-import type { CardRow } from "../../../../types";
+import type { CardLimitRow } from "../../../../types";
 
 export interface UsageCellProps {
-  row: CardRow;
+  // The card's title, to name the bar.
+  title: string;
+  limit: CardLimitRow;
 }

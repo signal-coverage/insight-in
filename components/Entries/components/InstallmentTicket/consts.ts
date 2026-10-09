@@ -5,4 +5,4 @@ export const PER_INSTALLMENT_LINE = "Monto por cuota";
 export const TOTAL_LINE = "Monto total";
 export const FIRST_LINE = "Primera cuota";
 export const LAST_LINE = "Última cuota estimada";
-export const MEDIUM_LINE = "Medio";
+export const ACCOUNT_LINE = "Cuenta";

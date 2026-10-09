@@ -3,11 +3,20 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  AccountCurrencyMismatchError,
+  AccountNotFoundError,
+} from "@/core/accounts/errors";
+import { BANKS_PATH } from "@/core/banks/consts";
+import {
   failure,
   runAuthenticated as runScoped,
 } from "@/core/entries/actionHelpers";
 
-import { INVALID_OPENING_BALANCE_MESSAGE, OVERVIEW_PATH } from "./consts";
+import {
+  INVALID_OPENING_BALANCE_MESSAGE,
+  OPENING_ACCOUNTS_CHANGED_MESSAGE,
+  OVERVIEW_PATH,
+} from "./consts";
 import { openingBalanceInputSchema } from "./schema";
 import { saveOpeningBalances } from "./service";
 import type { OpeningBalanceActionResult } from "./types";
@@ -17,8 +26,8 @@ const runAuthenticated = <Result extends { status: string }>(
   run: (userId: string) => Promise<Result>,
 ) => runScoped("opening-balance", run);
 
-// "Guardar" in the opening balance editor: one call carries the month and every currency's two
-// amounts. Nothing from the payload decides who the owner is.
+// "Guardar" in the opening balance editor: one call carries the month and every account's amount.
+// Nothing from the payload decides who the owner is.
 export async function saveOpeningBalanceAction(
   input: unknown,
 ): Promise<OpeningBalanceActionResult> {
@@ -40,8 +49,23 @@ export async function saveOpeningBalanceAction(
       };
     }
 
-    await saveOpeningBalances(userId, parsed.data);
+    try {
+      await saveOpeningBalances(userId, parsed.data);
+    } catch (error) {
+      // An account of the editor changed while it was open: the user reopens it with fresh rows.
+      if (
+        error instanceof AccountNotFoundError ||
+        error instanceof AccountCurrencyMismatchError
+      ) {
+        return failure(OPENING_ACCOUNTS_CHANGED_MESSAGE);
+      }
+
+      throw error;
+    }
+
     revalidatePath(OVERVIEW_PATH);
+    // The Banks board shows balances that include the opening amounts.
+    revalidatePath(BANKS_PATH);
 
     return { status: "success" };
   });

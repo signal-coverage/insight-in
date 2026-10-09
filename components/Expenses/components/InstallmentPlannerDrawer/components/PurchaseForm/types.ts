@@ -1,4 +1,5 @@
 import type { EntryCategory } from "@/components/Entries/types";
+import type { AccountChoice } from "@/core/accounts/types";
 
 import type { CardOption } from "../../../../types";
 import type { CardRecommendationItem, PurchaseValues } from "../../types";
@@ -8,6 +9,8 @@ export interface PurchaseFormProps {
   categories: readonly EntryCategory[];
   // The user's cards: an own card is chosen among them.
   cards: readonly CardOption[];
+  // Every account of the user: the purchase is paid from one of them.
+  accounts: readonly AccountChoice[];
   // The live line under the inputs ("12 cuotas de ... · total ..."), or null while the data is not
   // enough to work it out.
   preview: string | null;

@@ -11,9 +11,8 @@ const ROW: SummaryRow = {
   previous: "previous",
   current: "current",
   target: "target",
-  wallet: "wallet",
-  available: "available",
   reimbursements: "reimbursements",
+  paidPercent: 60,
 };
 
 const spec = (id: string) => SUMMARY_ROWS.find((row) => row.id === id)!;
@@ -35,12 +34,8 @@ describe("valueFor", () => {
     expect(values("expenses")).toEqual(["e-total", "e-settled", "e-pending"]);
   });
 
-  it("gives the remainders row the two remainders", () => {
-    expect(values("remainders")).toEqual(["current", "target"]);
-  });
-
-  it("gives the balances row the previous balance, the wallet and the total available", () => {
-    expect(values("balances")).toEqual(["previous", "wallet", "available"]);
+  it("gives the remainders row the previous balance and the two remainders", () => {
+    expect(values("remainders")).toEqual(["previous", "current", "target"]);
   });
 });
 
@@ -55,34 +50,37 @@ describe("labels", () => {
 });
 
 describe("SUMMARY_ROWS", () => {
-  it("lists incomes, expenses, remainders and balances, in that order", () => {
+  it("lists incomes, expenses and remainders, in that order", () => {
     expect(SUMMARY_ROWS.map((row) => row.title)).toEqual([
       "Ingresos",
       "Gastos",
       "Remanentes",
-      "Saldos",
     ]);
   });
 
-  it("gives each side its own tone and the remainders and balances the balance one", () => {
+  it("gives each side its own tone and the remainders the balance one", () => {
     expect(SUMMARY_ROWS.map((row) => row.tone)).toEqual([
       "income",
       "expense",
       "balance",
-      "balance",
     ]);
   });
 
-  it("explains the remainders and the balances and leaves the obvious cards without a description", () => {
+  it("explains every remainder and leaves the obvious cards without a description", () => {
     expect(spec("remainders").cards.every((card) => card.description)).toBe(
       true,
     );
-    expect(spec("balances").cards.every((card) => card.description)).toBe(true);
-    // The reimbursements card is the only one of the incomes that needs a line to be understood.
     expect(
       spec("incomes")
         .cards.filter((card) => card.description)
         .map((card) => card.id),
     ).toEqual(["reimbursements"]);
+  });
+
+  it("has no wallet nor total available any more", () => {
+    const ids = SUMMARY_ROWS.flatMap((row) => row.cards.map((card) => card.id));
+
+    expect(ids).not.toContain("wallet");
+    expect(ids).not.toContain("available");
   });
 });

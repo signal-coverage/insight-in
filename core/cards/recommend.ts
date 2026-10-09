@@ -3,9 +3,13 @@ import { monthOf } from "@/core/summary/month";
 
 import { NEAR_MARGIN_PERCENT } from "./consts";
 import { firstInstallmentDate } from "./cycle";
+import { capIn, isCreditCard } from "./kinds";
 import type {
+  CardCap,
   CardRecommendation,
   CardWithCharges,
+  CreditCard,
+  CreditCardWithCharges,
   PurchaseDraft,
   PurchaseProjection,
 } from "./types";
@@ -14,7 +18,7 @@ import { fitOf } from "./usage";
 // Which of the user's cards suits a purchase in installments. Pure: it works on the cards and the
 // charges it is given, so the planner can recommend live while the user types.
 
-type CycleOf = Pick<CardWithCharges, "closingDay" | "dueDay">;
+type CycleOf = Pick<CreditCard, "closingDay" | "dueDay">;
 
 // The purchase as one card sees it: its first installment is paid on the due date of the statement
 // the purchase lands in, which depends on the card's own cycle, and one more every month after.
@@ -44,21 +48,22 @@ const isTight = (margin: number, limit: number): boolean =>
   BigInt(margin) * BigInt(100) < BigInt(limit) * BigInt(NEAR_MARGIN_PERCENT);
 
 const verdictOf = (
-  card: CardWithCharges,
+  card: CreditCardWithCharges,
+  cap: CardCap,
   purchase: PurchaseDraft,
 ): Omit<CardRecommendation, "recommended"> => {
-  const fit = fitOf(card, card.charges, projectionOf(card, purchase));
+  const fit = fitOf(cap, card.charges, projectionOf(card, purchase));
 
   if (fit.fits) {
     return {
       cardId: card.id,
-      verdict: isTight(fit.margin, card.limitAmount) ? "near" : "fits",
+      verdict: isTight(fit.margin, cap.limitAmount) ? "near" : "fits",
       margin: fit.margin,
     };
   }
 
-  // The card is in the currency of the purchase (the caller filtered the others out), so a failure
-  // can only be about the cap.
+  // The cap is in the currency of the purchase (the others were left out), so a failure can only be
+  // about the cap.
   return {
     cardId: card.id,
     verdict: "exceeded",
@@ -66,7 +71,8 @@ const verdictOf = (
   };
 };
 
-// The cards in the currency of the purchase, with a verdict each: it fits, it fits but leaves less
+// The credit cards with a cap in the currency of the purchase, with a verdict each against that cap
+// (a debit card is paid on the spot, so it is never one of them): it fits, it fits but leaves less
 // than a fifth of the cap, or it goes over the cap. The ones that fit come first, the one with the
 // most room on top (a tie goes to the card that closes earlier), then the ones that do not, the least
 // over first. The top card, when it fits, is the recommended one.
@@ -74,12 +80,15 @@ export const recommendCards = (
   cards: readonly CardWithCharges[],
   purchase: PurchaseDraft,
 ): CardRecommendation[] => {
+  const credit = cards.filter(isCreditCard);
   const closingOf = new Map(
-    cards.map(({ id, closingDay }) => [id, closingDay]),
+    credit.map(({ id, closingDay }) => [id, closingDay]),
   );
-  const verdicts = cards
-    .filter(({ currency }) => currency === purchase.currency)
-    .map((card) => verdictOf(card, purchase));
+  const verdicts = credit.flatMap((card) => {
+    const cap = capIn(card, purchase.currency);
+
+    return cap ? [verdictOf(card, cap, purchase)] : [];
+  });
 
   const byRoom = (a: CardRecommendation, b: CardRecommendation): number => {
     if (a.verdict === "exceeded" || b.verdict === "exceeded") {

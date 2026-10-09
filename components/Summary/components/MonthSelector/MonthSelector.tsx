@@ -19,6 +19,7 @@ export function MonthSelector({
   label,
   currentMonth,
   basePath,
+  params,
 }: MonthSelectorProps) {
   const router = useRouter();
   // The navigation is a transition so that the page stays usable while the next month loads.
@@ -26,7 +27,7 @@ export function MonthSelector({
 
   const goTo = (target: string) =>
     startNavigation(() =>
-      router.push(monthHref(target, currentMonth, basePath)),
+      router.push(monthHref(target, currentMonth, basePath, params)),
     );
 
   return (

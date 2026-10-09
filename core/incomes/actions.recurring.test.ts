@@ -27,6 +27,7 @@ import {
   deleteRecurringIncomeAction,
   updateRecurringIncomeAction,
 } from "./actions";
+import { AccountArchivedError } from "@/core/accounts/errors";
 import { CategoryNotFoundError } from "./errors";
 
 const USER_ID = "user_123";
@@ -38,6 +39,7 @@ const buildFormData = (overrides: Record<string, string> = {}): FormData => {
     currency: "USD",
     categoryId: "cat_1",
     notes: "",
+    accountId: "acc_1",
     frequency: "MONTHLY",
     startDate: "2026-01-05",
     endDate: "",
@@ -93,7 +95,7 @@ describe("createRecurringIncomeAction", () => {
       currency: "USD",
       categoryId: "cat_1",
       notes: null,
-      medium: "DIGITAL",
+      accountId: "acc_1",
       frequency: "MONTHLY",
       startDate: "2026-01-05",
       endDate: null,
@@ -101,12 +103,14 @@ describe("createRecurringIncomeAction", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/incomes");
   });
 
-  it("passes on the medium the form sends", async () => {
+  it("passes on the account the form sends", async () => {
     mocks.createRecurringIncome.mockResolvedValue({ id: "rec_1" });
 
-    await createRecurringIncomeAction(buildFormData({ medium: "CASH" }));
+    await createRecurringIncomeAction(buildFormData({ accountId: "acc_9" }));
 
-    expect(mocks.createRecurringIncome.mock.calls[0][1].medium).toBe("CASH");
+    expect(mocks.createRecurringIncome.mock.calls[0][1].accountId).toBe(
+      "acc_9",
+    );
   });
 
   it("ignores a userId submitted in the form", async () => {
@@ -128,6 +132,23 @@ describe("createRecurringIncomeAction", () => {
     expect(result.status === "error" && result.fieldErrors).toEqual({
       categoryId: ["Selecciona una categoría válida."],
     });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("maps an archived account to an accountId field error, on create and on update", async () => {
+    mocks.createRecurringIncome.mockRejectedValue(new AccountArchivedError());
+    mocks.updateRecurringIncome.mockRejectedValue(new AccountArchivedError());
+
+    const expected = {
+      accountId: [
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ],
+    };
+    const created = await createRecurringIncomeAction(buildFormData());
+    const updated = await updateRecurringIncomeAction("rec_1", buildFormData());
+
+    expect(created.status === "error" && created.fieldErrors).toEqual(expected);
+    expect(updated.status === "error" && updated.fieldErrors).toEqual(expected);
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 

@@ -6,16 +6,22 @@ import type {
   TotalRow,
 } from "@/components/Entries/types";
 import type { Source } from "@/components/shared/Await";
+import type { AccountChoice } from "@/core/accounts/types";
 import type { CardWithCharges } from "@/core/cards/types";
 import type { EntriesQuery } from "@/core/entries/query";
 import type { Expense, RecurringExpenseItem } from "@/core/expenses/types";
 import type { PlanProgress } from "@/core/installments/types";
 
-// A card the forms can pay with, plus its title ("Visa •••• 1234"). The charges are what the planner
-// projects a purchase against to see whether it fits the cap.
-export interface CardOption extends CardWithCharges {
+// A card the forms can pay with: the card with its charges (the planner projects a purchase against
+// them), its title ("Visa •••• 1234") and the currencies it can pay in.
+export type CardOption = CardWithCharges & {
   title: string;
-}
+  currencies: string[];
+};
+
+export type CreditCardOption = Extract<CardOption, { kind: "CREDIT" }>;
+
+export type DebitCardOption = Extract<CardOption, { kind: "DEBIT" }>;
 
 // An expense plus the strings the UI needs, formatted on the server so the client never has to
 // re-derive money or date presentation.
@@ -88,6 +94,8 @@ export interface ExpensesProps {
   recurring: Source<RecurringData>;
   // The user's cards, for the card choice of the expense form and the installment planner.
   cards: Source<CardOption[]>;
+  // Every account of the user, for the "Cuenta" field of the forms.
+  accounts: Source<AccountChoice[]>;
 }
 
 // What the installment planner opens with: the key remounts it on every opening, and the date is

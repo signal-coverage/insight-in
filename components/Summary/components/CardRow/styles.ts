@@ -1,6 +1,7 @@
 export const ROOT_CLASS_NAME = "flex flex-col gap-2";
 
-export const LIST_CLASS_NAME = "flex flex-wrap gap-3";
+export const LIST_CLASS_NAME =
+  "grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3";
 
 export const HEADING_CLASS_NAME =
   "inline-flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold";

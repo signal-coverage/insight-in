@@ -18,11 +18,13 @@ const reimbursements = vi.hoisted(() => ({
 }));
 
 const progress = vi.hoisted(() => ({ listIncomePlanProgress: vi.fn() }));
+const choices = vi.hoisted(() => ({ listAccountChoices: vi.fn() }));
 
 vi.mock("./service", () => service);
 vi.mock("@/core/reimbursements/service", () => reimbursements);
 vi.mock("@/core/installments/incomeService", () => installments);
 vi.mock("@/core/installments/progress", () => progress);
+vi.mock("@/core/accounts/choices", () => choices);
 
 import { loadIncomesPageData } from "./pageData";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
@@ -63,6 +65,14 @@ beforeEach(() => {
   reads("first");
   service.materializeRecurringIncomes.mockResolvedValue(0);
   progress.listIncomePlanProgress.mockResolvedValue({});
+  choices.listAccountChoices.mockResolvedValue([
+    {
+      id: "acc_1",
+      currency: "USD",
+      label: "Banco Galicia · Dólares",
+      archived: false,
+    },
+  ]);
 });
 
 describe("loadIncomesPageData", () => {
@@ -161,6 +171,27 @@ describe("loadIncomesPageData", () => {
       USER_ID,
     );
     expect(data.reimbursables).toEqual(reimbursable);
+  });
+
+  it("reads the user's accounts once, for the income, template and repayment forms", async () => {
+    service.materializeRecurringIncomes.mockResolvedValue(2);
+
+    const data = await loadIncomesPageData(
+      USER_ID,
+      DEFAULT_ENTRIES_QUERY,
+      TODAY,
+    );
+
+    expect(choices.listAccountChoices).toHaveBeenCalledTimes(1);
+    expect(choices.listAccountChoices).toHaveBeenCalledWith(USER_ID);
+    expect(data.accounts).toEqual([
+      {
+        id: "acc_1",
+        currency: "USD",
+        label: "Banco Galicia · Dólares",
+        archived: false,
+      },
+    ]);
   });
 
   it("uses the first reads, exactly once, when nothing was generated", async () => {

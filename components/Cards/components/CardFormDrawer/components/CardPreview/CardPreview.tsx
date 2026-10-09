@@ -1,7 +1,7 @@
 import { BRAND_NAMES } from "@/core/cards/consts";
 
 import { BrandLogo } from "../../../BrandLogo";
-import { GENERIC_BRAND_WORD, PREVIEW_LABEL } from "./consts";
+import { GENERIC_BRAND_WORD, NO_CYCLE_TEXT, PREVIEW_LABEL } from "./consts";
 import {
   CYCLE_CLASS_NAME,
   NUMBER_CLASS_NAME,
@@ -14,12 +14,7 @@ import { cycleText, maskedNumber } from "./utils";
 
 // A card-shaped preview of what the form describes, drawn with CSS only. It follows the form as the
 // user types; the brand name is written for screen readers, since the logo is decoration.
-export function CardPreview({
-  brand,
-  last4,
-  closingDay,
-  dueDay,
-}: CardPreviewProps) {
+export function CardPreview({ brand, last4, cycle }: CardPreviewProps) {
   return (
     <div
       role="group"
@@ -35,7 +30,9 @@ export function CardPreview({
         <span className="sr-only">{BRAND_NAMES[brand]}</span>
       </div>
       <p className={NUMBER_CLASS_NAME}>{maskedNumber(last4)}</p>
-      <p className={CYCLE_CLASS_NAME}>{cycleText(closingDay, dueDay)}</p>
+      <p className={CYCLE_CLASS_NAME}>
+        {cycle ? cycleText(cycle.closingDay, cycle.dueDay) : NO_CYCLE_TEXT}
+      </p>
     </div>
   );
 }

@@ -45,7 +45,8 @@ const ROW: ExpenseRow = {
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   status: "PLANNED",
   isRecurring: false,
   installmentPlanId: null,
@@ -68,6 +69,22 @@ const ROW: ExpenseRow = {
 
 const GYM: ExpenseRow = { ...ROW, id: "exp_2", description: "Gym" };
 const TAXI: ExpenseRow = { ...ROW, id: "exp_3", description: "Taxi" };
+
+// Accounts as the forms receive them: one per currency, so each is preselected.
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
 
 const TODAY = "2026-09-15";
 const CURRENT_MONTH = {
@@ -99,6 +116,7 @@ const renderExpenses = (table: ExpensesTableData = TABLE) =>
         plans: [],
       }}
       cards={[]}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -248,6 +266,7 @@ describe("Expenses selection", () => {
           plans: [],
         }}
         cards={[]}
+        accounts={ACCOUNTS}
       />,
     );
 

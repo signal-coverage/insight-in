@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { SUPPORTED_CURRENCY_CODES } from "@/core/incomes/consts";
 import { isValidIsoDate } from "@/core/incomes/dates";
+import { isSupportedCurrencyCode } from "@/core/incomes/money";
 import { monthOf, monthRange } from "@/core/summary/month";
 
 import { ENTRY_STATUSES } from "./status";
@@ -40,8 +40,6 @@ export const DEFAULT_ENTRIES_QUERY: EntriesQuery = {
   direction: "desc",
 };
 
-const SUPPORTED_CURRENCY_SET = new Set(SUPPORTED_CURRENCY_CODES);
-
 // Dates read newest first; text columns read A to Z.
 export const defaultDirection = (sort: EntrySortKey): SortDirection =>
   sort === "date" ? "desc" : "asc";
@@ -71,7 +69,7 @@ const categoryIdSchema = z
 const currencySchema = z
   .string()
   .transform((value) => value.trim().toUpperCase())
-  .refine((value) => SUPPORTED_CURRENCY_SET.has(value))
+  .refine(isSupportedCurrencyCode)
   .nullable()
   .catch(null);
 

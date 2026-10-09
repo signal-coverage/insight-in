@@ -19,8 +19,12 @@ const db = vi.hoisted(() => ({
   recurringExpenseDecision: { upsert: vi.fn() },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import { AccountArchivedError } from "@/core/accounts/errors";
 import { CategoryNotFoundError } from "@/core/incomes/errors";
 
 import { RecurringExpenseSettledError, RecurringNotFoundError } from "./errors";
@@ -44,7 +48,7 @@ const templateRow = (patch: Record<string, unknown> = {}) => ({
   currency: "ARS",
   categoryId: "cat_1",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -90,7 +94,7 @@ describe("setRecurringDecision: enable", () => {
           currency: "ARS",
           categoryId: "cat_1",
           notes: null,
-          medium: "DIGITAL",
+          accountId: "acc_1",
           originCurrency: null,
           originAmount: null,
           date: new Date("2026-10-05T00:00:00.000Z"),
@@ -101,6 +105,51 @@ describe("setRecurringDecision: enable", () => {
       ],
       skipDuplicates: true,
     });
+  });
+
+  it("creates the month's expense in the template's account", async () => {
+    recurringExpense.findFirst.mockResolvedValue(
+      templateRow({ accountId: "acc_cash" }),
+    );
+    expense.findMany.mockResolvedValue([]);
+
+    await setRecurringDecision(USER_ID, "rec_1", MONTH, "ENABLED");
+
+    expect(expense.createMany.mock.calls[0][0].data[0].accountId).toBe(
+      "acc_cash",
+    );
+  });
+
+  it("creates the expense in the template's account even if that account was archived since, without checking it again", async () => {
+    recurringExpense.findFirst.mockResolvedValue(
+      templateRow({ accountId: "acc_archived" }),
+    );
+    // The account guard would refuse an archived account: it must not be asked.
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await enable();
+
+    expect(expense.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: USER_ID,
+          description: "Rent",
+          amount: BigInt(35000050),
+          currency: "ARS",
+          categoryId: "cat_1",
+          notes: null,
+          accountId: "acc_archived",
+          originCurrency: null,
+          originAmount: null,
+          date: new Date("2026-10-05T00:00:00.000Z"),
+          status: "PLANNED",
+          isRecurring: true,
+          recurringExpenseId: "rec_1",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    expect(usable.assertUsableAccount).not.toHaveBeenCalled();
   });
 
   it("copies the reference price of the template onto the expense", async () => {
@@ -277,7 +326,7 @@ describe("updateRecurringExpense", () => {
     currency: "USD",
     categoryId: "cat_2",
     notes: "Monthly fee",
-    medium: "CASH",
+    accountId: "acc_1",
     originCurrency: null,
     originAmount: null,
     dayOfMonth: 20,
@@ -296,7 +345,7 @@ describe("updateRecurringExpense", () => {
         currency: "USD",
         categoryId: "cat_2",
         notes: "Monthly fee",
-        medium: "CASH",
+        accountId: "acc_1",
         originCurrency: null,
         originAmount: null,
         dayOfMonth: 20,
@@ -343,6 +392,69 @@ describe("updateRecurringExpense", () => {
       where: { id: "cat_2", userId: USER_ID },
       select: { id: true },
     });
+    expect(recurringExpense.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("checks the new account and lets the template keep the one it has, even if archived", async () => {
+    recurringExpense.findFirst.mockResolvedValue(
+      templateRow({ accountId: "acc_old" }),
+    );
+
+    await updateRecurringExpense(USER_ID, "rec_1", {
+      ...INPUT,
+      accountId: "acc_old",
+    });
+
+    expect(recurringExpense.findFirst).toHaveBeenCalledWith({
+      where: { id: "rec_1", userId: USER_ID },
+      select: { accountId: true },
+    });
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_old",
+      currency: INPUT.currency,
+      keepAccountId: "acc_old",
+    });
+    expect(recurringExpense.updateMany.mock.calls[0][0].data.accountId).toBe(
+      "acc_old",
+    );
+  });
+
+  it("refuses to move the template to another archived account, keeping only the one it has", async () => {
+    recurringExpense.findFirst.mockResolvedValue(
+      templateRow({ accountId: "acc_old" }),
+    );
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(
+      updateRecurringExpense(USER_ID, "rec_1", {
+        ...INPUT,
+        accountId: "acc_other_archived",
+      }),
+    ).rejects.toBeInstanceOf(AccountArchivedError);
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_other_archived",
+      currency: INPUT.currency,
+      keepAccountId: "acc_old",
+    });
+    expect(recurringExpense.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing when the account is refused", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(
+      updateRecurringExpense(USER_ID, "rec_1", INPUT),
+    ).rejects.toBeInstanceOf(AccountArchivedError);
+    expect(recurringExpense.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("checks no account for a template that is not the user's", async () => {
+    recurringExpense.findFirst.mockResolvedValue(null);
+
+    await expect(updateRecurringExpense(USER_ID, "rec_9", INPUT)).resolves.toBe(
+      false,
+    );
+    expect(usable.assertUsableAccount).not.toHaveBeenCalled();
     expect(recurringExpense.updateMany).not.toHaveBeenCalled();
   });
 

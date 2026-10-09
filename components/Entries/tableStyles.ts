@@ -7,8 +7,9 @@ export const TABLE_CLASS_NAME = "min-h-64 w-full flex-1";
 // it. That is what keeps the skeleton and the real rows on the same columns (with the automatic
 // layout the columns jump when the data replaces the placeholders). The two free-text columns,
 // which have no width of their own, share whatever the others leave. Below the minimum width the
-// table scrolls sideways instead of squeezing the text to nothing.
-export const FIXED_TABLE_CLASS_NAME = "table-fixed min-w-[48rem]";
+// table scrolls sideways instead of squeezing the text to nothing (the 11rem "Cuenta" column joins
+// the 48rem the table had).
+export const FIXED_TABLE_CLASS_NAME = "table-fixed min-w-[59rem]";
 
 export const END_ALIGNED_CLASS_NAME = "text-right";
 
@@ -36,6 +37,9 @@ export const STATUS_COLUMN_CLASS_NAME = "w-16";
 export const ACTIONS_COLUMN_CLASS_NAME = "w-[7.25rem] px-4";
 // A long category name is cut with an ellipsis instead of spilling into the next column.
 export const CATEGORY_COLUMN_CLASS_NAME = "w-28 overflow-hidden text-ellipsis";
+// "Banco · Cuenta" is cut with an ellipsis instead of spilling into the next column.
+export const ACCOUNT_COLUMN_CLASS_NAME = "w-44 overflow-hidden text-ellipsis";
+export const ACCOUNT_CLASS_NAME = "block truncate";
 export const DATE_COLUMN_CLASS_NAME = "w-28";
 export const AMOUNT_COLUMN_CLASS_NAME =
   "w-32 text-right font-medium tabular-nums";

@@ -19,7 +19,7 @@ import { InlineAlert } from "@/components/shared/InlineAlert";
 import { PendingButton } from "@/components/shared/PendingButton";
 import { saveOpeningBalanceAction } from "@/core/balances/actions";
 
-import { CurrencyFields } from "./components/CurrencyFields";
+import { BankFields } from "./components/BankFields";
 import {
   CANCEL_LABEL,
   DESCRIPTION,
@@ -49,7 +49,7 @@ export function OpeningBalanceContent({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const payload = toPayload(new FormData(event.currentTarget), data.rows);
+    const payload = toPayload(new FormData(event.currentTarget), data.groups);
 
     startTransition(async () => {
       const result = await saveOpeningBalanceAction(payload);
@@ -107,8 +107,8 @@ export function OpeningBalanceContent({
             <FieldError />
           </Select>
 
-          {data.rows.map((row, index) => (
-            <CurrencyFields key={row.currency} row={row} index={index} />
+          {data.groups.map((group) => (
+            <BankFields key={group.bankId} group={group} />
           ))}
 
           {formError ? (

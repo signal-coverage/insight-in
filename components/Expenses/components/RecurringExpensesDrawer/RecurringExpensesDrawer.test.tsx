@@ -34,7 +34,7 @@ const row = (patch: Partial<RecurringRow>): RecurringRow => ({
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -129,6 +129,7 @@ const renderDrawer = (data = dataOf([RENT, GYM], [INTERNET, CABLE])) => {
       sessionKey={1}
       data={data}
       categories={CATEGORIES}
+      accounts={[]}
     />,
   );
 

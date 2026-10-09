@@ -11,8 +11,12 @@ const db = vi.hoisted(() => ({
   incomeCategory: { findFirst: vi.fn() },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import { AccountArchivedError } from "@/core/accounts/errors";
 import { CategoryNotFoundError } from "@/core/incomes/errors";
 
 import { InvalidInstallmentCountError } from "./errors";
@@ -32,7 +36,7 @@ const input: IncomeInstallmentPlanInput = {
   description: "Préstamo a Juan",
   categoryId: "cat_1",
   currency: "ARS",
-  medium: "CASH",
+  accountId: "acc_1",
   notes: "Devuelve en mano",
   totalCuotas: 3,
   totalAmount: 100000,
@@ -83,7 +87,7 @@ describe("createIncomeInstallmentPlan", () => {
         totalCuotas: 3,
         totalAmount: BigInt(100000),
         currency: "ARS",
-        medium: "CASH",
+        accountId: "acc_1",
         incomeCategoryId: "cat_1",
         notes: "Devuelve en mano",
         dayOfMonth: 31,
@@ -97,7 +101,7 @@ describe("createIncomeInstallmentPlan", () => {
     );
   });
 
-  it("creates every installment as a planned income linked to the plan, with its number, medium and notes", async () => {
+  it("creates every installment as a planned income linked to the plan, with its number, account and notes", async () => {
     await createIncomeInstallmentPlan(USER_ID, input);
 
     const common = {
@@ -105,7 +109,7 @@ describe("createIncomeInstallmentPlan", () => {
       currency: "ARS",
       categoryId: "cat_1",
       notes: "Devuelve en mano",
-      medium: "CASH",
+      accountId: "acc_1",
       status: "PLANNED",
       installmentPlanId: "plan_1",
     };
@@ -185,15 +189,36 @@ describe("createIncomeInstallmentPlan", () => {
     ).toBe(BigInt(100001));
   });
 
-  it("keeps the medium the user chose on the plan and on every installment", async () => {
-    await createIncomeInstallmentPlan(USER_ID, { ...input, medium: "DIGITAL" });
+  it("puts the plan and every installment in the account chosen", async () => {
+    await createIncomeInstallmentPlan(USER_ID, {
+      ...input,
+      accountId: "acc_cash",
+    });
 
-    expect(installmentPlan.create.mock.calls[0][0].data.medium).toBe("DIGITAL");
+    expect(installmentPlan.create.mock.calls[0][0].data.accountId).toBe(
+      "acc_cash",
+    );
     expect(
       income.createMany.mock.calls[0][0].data.every(
-        ({ medium }: { medium: string }) => medium === "DIGITAL",
+        ({ accountId }: { accountId: string }) => accountId === "acc_cash",
       ),
     ).toBe(true);
+  });
+
+  it("checks the account before writing anything, and writes nothing when it is refused", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(
+      createIncomeInstallmentPlan(USER_ID, input),
+    ).rejects.toBeInstanceOf(AccountArchivedError);
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_1",
+      currency: input.currency,
+      keepAccountId: null,
+    });
+    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(installmentPlan.create).not.toHaveBeenCalled();
+    expect(income.createMany).not.toHaveBeenCalled();
   });
 
   it("does the plan and its installments in one transaction", async () => {

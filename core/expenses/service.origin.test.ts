@@ -16,7 +16,10 @@ const db = vi.hoisted(() => ({
   expenseCategory: { findFirst: vi.fn() },
 }));
 
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
+
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
 
 import {
   createExpense,
@@ -29,6 +32,10 @@ import type { ExpenseInput } from "./types";
 const { expense, expenseCategory, recurringExpense } = db;
 
 const USER_ID = "user_123";
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
 
 // A 20 USD subscription that really left the user's money as 350,00 ARS.
 const input: ExpenseInput = {
@@ -39,7 +46,7 @@ const input: ExpenseInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   isRecurring: false,
   cardId: null,
   originCurrency: null,
@@ -64,7 +71,8 @@ const row = {
   category: { name: "Servicios" },
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   isRecurring: false,
   originCurrency: null,
   originAmount: null,
@@ -165,6 +173,11 @@ describe("updateExpense and the origin", () => {
       installmentPlanId: null,
       currency: "ARS",
       expectedReimbursement: null,
+      accountId: "acc_1",
+      cardId: null,
+      amount: BigInt(35000),
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      status: "SETTLED",
     });
     expense.updateMany.mockResolvedValue({ count: 1 });
   });
@@ -207,6 +220,11 @@ describe("updateExpense and the origin", () => {
       installmentPlanId: null,
       currency: "ARS",
       expectedReimbursement: null,
+      accountId: "acc_1",
+      cardId: null,
+      amount: BigInt(35000),
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      status: "SETTLED",
     });
 
     await updateExpense(USER_ID, "exp_1", {

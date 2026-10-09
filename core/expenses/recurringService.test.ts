@@ -16,8 +16,12 @@ const db = vi.hoisted(() => ({
   installmentPlan: { findMany: vi.fn() },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import { AccountArchivedError } from "@/core/accounts/errors";
 import { InvalidInstallmentCountError } from "@/core/installments/errors";
 
 import { InvalidRecurringAmountError } from "./errors";
@@ -40,7 +44,7 @@ const templateRow = (patch: Record<string, unknown> = {}) => ({
   categoryId: "cat_1",
   category: { name: "Alquiler" },
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -91,7 +95,7 @@ describe("listRecurringExpenses", () => {
         categoryId: "cat_1",
         categoryName: "Alquiler",
         notes: null,
-        medium: "DIGITAL",
+        accountId: "acc_1",
         originCurrency: null,
         originAmount: null,
         dayOfMonth: 5,
@@ -144,7 +148,7 @@ describe("applyRecurringDecisions", () => {
             currency: "ARS",
             categoryId: "cat_1",
             notes: null,
-            medium: "DIGITAL",
+            accountId: "acc_1",
             originCurrency: null,
             originAmount: null,
             date: new Date("2026-10-05T00:00:00.000Z"),
@@ -170,23 +174,55 @@ describe("applyRecurringDecisions", () => {
       });
     });
 
-    it("gives the expense the medium of its template", async () => {
+    it("creates the month's expense in the account of its template", async () => {
       await apply(
         [
           { recurringExpenseId: "rec_1", choice: "enable" },
           { recurringExpenseId: "rec_2", choice: "enable" },
         ],
         [
-          templateRow({ medium: "CASH" }),
-          templateRow({ id: "rec_2", medium: "DIGITAL" }),
+          templateRow({ accountId: "acc_cash" }),
+          templateRow({ id: "rec_2", accountId: "acc_bank" }),
         ],
       );
 
       expect(
         expense.createMany.mock.calls[0][0].data.map(
-          (row: { medium: string }) => row.medium,
+          (row: { accountId: string }) => row.accountId,
         ),
-      ).toEqual(["CASH", "DIGITAL"]);
+      ).toEqual(["acc_cash", "acc_bank"]);
+    });
+
+    it("creates the expense in the template's account even if it was archived since, without checking it again", async () => {
+      // The account guard would refuse an archived account: the wizard must not ask it.
+      usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+      await apply(
+        [{ recurringExpenseId: "rec_1", choice: "enable" }],
+        [templateRow({ accountId: "acc_archived" })],
+      );
+
+      expect(expense.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            userId: USER_ID,
+            description: "Rent",
+            amount: BigInt(35000050),
+            currency: "ARS",
+            categoryId: "cat_1",
+            notes: null,
+            accountId: "acc_archived",
+            originCurrency: null,
+            originAmount: null,
+            date: new Date("2026-10-05T00:00:00.000Z"),
+            status: "PLANNED",
+            isRecurring: true,
+            recurringExpenseId: "rec_1",
+          },
+        ],
+        skipDuplicates: true,
+      });
+      expect(usable.assertUsableAccount).not.toHaveBeenCalled();
     });
 
     it("uses the last day of a shorter month", async () => {

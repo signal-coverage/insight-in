@@ -45,7 +45,8 @@ const ROW: ExpenseRow = {
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   status: "SETTLED",
   isRecurring: false,
   installmentPlanId: null,
@@ -81,6 +82,22 @@ const PLAN: InstallmentPlanRow = {
 };
 
 // Mid-month on purpose: the default range is the whole month, not the days up to today.
+// Accounts as the forms receive them: one per currency, so each is preselected.
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const TODAY = "2026-09-15";
 const PAGINATION = { page: 1, totalPages: 1, total: 1, pageSize: 25 };
 const CURRENT_MONTH = {
@@ -105,7 +122,7 @@ const TEMPLATE: RecurringRow = {
   categoryId: "c2",
   categoryName: "Salud",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 20,
@@ -145,6 +162,7 @@ const renderExpenses = (
       table={{ rows: [ROW], pagination: PAGINATION, hasAnyExpenses: true }}
       recurring={recurring}
       cards={[]}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -437,6 +455,7 @@ describe("Expenses while its data is still on the way", () => {
         table={never()}
         recurring={never()}
         cards={[]}
+        accounts={ACCOUNTS}
       />,
     );
 
@@ -505,6 +524,66 @@ describe("Expenses status toggle", () => {
 
     expect(box()).toBeChecked();
   });
+
+  it("says why the server refused, above the table", async () => {
+    actions.setExpenseStatusAction.mockResolvedValue({
+      status: "error",
+      message:
+        "La cuenta no tiene fondos suficientes para este gasto: tenía $ 0,00.",
+    });
+    renderExpenses();
+
+    await act(async () => {
+      fireEvent.click(box());
+    });
+
+    expect(
+      screen.getByText(
+        "La cuenta no tiene fondos suficientes para este gasto: tenía $ 0,00.",
+      ),
+    ).toBeVisible();
+  });
+
+  it.each([
+    [
+      "a future date",
+      "Un gasto pagado con débito no puede tener fecha posterior a hoy. Usá la fecha de hoy o dejalo por pagar.",
+    ],
+    [
+      "a change made meanwhile",
+      "El gasto cambió mientras lo guardabas. Volvé a intentarlo.",
+    ],
+    ["an expense that is gone", "No se encontró el gasto."],
+  ])(
+    "shows whatever plain message the server gave for %s, not only the funds one",
+    async (_reason, message) => {
+      actions.setExpenseStatusAction.mockResolvedValue({
+        status: "error",
+        message,
+      });
+      renderExpenses();
+
+      await act(async () => {
+        fireEvent.click(box());
+      });
+
+      expect(screen.getByText(message)).toBeVisible();
+    },
+  );
+
+  it("shows no such message when the change went through", async () => {
+    actions.setExpenseStatusAction.mockResolvedValue({ status: "success" });
+    renderExpenses();
+
+    await act(async () => {
+      fireEvent.click(box());
+    });
+
+    expect(actions.setExpenseStatusAction).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByText(/no tiene fondos suficientes/),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("Expenses empty table", () => {
@@ -523,6 +602,7 @@ describe("Expenses empty table", () => {
         }}
         recurring={NO_RECURRING}
         cards={[]}
+        accounts={ACCOUNTS}
       />,
     );
 
@@ -552,6 +632,7 @@ describe("Expenses empty table", () => {
         }}
         recurring={NO_RECURRING}
         cards={[]}
+        accounts={ACCOUNTS}
       />,
     );
 

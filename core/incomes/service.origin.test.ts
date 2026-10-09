@@ -6,11 +6,14 @@ const db = vi.hoisted(() => ({
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
+    findFirst: vi.fn(),
   },
   incomeCategory: { findFirst: vi.fn() },
 }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
 
 import { createIncome, listIncomes, updateIncome } from "./service";
 import type { IncomeInput } from "./types";
@@ -18,6 +21,11 @@ import type { IncomeInput } from "./types";
 const { income, incomeCategory } = db;
 
 const USER_ID = "user_123";
+
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
 
 const input: IncomeInput = {
   description: "September salary",
@@ -27,7 +35,7 @@ const input: IncomeInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: null,
@@ -44,7 +52,8 @@ const row = {
   category: { name: "Salary" },
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: null,
@@ -64,6 +73,7 @@ const withOrigin = {
 beforeEach(() => {
   vi.resetAllMocks();
   incomeCategory.findFirst.mockResolvedValue({ id: "cat_1" });
+  income.findFirst.mockResolvedValue({ accountId: "acc_1" });
 });
 
 describe("createIncome with an origin", () => {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { amountFieldName, monthOptions, toPayload } from "./utils";
+import {
+  amountFieldName,
+  monthOptions,
+  openingRowLabel,
+  toPayload,
+} from "./utils";
 
 describe("monthOptions", () => {
   it("runs from the month in course back 36 months, most recent first", () => {
@@ -44,16 +49,61 @@ describe("monthOptions", () => {
 });
 
 describe("amountFieldName", () => {
-  it("names a field after its row and medium, as the server reports its errors", () => {
-    expect(amountFieldName(0, "digital")).toBe("balances.0.digital");
-    expect(amountFieldName(2, "cash")).toBe("balances.2.cash");
+  it("names a field after its row, as the server reports its errors", () => {
+    expect(amountFieldName(0)).toBe("balances.0.amount");
+    expect(amountFieldName(4)).toBe("balances.4.amount");
+  });
+});
+
+describe("openingRowLabel", () => {
+  it("names the account with its currency", () => {
+    expect(openingRowLabel("Caja de ahorro", "ARS", false)).toBe(
+      "Caja de ahorro (ARS)",
+    );
+  });
+
+  it("says when the account is archived", () => {
+    expect(openingRowLabel("Vieja", "USD", true)).toBe(
+      "Vieja (USD) · archivada",
+    );
   });
 });
 
 describe("toPayload", () => {
-  const ROWS = [
-    { currency: "ARS", digital: "", cash: "" },
-    { currency: "USD", digital: "", cash: "" },
+  const GROUPS = [
+    {
+      bankId: "bank_galicia",
+      bankName: "Banco Galicia",
+      rows: [
+        {
+          index: 0,
+          accountId: "acc_bank",
+          currency: "ARS",
+          label: "Caja de ahorro (ARS)",
+          amount: "",
+        },
+        {
+          index: 1,
+          accountId: "acc_usd",
+          currency: "USD",
+          label: "Dólares (USD)",
+          amount: "",
+        },
+      ],
+    },
+    {
+      bankId: "bank_cash",
+      bankName: "Efectivo",
+      rows: [
+        {
+          index: 2,
+          accountId: "acc_cash",
+          currency: "ARS",
+          label: "Efectivo (ARS)",
+          amount: "",
+        },
+      ],
+    },
   ];
 
   const form = (entries: Record<string, string>) => {
@@ -64,33 +114,60 @@ describe("toPayload", () => {
     return formData;
   };
 
-  it("sends the chosen month and each currency's two amounts as typed", () => {
-    const payload = toPayload(
-      form({
-        month: "2026-06",
-        "balances.0.digital": "1500.50",
-        "balances.0.cash": "200",
-        "balances.1.digital": "",
-        "balances.1.cash": "50",
-      }),
-      ROWS,
-    );
-
-    expect(payload).toEqual({
+  it("sends the month and one row per account, every bank together, as typed", () => {
+    expect(
+      toPayload(
+        form({
+          month: "2026-06",
+          "balances.0.amount": "1500.50",
+          "balances.2.amount": "200",
+        }),
+        GROUPS,
+      ),
+    ).toEqual({
       month: "2026-06",
       balances: [
-        { currency: "ARS", digital: "1500.50", cash: "200" },
-        { currency: "USD", digital: "", cash: "50" },
+        { accountId: "acc_bank", currency: "ARS", amount: "1500.50" },
+        { accountId: "acc_usd", currency: "USD", amount: "" },
+        { accountId: "acc_cash", currency: "ARS", amount: "200" },
       ],
     });
   });
 
-  it("sends an empty string for a field the form does not have", () => {
-    const payload = toPayload(form({ month: "2026-06" }), ROWS);
+  it("sends the rows in the order of their index, so the server's position is the input's name", () => {
+    // Two banks whose accounts interleave: the groups hold indexes [0, 2] and [1].
+    const interleaved = [
+      {
+        bankId: "bank_a",
+        bankName: "Banco A",
+        rows: [
+          { ...GROUPS[0].rows[0], index: 0, accountId: "acc_a1" },
+          { ...GROUPS[0].rows[0], index: 2, accountId: "acc_a2" },
+        ],
+      },
+      {
+        bankId: "bank_b",
+        bankName: "Banco B",
+        rows: [{ ...GROUPS[0].rows[0], index: 1, accountId: "acc_b1" }],
+      },
+    ];
+    const { balances } = toPayload(
+      form({
+        "balances.0.amount": "10",
+        "balances.1.amount": "20",
+        "balances.2.amount": "30",
+      }),
+      interleaved,
+    );
 
-    expect(payload.balances).toEqual([
-      { currency: "ARS", digital: "", cash: "" },
-      { currency: "USD", digital: "", cash: "" },
+    expect(balances.map(({ accountId }) => accountId)).toEqual([
+      "acc_a1",
+      "acc_b1",
+      "acc_a2",
     ]);
+    // Position i of the payload is the row that the input `balances.<i>.amount` belongs to.
+    balances.forEach(({ amount }, position) => {
+      expect(amount).toBe(String((position + 1) * 10));
+    });
   });
 });

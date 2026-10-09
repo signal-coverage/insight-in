@@ -6,12 +6,15 @@ const db = vi.hoisted(() => ({
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
+    findFirst: vi.fn(),
   },
   incomeCategory: { findFirst: vi.fn() },
 }));
 const reimbursements = vi.hoisted(() => ({ assertReimbursable: vi.fn() }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
 vi.mock("@/core/reimbursements/service", () => reimbursements);
 
 import { ReimbursementCurrencyMismatchError } from "@/core/reimbursements/errors";
@@ -23,6 +26,11 @@ const { income, incomeCategory } = db;
 
 const USER_ID = "user_123";
 
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
+
 const input: IncomeInput = {
   description: "Reintegro obra social",
   amount: 600000,
@@ -31,7 +39,7 @@ const input: IncomeInput = {
   categoryId: "cat_1",
   notes: null,
   status: "PLANNED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: "exp_1",
@@ -48,7 +56,8 @@ const row = {
   category: { name: "Otros" },
   notes: null,
   status: "PLANNED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: "exp_1",
@@ -63,6 +72,7 @@ const row = {
 beforeEach(() => {
   vi.resetAllMocks();
   incomeCategory.findFirst.mockResolvedValue({ id: "cat_1" });
+  income.findFirst.mockResolvedValue({ accountId: "acc_1" });
   reimbursements.assertReimbursable.mockResolvedValue(undefined);
 });
 
@@ -199,6 +209,7 @@ describe("listIncomes and the expense it pays back", () => {
 
     expect(income.findMany.mock.calls[0][0].include).toEqual({
       category: { select: { name: true } },
+      account: { select: { name: true, bank: { select: { name: true } } } },
       reimbursesExpense: { select: { description: true } },
     });
     expect(

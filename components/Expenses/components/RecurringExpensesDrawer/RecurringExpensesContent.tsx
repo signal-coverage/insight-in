@@ -48,6 +48,7 @@ import { useRowManagement } from "./useRowManagement";
 export function RecurringExpensesContent({
   data,
   categories,
+  accounts,
   onClose,
 }: RecurringExpensesContentProps) {
   const [choices, setChoices] = useState<Choices>({});
@@ -167,6 +168,7 @@ export function RecurringExpensesContent({
         onClose={management.formState.close}
         target={management.formTarget}
         categories={categories}
+        accounts={accounts}
       />
 
       <ConfirmRowDialog

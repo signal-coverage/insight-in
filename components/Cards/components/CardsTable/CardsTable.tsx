@@ -22,16 +22,19 @@ import {
   TABLE_CLASS_NAME,
 } from "@/components/Entries/tableStyles";
 
-import { EMPTY_COPY } from "../../consts";
+import { EMPTY_COPY, NO_VALUE_LABEL } from "../../consts";
 import type { CardRow } from "../../types";
 import { BrandLogo } from "../BrandLogo";
+import { CellLines } from "./components/CellLines";
 import { UsageCell } from "./components/UsageCell";
 import {
   ACTIONS_HEADER,
   AVAILABLE_HEADER,
+  BANK_HEADER,
   CARD_HEADER,
   CLOSING_HEADER,
   DUE_HEADER,
+  KIND_HEADER,
   LIMIT_HEADER,
   LOADING_LABEL,
   TABLE_LABEL,
@@ -39,12 +42,15 @@ import {
 } from "./consts";
 import {
   AVAILABLE_COLUMN_CLASS_NAME,
+  BANK_COLUMN_CLASS_NAME,
   CARD_CELL_CLASS_NAME,
   CLOSING_COLUMN_CLASS_NAME,
   DUE_COLUMN_CLASS_NAME,
   FIXED_TABLE_CLASS_NAME,
+  KIND_COLUMN_CLASS_NAME,
   LIMIT_COLUMN_CLASS_NAME,
   USAGE_COLUMN_CLASS_NAME,
+  USAGE_LIST_CLASS_NAME,
   USAGE_SKELETON_CLASS_NAME,
 } from "./styles";
 import type { CardsTableProps } from "./types";
@@ -117,6 +123,24 @@ export function CardsTable({
       loadingCell: <Skeleton className="h-4 w-4/5" />,
     },
     {
+      key: "kind",
+      header: KIND_HEADER,
+      className: KIND_COLUMN_CLASS_NAME,
+      cell: (row) => row.kindLabel,
+      loadingCell: <Skeleton className="h-4 w-3/4" />,
+    },
+    {
+      key: "bank",
+      header: BANK_HEADER,
+      className: BANK_COLUMN_CLASS_NAME,
+      cell: (row) => (
+        <TruncatedText className={DESCRIPTION_CLASS_NAME}>
+          {row.bankName}
+        </TruncatedText>
+      ),
+      loadingCell: <Skeleton className="h-4 w-4/5" />,
+    },
+    {
       key: "closing",
       header: CLOSING_HEADER,
       className: CLOSING_COLUMN_CLASS_NAME,
@@ -134,14 +158,33 @@ export function CardsTable({
       key: "limit",
       header: LIMIT_HEADER,
       className: LIMIT_COLUMN_CLASS_NAME,
-      cell: (row) => row.limitLabel,
+      cell: (row) =>
+        row.kind === "CREDIT" ? (
+          <CellLines
+            lines={row.limits.map(({ currency, limitLabel }) => ({
+              key: currency,
+              text: limitLabel,
+            }))}
+          />
+        ) : (
+          (row.currenciesLabel ?? NO_VALUE_LABEL)
+        ),
       loadingCell: <Skeleton className="h-4 w-4/5" />,
     },
     {
       key: "usage",
       header: USAGE_HEADER,
       className: USAGE_COLUMN_CLASS_NAME,
-      cell: (row) => <UsageCell row={row} />,
+      cell: (row) =>
+        row.kind === "CREDIT" ? (
+          <div className={USAGE_LIST_CLASS_NAME}>
+            {row.limits.map((limit) => (
+              <UsageCell key={limit.currency} title={row.title} limit={limit} />
+            ))}
+          </div>
+        ) : (
+          NO_VALUE_LABEL
+        ),
       loadingCell: (
         <div className={USAGE_SKELETON_CLASS_NAME}>
           <Skeleton className="h-4 w-4/5" />
@@ -154,7 +197,17 @@ export function CardsTable({
       header: AVAILABLE_HEADER,
       className: AVAILABLE_COLUMN_CLASS_NAME,
       headerClassName: END_ALIGNED_CLASS_NAME,
-      cell: (row) => row.availableLabel,
+      cell: (row) =>
+        row.kind === "CREDIT" ? (
+          <CellLines
+            lines={row.limits.map(({ currency, availableLabel }) => ({
+              key: currency,
+              text: availableLabel,
+            }))}
+          />
+        ) : (
+          NO_VALUE_LABEL
+        ),
       loadingCell: <Skeleton className="ml-auto h-4 w-3/4" />,
     },
   ];

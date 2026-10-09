@@ -1,19 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import { projectionOf, recommendCards } from "./recommend";
-import type { CardWithCharges } from "./types";
+import { creditCard, debitCard } from "./testFixtures";
+import type { CreditCardPatch } from "./testFixtures";
+import type {
+  CardCharge,
+  CardWithCharges,
+  CreditCardWithCharges,
+} from "./types";
 
-const card = (patch: Partial<CardWithCharges> = {}): CardWithCharges => ({
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "TOTAL",
-  limitAmount: 100000,
-  charges: [],
-  ...patch,
+const card = ({
+  charges = [],
+  ...patch
+}: CreditCardPatch & {
+  charges?: CardCharge[];
+} = {}): CreditCardWithCharges => ({
+  ...creditCard({ limitMode: "TOTAL", limitAmount: 100000, ...patch }),
+  charges,
 });
 
 // Bought on the 10th: every card below closes after it, so the statement is the one of that month.
@@ -69,6 +72,40 @@ describe("recommendCards", () => {
 
   it("lists nothing when no card is in that currency", () => {
     expect(recommendCards([card({ currency: "USD" })], PURCHASE)).toEqual([]);
+  });
+
+  it("never lists a debit card, whatever accounts it has", () => {
+    const debit: CardWithCharges = { ...debitCard(), charges: [] };
+
+    expect(
+      recommendCards([debit, card()], PURCHASE).map(({ cardId }) => cardId),
+    ).toEqual(["card_1"]);
+  });
+
+  it("weighs a card with several caps only against the cap of the purchase's currency, never their sum", () => {
+    const both = card({
+      limits: [
+        { currency: "ARS", amount: 37499 },
+        { currency: "USD", amount: 1000000 },
+      ],
+    });
+
+    expect(recommendCards([both], PURCHASE)[0]).toMatchObject({
+      verdict: "near",
+      margin: 7499,
+    });
+    expect(
+      recommendCards([both], { ...PURCHASE, currency: "USD" })[0],
+    ).toMatchObject({ verdict: "fits", margin: 970000 });
+  });
+
+  it("leaves out a credit card that has no cap in the purchase's currency", () => {
+    expect(
+      recommendCards(
+        [card({ limits: [{ currency: "USD", amount: 1000000 }] })],
+        PURCHASE,
+      ),
+    ).toEqual([]);
   });
 
   describe("the verdict", () => {

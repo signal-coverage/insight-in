@@ -4,8 +4,7 @@ import { OpeningBalanceContent } from "./OpeningBalanceContent";
 import { DIALOG_CLASS_NAME } from "./styles";
 import type { OpeningBalanceDrawerProps } from "./types";
 
-// The opening balance editor: how much the user held, in accounts and in cash, when the month they
-// choose began.
+// The opening balance editor: how much each account held when the month the user chooses began.
 export function OpeningBalanceDrawer({
   isOpen,
   onOpenChange,

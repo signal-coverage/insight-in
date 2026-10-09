@@ -6,11 +6,9 @@ const group = (
   currency: string,
   status: "PLANNED" | "SETTLED" | "COVERED",
   amount: number | null,
-  medium: "DIGITAL" | "CASH" = "DIGITAL",
 ) => ({
   currency,
   status,
-  medium,
   _sum: { amount: amount === null ? null : BigInt(amount) },
 });
 
@@ -111,6 +109,26 @@ describe("summarize", () => {
     expect(rows[2].current).toBe(10);
   });
 
+  it("lists the crypto sections after the legal tender ones, each on its own", () => {
+    const rows = summarize(
+      [
+        group("USDC", "SETTLED", 1500000),
+        group("ARS", "SETTLED", 20),
+        group("BTC", "SETTLED", 1),
+      ],
+      [group("USD", "SETTLED", 5)],
+    );
+
+    expect(rows.map((row) => row.currency)).toEqual([
+      "ARS",
+      "USD",
+      "USDC",
+      "BTC",
+    ]);
+    expect(rows[2].current).toBe(1500000);
+    expect(rows[1].current).toBe(-5);
+  });
+
   it("ignores groups without a sum", () => {
     const rows = summarize([group("ARS", "SETTLED", null)], []);
 
@@ -122,55 +140,28 @@ describe("summarize", () => {
   });
 });
 
-describe("summarize with payment mediums", () => {
-  const previous = [{ currency: "ARS", digital: 5000, cash: 800 }];
+describe("summarize with the previous balance", () => {
+  const previous = [{ currency: "ARS", amount: 5800 }];
 
-  it("counts cash and digital entries together in the incomes and expenses rows", () => {
-    const [ars] = summarize(
-      [
-        group("ARS", "SETTLED", 1000, "DIGITAL"),
-        group("ARS", "SETTLED", 200, "CASH"),
-        group("ARS", "PLANNED", 400, "CASH"),
-      ],
-      [
-        group("ARS", "SETTLED", 300, "DIGITAL"),
-        group("ARS", "SETTLED", 50, "CASH"),
-      ],
-    );
-
-    expect(ars.incomes).toEqual({ total: 1600, settled: 1200, pending: 400 });
-    expect(ars.expenses).toEqual({ total: 350, settled: 350, pending: 0 });
-  });
-
-  it("adds the digital previous balance to the current remainder", () => {
+  it("adds the previous balance (every account of the currency) to the current remainder", () => {
     const [ars] = summarize(
       [group("ARS", "SETTLED", 1000)],
       [group("ARS", "SETTLED", 300)],
       { previous },
     );
 
-    expect(ars.previous).toBe(5000);
-    expect(ars.current).toBe(5700);
+    expect(ars.previous).toBe(5800);
+    expect(ars.current).toBe(6500);
   });
 
-  it("builds the current remainder only from digital entries: cash does not touch it", () => {
+  it("builds the target from the current remainder and every pending entry", () => {
     const [ars] = summarize(
-      [group("ARS", "SETTLED", 1000), group("ARS", "SETTLED", 700, "CASH")],
-      [group("ARS", "SETTLED", 300), group("ARS", "SETTLED", 100, "CASH")],
-    );
-
-    expect(ars.current).toBe(700);
-  });
-
-  it("builds the target from the current remainder and the pending digital entries", () => {
-    const [ars] = summarize(
-      [group("ARS", "PLANNED", 400), group("ARS", "PLANNED", 999, "CASH")],
-      [group("ARS", "PLANNED", 200), group("ARS", "PLANNED", 888, "CASH")],
+      [group("ARS", "PLANNED", 400)],
+      [group("ARS", "PLANNED", 200)],
       { previous },
     );
 
-    // 5000 before, plus 400 still to collect, minus 200 still to pay: pending cash is left out.
-    expect(ars.target).toBe(5200);
+    expect(ars.target).toBe(6000);
   });
 
   it("can leave the expected incomes out of the target and still carry the previous balance", () => {
@@ -180,77 +171,31 @@ describe("summarize with payment mediums", () => {
       { previous, includeExpectedIncomes: false },
     );
 
-    expect(ars.target).toBe(4800);
-    expect(ars.current).toBe(5000);
-  });
-
-  it("computes the wallet as the cash previous balance plus the settled cash movements", () => {
-    const [ars] = summarize(
-      [
-        group("ARS", "SETTLED", 200, "CASH"),
-        group("ARS", "PLANNED", 900, "CASH"),
-      ],
-      [
-        group("ARS", "SETTLED", 50, "CASH"),
-        group("ARS", "PLANNED", 70, "CASH"),
-      ],
-      { previous },
-    );
-
-    // 800 + 200 - 50: planned cash has not moved yet.
-    expect(ars.wallet).toBe(950);
-  });
-
-  it("leaves digital entries out of the wallet", () => {
-    const [ars] = summarize(
-      [group("ARS", "SETTLED", 1000)],
-      [group("ARS", "SETTLED", 300)],
-    );
-
-    expect(ars.wallet).toBe(0);
-  });
-
-  it("computes the total available as the current remainder plus the wallet", () => {
-    const [ars] = summarize(
-      [group("ARS", "SETTLED", 1000), group("ARS", "SETTLED", 200, "CASH")],
-      [group("ARS", "SETTLED", 300), group("ARS", "SETTLED", 50, "CASH")],
-      { previous },
-    );
-
-    expect(ars.current).toBe(5700);
-    expect(ars.wallet).toBe(950);
-    expect(ars.available).toBe(6650);
-  });
-
-  it("can have a negative wallet", () => {
-    const [ars] = summarize([], [group("ARS", "SETTLED", 300, "CASH")]);
-
-    expect(ars.wallet).toBe(-300);
-    expect(ars.available).toBe(-300 + ars.current);
+    expect(ars.target).toBe(5600);
+    expect(ars.current).toBe(5800);
   });
 
   it("gives a currency that only has a previous balance a row of its own", () => {
     const rows = summarize([group("ARS", "SETTLED", 100)], [], {
-      previous: [{ currency: "USD", digital: 250, cash: 40 }],
+      previous: [{ currency: "USD", amount: 290 }],
     });
 
     expect(rows.map((row) => row.currency)).toEqual(["ARS", "USD"]);
     expect(rows[1]).toMatchObject({
       currency: "USD",
       incomes: { total: 0, settled: 0, pending: 0 },
-      previous: 250,
-      current: 250,
-      wallet: 40,
-      available: 290,
+      previous: 290,
+      current: 290,
+      target: 290,
     });
   });
 
-  it("has no previous balance, wallet or availability without any", () => {
+  it("has no previous balance without any, and no wallet or availability at all", () => {
     const [ars] = summarize([group("ARS", "SETTLED", 100)], []);
 
     expect(ars.previous).toBe(0);
-    expect(ars.wallet).toBe(0);
-    expect(ars.available).toBe(100);
+    expect(ars).not.toHaveProperty("wallet");
+    expect(ars).not.toHaveProperty("available");
   });
 });
 
@@ -259,7 +204,6 @@ describe("summarize with covered installments", () => {
     group("ARS", "SETTLED", 300),
     group("ARS", "PLANNED", 200),
     group("ARS", "COVERED", 900),
-    group("ARS", "COVERED", 700, "CASH"),
   ];
 
   it("counts a covered expense as neither settled nor pending, nor in the total", () => {
@@ -268,13 +212,11 @@ describe("summarize with covered installments", () => {
     expect(ars.expenses).toEqual({ total: 500, settled: 300, pending: 200 });
   });
 
-  it("does not touch the remainders, the target, the wallet or the availability", () => {
+  it("does not touch the remainders or the target", () => {
     const [ars] = summarize([group("ARS", "SETTLED", 1000)], expenses);
 
     expect(ars.current).toBe(700);
     expect(ars.target).toBe(500);
-    expect(ars.wallet).toBe(0);
-    expect(ars.available).toBe(700);
   });
 
   it("gives no row to a currency whose only expenses are covered", () => {
@@ -301,7 +243,7 @@ describe("summarize with pending reimbursements", () => {
     ]);
   });
 
-  it("is informational: no remainder, wallet or availability moves with it", () => {
+  it("is informational: no remainder moves with it", () => {
     const withIt = summarize(
       [group("ARS", "SETTLED", 1000), group("ARS", "PLANNED", 400)],
       [group("ARS", "SETTLED", 300), group("ARS", "PLANNED", 200)],

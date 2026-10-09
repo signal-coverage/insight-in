@@ -7,4 +7,6 @@ export interface MonthSelectorProps {
   currentMonth: string;
   // The page the selector belongs to, whose address carries the month. The summary when omitted.
   basePath?: string;
+  // Other parameters the page keeps in its address when the month changes (the summary's currency).
+  params?: Readonly<Record<string, string>>;
 }

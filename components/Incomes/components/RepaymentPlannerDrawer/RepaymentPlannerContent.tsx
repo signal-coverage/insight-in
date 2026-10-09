@@ -34,12 +34,14 @@ import {
   previewText,
   toPayload,
   toTicketLines,
+  withRepaymentChange,
 } from "./utils";
 
 // Mounted with a fresh key on every opening, so each one starts from the defaults. The data of the
 // repayment, then a ticket to review before anything is written. Kept in local state.
 export function RepaymentPlannerContent({
   categories,
+  accounts,
   defaultDate,
   onClose,
 }: RepaymentPlannerContentProps) {
@@ -50,16 +52,18 @@ export function RepaymentPlannerContent({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const summary = parseRepayment(values);
+  const summary = parseRepayment(values, accounts);
   const categoryName =
     categories.find(({ id }) => id === values.categoryId)?.name ?? "";
 
   const handleChange = (patch: Partial<RepaymentValues>) =>
-    setValues((current) => ({ ...current, ...patch }));
+    setValues((current) => withRepaymentChange(current, patch));
 
   const handleSave = () => {
     startTransition(async () => {
-      const result = await createInstallmentPlanAction(toPayload(values));
+      const result = await createInstallmentPlanAction(
+        toPayload(values, accounts),
+      );
 
       if (result.status === "success") {
         onClose();
@@ -89,6 +93,7 @@ export function RepaymentPlannerContent({
           <RepaymentForm
             values={values}
             categories={categories}
+            accounts={accounts}
             preview={summary ? previewText(summary) : null}
             onChange={handleChange}
           />

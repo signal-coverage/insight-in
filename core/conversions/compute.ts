@@ -1,3 +1,4 @@
+import { compareCurrencyCodes } from "@/core/currencies/crypto";
 import { impliedRate } from "@/core/currencies/origin";
 import { monthOf, shiftMonth } from "@/core/summary/month";
 
@@ -61,8 +62,8 @@ const groupByPair = (entries: readonly ConversionEntry[]): Pair[] => {
     .map((pair) => ({ ...pair, rated: [...pair.rated].sort(byDateThenId) }))
     .sort(
       (a, b) =>
-        a.originCurrency.localeCompare(b.originCurrency) ||
-        a.netCurrency.localeCompare(b.netCurrency),
+        compareCurrencyCodes(a.originCurrency, b.originCurrency) ||
+        compareCurrencyCodes(a.netCurrency, b.netCurrency),
     );
 };
 

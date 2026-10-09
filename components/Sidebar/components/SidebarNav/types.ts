@@ -1,7 +1,7 @@
-import type { NavItem } from "../../types";
+import type { NavSection } from "../../types";
 
 export interface SidebarNavProps {
-  items: readonly NavItem[];
+  sections: readonly NavSection[];
   isCollapsed: boolean;
   isSearchActive?: boolean;
 }

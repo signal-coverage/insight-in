@@ -9,6 +9,7 @@ const validInput = {
   date: "2026-09-01",
   categoryId: "cat_1",
   notes: "",
+  accountId: "acc_1",
 };
 
 const MISSING_CURRENCY = "Elegí la moneda de origen.";
@@ -112,7 +113,7 @@ describe("incomeInputSchema origin", () => {
 
   it("rejects a currency that is neither crypto nor supported", () => {
     expect(
-      fieldErrors({ ...validInput, originCurrency: "BTC", originAmount: "1" }),
+      fieldErrors({ ...validInput, originCurrency: "XRP", originAmount: "1" }),
     ).toEqual({ originCurrency: [MISSING_CURRENCY] });
   });
 
@@ -168,5 +169,28 @@ describe("incomeInputSchema origin", () => {
         originAmount: "1",
       }),
     ).toEqual({ currency: ["Selecciona una moneda compatible."] });
+  });
+
+  it("checks the origin of an income in a crypto currency like any other", () => {
+    const usdc = { ...validInput, currency: "USDC", amount: "10" };
+
+    expect(
+      incomeInputSchema.safeParse({
+        ...usdc,
+        originCurrency: "ARS",
+        originAmount: "12500",
+      }).data,
+    ).toMatchObject({
+      currency: "USDC",
+      amount: 10000000,
+      originCurrency: "ARS",
+      originAmount: 1250000,
+    });
+    expect(
+      fieldErrors({ ...usdc, originCurrency: "ARS", originAmount: "1.234" }),
+    ).toEqual({ originAmount: [INVALID_AMOUNT] });
+    expect(
+      fieldErrors({ ...usdc, originCurrency: "USDC", originAmount: "10" }),
+    ).toEqual({ originCurrency: [MISSING_CURRENCY] });
   });
 });

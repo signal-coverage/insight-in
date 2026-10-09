@@ -75,3 +75,17 @@ export const formatMonth = (
 
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
+
+// "sept 26": a short month and year for the axis of a chart. Intl decides the abbreviation.
+export const formatShortMonth = (
+  month: string,
+  locale: string = DISPLAY_LOCALE,
+): string => {
+  const [year, monthNumber] = toYearAndMonth(month);
+
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    year: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
+};

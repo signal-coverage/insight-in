@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   income: {
     findMany: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
@@ -15,9 +16,19 @@ const db = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
-import { CoveredNotAllowedError } from "@/core/entries/errors";
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import {
+  AccountArchivedError,
+  AccountNotFoundError,
+} from "@/core/accounts/errors";
+import {
+  CoveredNotAllowedError,
+  InstallmentCurrencyLockedError,
+} from "@/core/entries/errors";
 
 import { CategoryNotFoundError, DuplicateCategoryError } from "./errors";
 import {
@@ -34,6 +45,11 @@ const { income, incomeCategory } = db;
 
 const USER_ID = "user_123";
 
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
+
 const input: IncomeInput = {
   description: "September salary",
   amount: 150050,
@@ -42,7 +58,7 @@ const input: IncomeInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: null,
@@ -59,7 +75,8 @@ const row = {
   category: { name: "Salary" },
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: null,
@@ -76,7 +93,7 @@ const WRITABLE_DATA = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   reimbursesExpenseId: null,
@@ -85,6 +102,7 @@ const WRITABLE_DATA = {
 beforeEach(() => {
   vi.resetAllMocks();
   incomeCategory.findFirst.mockResolvedValue({ id: "cat_1", name: "Salary" });
+  income.findFirst.mockResolvedValue({ accountId: "acc_1" });
 });
 
 describe("createIncome", () => {
@@ -108,6 +126,7 @@ describe("createIncome", () => {
       data: { userId: USER_ID, ...WRITABLE_DATA },
       include: {
         category: { select: { name: true } },
+        account: { select: { name: true, bank: { select: { name: true } } } },
         reimbursesExpense: { select: { description: true } },
       },
     });
@@ -121,19 +140,34 @@ describe("createIncome", () => {
     expect(income.create.mock.calls[0][0].data.status).toBe("PLANNED");
   });
 
-  it("stores the medium it is given", async () => {
-    income.create.mockResolvedValue({ ...row, medium: "CASH" });
+  it("checks the account is the user's, active and in the income's currency before writing", async () => {
+    income.create.mockResolvedValue(row);
 
-    await createIncome(USER_ID, { ...input, medium: "CASH" });
+    await createIncome(USER_ID, input);
 
-    expect(income.create.mock.calls[0][0].data.medium).toBe("CASH");
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_1",
+      currency: "USD",
+      keepAccountId: null,
+    });
+    expect(income.create.mock.calls[0][0].data.accountId).toBe("acc_1");
   });
 
-  it("returns the medium of the stored income", async () => {
-    income.create.mockResolvedValue({ ...row, medium: "CASH" });
+  it("writes nothing when the account is refused", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(createIncome(USER_ID, input)).rejects.toBeInstanceOf(
+      AccountArchivedError,
+    );
+    expect(income.create).not.toHaveBeenCalled();
+  });
+
+  it("returns the account of the income, labelled 'Banco · Cuenta'", async () => {
+    income.create.mockResolvedValue(row);
 
     await expect(createIncome(USER_ID, input)).resolves.toMatchObject({
-      medium: "CASH",
+      accountId: "acc_1",
+      accountLabel: "Banco Galicia · Caja de ahorro",
     });
   });
 
@@ -210,7 +244,36 @@ describe("updateIncome", () => {
     await expect(updateIncome(USER_ID, "inc_1", input)).resolves.toBe(true);
   });
 
+  it("keeps the currency of a repayment plan's row: USDC and ARS are refused on a USD one, USD is accepted", async () => {
+    income.findFirst.mockResolvedValue({
+      accountId: "acc_1",
+      installmentPlanId: "plan_1",
+      currency: "USD",
+    });
+    income.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, currency: "USDC" }),
+    ).rejects.toBeInstanceOf(InstallmentCurrencyLockedError);
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, currency: "ARS" }),
+    ).rejects.toBeInstanceOf(InstallmentCurrencyLockedError);
+    expect(income.updateMany).not.toHaveBeenCalled();
+
+    await expect(updateIncome(USER_ID, "inc_1", input)).resolves.toBe(true);
+    expect(income.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a row outside any plan change currency", async () => {
+    income.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, currency: "USDC" }),
+    ).resolves.toBe(true);
+  });
+
   it("returns false when the record does not exist or belongs to someone else", async () => {
+    income.findFirst.mockResolvedValue(null);
     income.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(updateIncome(USER_ID, "inc_other", input)).resolves.toBe(
@@ -225,6 +288,54 @@ describe("updateIncome", () => {
       CategoryNotFoundError,
     );
     expect(income.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("reads the income's current account, scoped to the user, and lets the edit keep it even if archived", async () => {
+    income.findFirst.mockResolvedValue({ accountId: "acc_old" });
+    income.updateMany.mockResolvedValue({ count: 1 });
+
+    await updateIncome(USER_ID, "inc_1", { ...input, accountId: "acc_old" });
+
+    expect(income.findFirst).toHaveBeenCalledWith({
+      where: { id: "inc_1", userId: USER_ID },
+      select: { accountId: true, installmentPlanId: true, currency: true },
+    });
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_old",
+      currency: "USD",
+      keepAccountId: "acc_old",
+    });
+  });
+
+  it("refuses to move the income to another archived account: only the current one is kept", async () => {
+    income.findFirst.mockResolvedValue({ accountId: "acc_old" });
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, accountId: "acc_other_old" }),
+    ).rejects.toBeInstanceOf(AccountArchivedError);
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_other_old",
+      currency: "USD",
+      keepAccountId: "acc_old",
+    });
+    expect(income.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing when the account is not the user's", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountNotFoundError());
+
+    await expect(
+      updateIncome(USER_ID, "inc_1", { ...input, accountId: "acc_x" }),
+    ).rejects.toBeInstanceOf(AccountNotFoundError);
+    expect(income.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("checks no account for an income that is not the user's", async () => {
+    income.findFirst.mockResolvedValue(null);
+
+    await expect(updateIncome(USER_ID, "inc_9", input)).resolves.toBe(false);
+    expect(usable.assertUsableAccount).not.toHaveBeenCalled();
   });
 
   it("never lets the payload override the owner", async () => {

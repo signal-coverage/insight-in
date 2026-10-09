@@ -79,6 +79,7 @@ export function Incomes({
   recurring,
   repayments,
   reimbursables,
+  accounts,
 }: IncomesProps) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
@@ -297,33 +298,46 @@ export function Incomes({
           <>
             <Await source={reimbursables} fallback={null}>
               {(loadedReimbursables) => (
-                <IncomeFormDrawer
-                  isOpen={formState.isOpen}
-                  onOpenChange={formState.setOpen}
-                  onClose={formState.close}
-                  target={formTarget}
-                  categories={loadedCategories}
-                  reimbursables={loadedReimbursables}
-                />
+                <Await source={accounts} fallback={null}>
+                  {(loadedAccounts) => (
+                    <IncomeFormDrawer
+                      isOpen={formState.isOpen}
+                      onOpenChange={formState.setOpen}
+                      onClose={formState.close}
+                      target={formTarget}
+                      categories={loadedCategories}
+                      reimbursables={loadedReimbursables}
+                      accounts={loadedAccounts}
+                    />
+                  )}
+                </Await>
               )}
             </Await>
 
-            <RecurringFormDrawer
-              isOpen={recurringFormState.isOpen}
-              onOpenChange={handleRecurringFormOpenChange}
-              onClose={() => handleRecurringFormOpenChange(false)}
-              target={recurringTarget}
-              categories={loadedCategories}
-            />
+            <Await source={accounts} fallback={null}>
+              {(loadedAccounts) => (
+                <>
+                  <RecurringFormDrawer
+                    isOpen={recurringFormState.isOpen}
+                    onOpenChange={handleRecurringFormOpenChange}
+                    onClose={() => handleRecurringFormOpenChange(false)}
+                    target={recurringTarget}
+                    categories={loadedCategories}
+                    accounts={loadedAccounts}
+                  />
 
-            <RepaymentPlannerDrawer
-              isOpen={repaymentPlannerState.isOpen}
-              onOpenChange={repaymentPlannerState.setOpen}
-              onClose={repaymentPlannerState.close}
-              sessionKey={repaymentPlanner.key}
-              defaultDate={repaymentPlanner.defaultDate}
-              categories={loadedCategories}
-            />
+                  <RepaymentPlannerDrawer
+                    isOpen={repaymentPlannerState.isOpen}
+                    onOpenChange={repaymentPlannerState.setOpen}
+                    onClose={repaymentPlannerState.close}
+                    sessionKey={repaymentPlanner.key}
+                    defaultDate={repaymentPlanner.defaultDate}
+                    categories={loadedCategories}
+                    accounts={loadedAccounts}
+                  />
+                </>
+              )}
+            </Await>
 
             <ManageCategoriesDrawer
               isOpen={manageCategoriesState.isOpen}

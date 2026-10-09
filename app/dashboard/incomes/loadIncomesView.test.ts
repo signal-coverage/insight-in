@@ -32,6 +32,14 @@ const LOADED = {
   recurring: [],
   repayments: { month: "2026-09", plans: [] },
   reimbursables: [],
+  accounts: [
+    {
+      id: "acc_1",
+      currency: "ARS",
+      label: "Banco Galicia · Caja de ahorro",
+      archived: false,
+    },
+  ],
 };
 
 const start = () =>
@@ -49,6 +57,7 @@ describe("loadIncomesView", () => {
     const view = start();
 
     expect(Object.keys(view).sort()).toEqual([
+      "accounts",
       "categories",
       "currencies",
       "recurring",
@@ -175,6 +184,12 @@ describe("loadIncomesView", () => {
     expect(option).toMatchObject({ id: "exp_1", currency: "ARS" });
     expect(option.label).toContain("Dentista · 12/09 · faltan");
     expect(option.label).toMatch(/4.000,00/);
+  });
+
+  it("hands the forms the user's accounts as they were read", async () => {
+    pageData.loadIncomesPageData.mockResolvedValue(LOADED);
+
+    expect(await start().accounts).toEqual(LOADED.accounts);
   });
 
   it("gives the repayments drawer the month and the loans, formatted", async () => {

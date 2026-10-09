@@ -1,13 +1,13 @@
 import type { EntryCategory } from "@/components/Entries/types";
+import type { AccountChoice } from "@/core/accounts/types";
 import type { CardVerdict } from "@/core/cards/types";
-import type { PaymentMedium } from "@/core/entries/medium";
 import type {
   AmountMode,
   CardOwnership,
   InstallmentPlanInput,
 } from "@/core/installments/types";
 
-import type { CardOption } from "../../types";
+import type { CardOption, CreditCardOption } from "../../types";
 
 export interface InstallmentPlannerDrawerProps {
   isOpen: boolean;
@@ -21,12 +21,17 @@ export interface InstallmentPlannerDrawerProps {
   categories: readonly EntryCategory[];
   // The user's cards, to pay the purchase with one of them and to see which one suits it.
   cards: readonly CardOption[];
+  // Every account of the user: the purchase is paid from one of them.
+  accounts: readonly AccountChoice[];
 }
 
-export type InstallmentPlannerContentProps = Pick<
+// The planner itself only ever sees credit cards: the drawer leaves the debit ones out.
+export interface InstallmentPlannerContentProps extends Pick<
   InstallmentPlannerDrawerProps,
-  "onClose" | "defaultDate" | "categories" | "cards"
->;
+  "onClose" | "defaultDate" | "categories" | "accounts"
+> {
+  cards: readonly CreditCardOption[];
+}
 
 // The steps: the data of the purchase, then the ticket to review before saving. When an own card
 // charges the first installment this very month, saving asks first in a pop-up over the ticket.
@@ -38,7 +43,8 @@ export interface PurchaseValues {
   description: string;
   categoryId: string | null;
   currency: string;
-  medium: PaymentMedium;
+  // The account that pays the purchase, or null while none is chosen (see resolveAccountId).
+  accountId: string | null;
   amountMode: AmountMode;
   amount: string;
   totalCuotas: number | null;
@@ -57,8 +63,10 @@ export interface PurchaseValues {
 export interface PurchaseSummary {
   input: InstallmentPlanInput;
   // The own card chosen, or null for a borrowed card.
-  card: CardOption | null;
+  card: CreditCardOption | null;
   ownership: CardOwnership;
+  // "Banco · Cuenta" of the account that pays it.
+  accountLabel: string;
   // What the first installment costs (minor units): the one shown as "the" amount per installment.
   installmentAmount: number;
   // The total does not divide evenly, so the real charge of each installment depends on the bank and

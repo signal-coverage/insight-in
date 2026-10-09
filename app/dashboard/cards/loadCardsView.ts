@@ -12,5 +12,6 @@ export const loadCardsView = (userId: string) => {
 
   return {
     table: data.then(({ cards }) => ({ rows: toCardRows(cards) })),
+    banks: data.then(({ banks }) => banks),
   };
 };

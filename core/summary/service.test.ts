@@ -4,6 +4,8 @@ const db = vi.hoisted(() => ({
   income: { groupBy: vi.fn() },
   expense: { groupBy: vi.fn(), findMany: vi.fn() },
   openingBalance: { findMany: vi.fn() },
+  // The summary must never read it: a transfer is neither an income nor an expense.
+  transfer: { groupBy: vi.fn(), findMany: vi.fn(), aggregate: vi.fn() },
 }));
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
@@ -15,22 +17,32 @@ const USER_ID = "user_123";
 const monthGroup = (
   currency: string,
   status: "SETTLED" | "PLANNED" | "COVERED",
-  medium: "DIGITAL" | "CASH",
   amount: number,
-) => ({ currency, status, medium, _sum: { amount: BigInt(amount) } });
+) => ({ currency, status, _sum: { amount: BigInt(amount) } });
 
 const priorGroup = (
   currency: string,
-  medium: "DIGITAL" | "CASH",
   amount: number,
-) => ({ currency, medium, _sum: { amount: BigInt(amount) } });
+  accountId = `acc_${currency}`,
+) => ({
+  accountId,
+  currency,
+  _sum: { amount: BigInt(amount) },
+});
 
 const openingRow = (
+  accountId: string,
   currency: string,
-  medium: "DIGITAL" | "CASH",
   amount: number,
   month: string,
-) => ({ currency, medium, amount: BigInt(amount), month });
+) => ({
+  id: `ob_${accountId}`,
+  userId: USER_ID,
+  accountId,
+  account: { currency },
+  amount: BigInt(amount),
+  month,
+});
 
 // The first call of each table reads the month itself; the second, when there is one, reads the
 // settled entries before it.
@@ -48,7 +60,7 @@ beforeEach(() => {
 });
 
 describe("getMonthlySummary", () => {
-  it("groups the user's incomes and expenses of that month by currency, status and medium", async () => {
+  it("groups the user's incomes and expenses of that month by currency and status", async () => {
     await getMonthlySummary(USER_ID, "2026-09");
 
     const where = {
@@ -60,21 +72,40 @@ describe("getMonthlySummary", () => {
     };
 
     expect(db.income.groupBy).toHaveBeenCalledWith({
-      by: ["currency", "status", "medium"],
+      by: ["currency", "status"],
       where,
       _sum: { amount: true },
     });
     expect(db.expense.groupBy).toHaveBeenCalledWith({
-      by: ["currency", "status", "medium"],
+      by: ["currency", "status"],
       where,
       _sum: { amount: true },
     });
   });
 
+  it("never reads transfers: moving money between accounts changes no total of the month", async () => {
+    db.openingBalance.findMany.mockResolvedValue([
+      openingRow("acc_ARS", "ARS", 5000, "2026-06"),
+    ]);
+    // Only the month read (the first call) has groups by currency and status.
+    db.income.groupBy.mockResolvedValueOnce([
+      monthGroup("ARS", "SETTLED", 1000),
+    ]);
+
+    const summary = await getMonthlySummary(USER_ID, "2026-09");
+
+    expect(summary.find(({ currency }) => currency === "ARS")).toMatchObject({
+      incomes: expect.objectContaining({ settled: 1000 }),
+    });
+    expect(db.transfer.groupBy).not.toHaveBeenCalled();
+    expect(db.transfer.findMany).not.toHaveBeenCalled();
+    expect(db.transfer.aggregate).not.toHaveBeenCalled();
+  });
+
   it("sums only the real amount of the expenses: the reference price of one quoted in another currency never enters", async () => {
     // A 20 USD subscription that cost 35.000 ARS is just 35.000 ARS to the month.
     db.expense.groupBy.mockResolvedValue([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 3500000),
+      monthGroup("ARS", "SETTLED", 3500000),
     ]);
 
     const summary = await getMonthlySummary(USER_ID, "2026-09");
@@ -89,13 +120,14 @@ describe("getMonthlySummary", () => {
 
   it("never reaches another user's rows: the owner leads every filter", async () => {
     db.openingBalance.findMany.mockResolvedValue([
-      openingRow("ARS", "DIGITAL", 100, "2026-01"),
+      openingRow("acc_ARS", "ARS", 100, "2026-01"),
     ]);
 
     await getMonthlySummary(USER_ID, "2026-02");
 
     expect(db.openingBalance.findMany).toHaveBeenCalledWith({
       where: { userId: USER_ID },
+      include: { account: { select: { currency: true } } },
     });
 
     for (const table of ["income", "expense"] as const) {
@@ -116,7 +148,7 @@ describe("getMonthlySummary", () => {
     // 12.000,00 ARS arrived out of 10 USDC: the database sums the net column, grouped by the net
     // currency, so the origin can neither be added to a total nor open a group of its own.
     db.income.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 1200000),
+      monthGroup("ARS", "SETTLED", 1200000),
     ]);
 
     const [ars, ...others] = await getMonthlySummary(USER_ID, "2026-09");
@@ -134,8 +166,8 @@ describe("getMonthlySummary", () => {
   it("turns a collected installment into collected money and a planned one into money still to collect", async () => {
     db.income.groupBy.mockResolvedValueOnce([
       // The monthly income of the loan: one installment collected, another still to come.
-      monthGroup("ARS", "SETTLED", "DIGITAL", 50000),
-      monthGroup("ARS", "PLANNED", "DIGITAL", 50000),
+      monthGroup("ARS", "SETTLED", 50000),
+      monthGroup("ARS", "PLANNED", 50000),
     ]);
 
     const [ars] = await getMonthlySummary(USER_ID, "2026-09");
@@ -159,11 +191,11 @@ describe("getMonthlySummary", () => {
 
   it("turns what the database returns into the summary", async () => {
     db.income.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 100000),
-      monthGroup("ARS", "PLANNED", "DIGITAL", 40000),
+      monthGroup("ARS", "SETTLED", 100000),
+      monthGroup("ARS", "PLANNED", 40000),
     ]);
     db.expense.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 30000),
+      monthGroup("ARS", "SETTLED", 30000),
     ]);
 
     await expect(getMonthlySummary(USER_ID, "2026-09")).resolves.toEqual([
@@ -174,8 +206,6 @@ describe("getMonthlySummary", () => {
         previous: 0,
         current: 70000,
         target: 110000,
-        wallet: 0,
-        available: 70000,
         pendingReimbursements: 0,
       },
     ]);
@@ -183,13 +213,13 @@ describe("getMonthlySummary", () => {
 
   it("leaves the installments covered by someone else out of every figure of the summary", async () => {
     db.income.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 100000),
+      monthGroup("ARS", "SETTLED", 100000),
     ]);
     db.expense.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "SETTLED", "DIGITAL", 30000),
-      monthGroup("ARS", "PLANNED", "DIGITAL", 20000),
-      monthGroup("ARS", "COVERED", "DIGITAL", 50000),
-      monthGroup("ARS", "COVERED", "CASH", 7000),
+      monthGroup("ARS", "SETTLED", 30000),
+      monthGroup("ARS", "PLANNED", 20000),
+      monthGroup("ARS", "COVERED", 50000),
+      monthGroup("ARS", "COVERED", 7000),
     ]);
 
     await expect(getMonthlySummary(USER_ID, "2026-09")).resolves.toEqual([
@@ -200,8 +230,6 @@ describe("getMonthlySummary", () => {
         previous: 0,
         current: 70000,
         target: 50000,
-        wallet: 0,
-        available: 70000,
         pendingReimbursements: 0,
       },
     ]);
@@ -215,7 +243,7 @@ describe("getMonthlySummary", () => {
 
   it("can leave the expected incomes out of the target remainder", async () => {
     db.income.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "PLANNED", "DIGITAL", 40000),
+      monthGroup("ARS", "PLANNED", 40000),
     ]);
 
     const [row] = await getMonthlySummary(USER_ID, "2026-09", {
@@ -252,7 +280,7 @@ describe("getMonthlySummary pending reimbursements", () => {
 
   it("is informational: the target remainder is the same with and without it", async () => {
     db.income.groupBy.mockResolvedValueOnce([
-      monthGroup("ARS", "PLANNED", "DIGITAL", 40000),
+      monthGroup("ARS", "PLANNED", 40000),
     ]);
     db.expense.findMany.mockResolvedValue([
       { id: "exp_1", currency: "ARS", expectedReimbursement: BigInt(1000000) },
@@ -296,7 +324,7 @@ describe("getMonthlySummary previous balance", () => {
 
     for (const table of ["income", "expense"] as const) {
       expect(priorCall(table)).toEqual({
-        by: ["currency", "medium"],
+        by: ["accountId", "currency"],
         where: {
           userId: USER_ID,
           status: "SETTLED",
@@ -309,7 +337,7 @@ describe("getMonthlySummary previous balance", () => {
 
   it("with an opening balance, adds up only from the first day of its month", async () => {
     db.openingBalance.findMany.mockResolvedValue([
-      openingRow("ARS", "DIGITAL", 100, "2026-06"),
+      openingRow("acc_ARS", "ARS", 100, "2026-06"),
     ]);
 
     await getMonthlySummary(USER_ID, "2026-09");
@@ -322,7 +350,7 @@ describe("getMonthlySummary previous balance", () => {
 
   it("reads nothing before the opening month, nor in it: no balance applies there", async () => {
     db.openingBalance.findMany.mockResolvedValue([
-      openingRow("ARS", "DIGITAL", 100, "2026-06"),
+      openingRow("acc_ARS", "ARS", 100, "2026-06"),
     ]);
 
     await getMonthlySummary(USER_ID, "2026-06");
@@ -333,50 +361,58 @@ describe("getMonthlySummary previous balance", () => {
     expect(db.expense.groupBy).toHaveBeenCalledTimes(2);
   });
 
-  it("feeds the remainders with the digital part and the wallet with the cash part", async () => {
+  it("feeds the remainders with every account of the currency, cash included", async () => {
     db.income.groupBy
-      .mockResolvedValueOnce([monthGroup("ARS", "SETTLED", "CASH", 500)])
-      .mockResolvedValueOnce([
-        priorGroup("ARS", "DIGITAL", 10000),
-        priorGroup("ARS", "CASH", 2000),
-      ]);
+      .mockResolvedValueOnce([monthGroup("ARS", "SETTLED", 500)])
+      .mockResolvedValueOnce([priorGroup("ARS", 12000)]);
     db.expense.groupBy
-      .mockResolvedValueOnce([monthGroup("ARS", "SETTLED", "DIGITAL", 300)])
-      .mockResolvedValueOnce([
-        priorGroup("ARS", "DIGITAL", 4000),
-        priorGroup("ARS", "CASH", 500),
-      ]);
+      .mockResolvedValueOnce([monthGroup("ARS", "SETTLED", 300)])
+      .mockResolvedValueOnce([priorGroup("ARS", 4500)]);
 
     const [row] = await getMonthlySummary(USER_ID, "2026-09");
 
-    expect(row.previous).toBe(6000);
-    expect(row.current).toBe(5700);
-    expect(row.wallet).toBe(2000);
-    expect(row.available).toBe(7700);
+    expect(row.previous).toBe(7500);
+    expect(row.current).toBe(7700);
+  });
+
+  it("sums the previous balance of every account of the currency", async () => {
+    db.income.groupBy
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        priorGroup("ARS", 10000, "acc_bank"),
+        priorGroup("ARS", 2000, "acc_cash"),
+      ]);
+    db.expense.groupBy
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([priorGroup("ARS", 500, "acc_cash")]);
+
+    const [row] = await getMonthlySummary(USER_ID, "2026-09");
+
+    expect(row.previous).toBe(11500);
   });
 
   it("starts from the opening amounts and adds what happened since", async () => {
     db.openingBalance.findMany.mockResolvedValue([
-      openingRow("ARS", "DIGITAL", 50000, "2026-06"),
-      openingRow("ARS", "CASH", 8000, "2026-06"),
+      openingRow("acc_bank", "ARS", 50000, "2026-06"),
+      openingRow("acc_cash", "ARS", 8000, "2026-06"),
     ]);
     db.income.groupBy
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([priorGroup("ARS", "DIGITAL", 20000)]);
+      .mockResolvedValueOnce([priorGroup("ARS", 20000)]);
     db.expense.groupBy
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([priorGroup("ARS", "CASH", 3000)]);
+      .mockResolvedValueOnce([priorGroup("ARS", 3000)]);
 
     const [row] = await getMonthlySummary(USER_ID, "2026-09");
 
-    expect(row.previous).toBe(70000);
-    expect(row.wallet).toBe(5000);
+    // 50000 + 8000 + 20000 - 3000
+    expect(row.previous).toBe(75000);
   });
 
   it("gives a section to a currency that only has a previous balance", async () => {
     db.income.groupBy
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([priorGroup("USD", "DIGITAL", 25000)]);
+      .mockResolvedValueOnce([priorGroup("USD", 25000)]);
 
     const rows = await getMonthlySummary(USER_ID, "2026-09");
 
@@ -385,17 +421,16 @@ describe("getMonthlySummary previous balance", () => {
       currency: "USD",
       previous: 25000,
       current: 25000,
-      available: 25000,
     });
   });
 
   it("gives a section to a currency that only has an opening balance", async () => {
     db.openingBalance.findMany.mockResolvedValue([
-      openingRow("EUR", "CASH", 900, "2026-09"),
+      openingRow("acc_EUR", "EUR", 900, "2026-09"),
     ]);
 
     const rows = await getMonthlySummary(USER_ID, "2026-09");
 
-    expect(rows).toMatchObject([{ currency: "EUR", wallet: 900 }]);
+    expect(rows).toMatchObject([{ currency: "EUR", previous: 900 }]);
   });
 });

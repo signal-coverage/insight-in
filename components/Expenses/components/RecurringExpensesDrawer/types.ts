@@ -1,4 +1,5 @@
 import type { EntryCategory } from "@/components/Entries/types";
+import type { AccountChoice } from "@/core/accounts/types";
 import type { RecurringChoice } from "@/core/expenses/types";
 
 import type { RecurringData } from "../../types";
@@ -12,11 +13,13 @@ export interface RecurringExpensesDrawerProps {
   data: RecurringData;
   // For the form that edits a template.
   categories: readonly EntryCategory[];
+  // For the "Cuenta" field of the form that edits a template.
+  accounts: readonly AccountChoice[];
 }
 
 export type RecurringExpensesContentProps = Pick<
   RecurringExpensesDrawerProps,
-  "onClose" | "data" | "categories"
+  "onClose" | "data" | "categories" | "accounts"
 >;
 
 // What the user picked per template id; a template without an entry has no choice yet.

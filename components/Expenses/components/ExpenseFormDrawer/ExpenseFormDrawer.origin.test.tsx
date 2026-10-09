@@ -16,25 +16,30 @@ const actions = vi.hoisted(() => ({
 
 vi.mock("@/core/expenses/actions", () => actions);
 
+import { creditOption } from "../../testCards";
 import type { CardOption, ExpenseRow, FormTarget } from "../../types";
 import { ExpenseFormDrawer } from "./ExpenseFormDrawer";
 
 const CATEGORIES = [{ id: "c1", name: "Servicios" }];
 
-const CARD: CardOption = {
-  id: "card_1",
-  title: "Visa •••• 1234",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  charges: [],
-};
+const CARD: CardOption = creditOption();
 
 // A subscription of 20 USD that really cost 35.000 ARS.
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const EXPENSE: ExpenseRow = {
   id: "exp_1",
   description: "Netflix",
@@ -45,7 +50,8 @@ const EXPENSE: ExpenseRow = {
   categoryName: "Servicios",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   isRecurring: false,
   installmentPlanId: null,
   installmentNumber: null,
@@ -88,6 +94,7 @@ const renderForm = (
       target={target}
       categories={CATEGORIES}
       cards={cards}
+      accounts={ACCOUNTS}
     />,
   );
 };
@@ -181,12 +188,19 @@ describe("origin section of the expense form", () => {
 
     expect(within(listbox).getByText("Cripto")).toBeInTheDocument();
     expect(within(listbox).getByText("Monedas")).toBeInTheDocument();
-    expect(options.slice(0, 3)).toEqual([
+    expect(options.slice(0, 10)).toEqual([
       "USDC - USD Coin",
       "USDT - Tether",
       "DAI - Dai",
+      "BTC - Bitcoin",
+      "ETH - Ethereum",
+      "XMR - Monero",
+      "SOL - Solana",
+      "BNB - BNB",
+      "LTC - Litecoin",
+      "TRX - TRON",
     ]);
-    expect(options[3]).toMatch(/^USD - /);
+    expect(options[10]).toMatch(/^USD - /);
     expect(options.some((option) => option.startsWith("ARS - "))).toBe(false);
   });
 

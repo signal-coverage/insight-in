@@ -19,7 +19,8 @@ const ROW: IncomeRow = {
   installmentPlanId: null,
   installmentNumber: null,
   status: "PLANNED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   amountLabel: "$2,500.00",
   amountDecimal: "2500.00",
   dateLabel: "1 sept 2026",
@@ -71,7 +72,7 @@ describe("IncomesTable selection", () => {
       }),
     ).toBeInTheDocument();
     expect(headers[1]).toHaveTextContent("Acciones");
-    expect(headers).toHaveLength(8);
+    expect(headers).toHaveLength(9);
   });
 
   it("names each row's checkbox after its description and reports the ids", () => {
@@ -101,7 +102,7 @@ describe("IncomesTable selection", () => {
   it("has no selection column when nothing listens to it", () => {
     renderTable({ onSelectionChange: undefined });
 
-    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(8);
   });
 
   it("keeps the same column classes while loading, the checkbox column included", () => {

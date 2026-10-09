@@ -1,3 +1,4 @@
+import { assertUsableAccount } from "@/core/accounts/usable";
 import { dayOfMonthOf } from "@/core/expenses/recurrence";
 import { dateToIsoDate, isoDateToDate } from "@/core/incomes/dates";
 import { minorUnitsToNumber } from "@/core/incomes/money";
@@ -29,6 +30,11 @@ export const createIncomeInstallmentPlan = async (
   input: IncomeInstallmentPlanInput,
 ): Promise<{ id: string }> => {
   await assertCategoryOwnedBy(userId, input.categoryId);
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: null,
+  });
 
   const installments = buildInstallments({
     description: input.description,
@@ -46,7 +52,7 @@ export const createIncomeInstallmentPlan = async (
         totalCuotas: input.totalCuotas,
         totalAmount: BigInt(input.totalAmount),
         currency: input.currency,
-        medium: input.medium,
+        accountId: input.accountId,
         incomeCategoryId: input.categoryId,
         notes: input.notes,
         dayOfMonth: dayOfMonthOf(input.firstDate),
@@ -64,7 +70,8 @@ export const createIncomeInstallmentPlan = async (
         notes: input.notes,
         // Created ahead of time: it still has to be collected.
         status: "PLANNED" as const,
-        medium: input.medium,
+        // Every installment arrives in the plan's account.
+        accountId: input.accountId,
         installmentPlanId: plan.id,
         installmentNumber: number,
       })),

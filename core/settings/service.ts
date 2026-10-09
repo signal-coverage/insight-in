@@ -13,7 +13,10 @@ export const getUserSettings = async (
     return { ...DEFAULT_SETTINGS };
   }
 
-  return { includeExpectedIncomes: row.includeExpectedIncomes };
+  return {
+    includeExpectedIncomes: row.includeExpectedIncomes,
+    hiddenSummaryCurrencies: row.hiddenSummaryCurrencies ?? [],
+  };
 };
 
 // Creates the user's row the first time they change a setting, and updates it afterwards.
@@ -25,5 +28,17 @@ export const saveIncludeExpectedIncomes = async (
     where: { userId },
     create: { userId, includeExpectedIncomes },
     update: { includeExpectedIncomes },
+  });
+};
+
+// Which currencies the month block of the summary hides. Creates the row when there is none.
+export const saveHiddenSummaryCurrencies = async (
+  userId: string,
+  hiddenSummaryCurrencies: string[],
+): Promise<void> => {
+  await prisma.userSettings.upsert({
+    where: { userId },
+    create: { userId, hiddenSummaryCurrencies },
+    update: { hiddenSummaryCurrencies },
   });
 };

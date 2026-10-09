@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Label,
-  ListBox,
   Select,
   TextArea,
   TextField,
@@ -14,10 +13,13 @@ import {
 import { useState, useTransition } from "react";
 import type { FormEvent } from "react";
 
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
-import { MediumField } from "@/components/Entries/components/MediumField";
 import { OriginSection } from "@/components/Entries/components/OriginSection";
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import { CurrencyListBox } from "@/components/Entries/components/CurrencyListBox";
 import {
   AMOUNT_HINT,
   AMOUNT_LABEL,
@@ -68,6 +70,7 @@ import type { TemplateFormContentProps } from "./types";
 export function TemplateFormContent({
   template,
   categories,
+  accounts,
   onClose,
 }: TemplateFormContentProps) {
   const [isPending, startTransition] = useTransition();
@@ -78,6 +81,16 @@ export function TemplateFormContent({
   const [amount, setAmount] = useState(template.amountDecimal);
   const [currency, setCurrency] = useState(
     template.currency || DEFAULT_CURRENCY_CODE,
+  );
+  // The account the month's expense goes to: the template keeps its own, even if it was archived
+  // since; a currency change drops it.
+  const keepAccountId = template.accountId;
+  const [accountId, setAccountId] = useState<string | null>(keepAccountId);
+  const account = resolveAccountId(
+    accounts,
+    currency,
+    accountId,
+    keepAccountId,
   );
   const hasOriginErrors = Boolean(
     fieldErrors.originCurrency || fieldErrors.originAmount,
@@ -161,6 +174,7 @@ export function TemplateFormContent({
               onChange={(value) => {
                 if (typeof value === "string") {
                   setCurrency(value);
+                  setAccountId(null);
                 }
               }}
             >
@@ -170,14 +184,7 @@ export function TemplateFormContent({
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover>
-                <ListBox>
-                  {CURRENCY_OPTIONS.map(({ code, label }) => (
-                    <ListBox.Item key={code} id={code} textValue={label}>
-                      {label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
+                <CurrencyListBox includeCrypto />
               </Select.Popover>
               <FieldError />
             </Select>
@@ -198,7 +205,14 @@ export function TemplateFormContent({
             onCreate={createCategoryAction}
           />
 
-          <MediumField defaultMedium={template.medium} />
+          <AccountField
+            accounts={accounts}
+            currency={currency}
+            value={account}
+            keepAccountId={keepAccountId}
+            onChange={setAccountId}
+            errorMessage={fieldErrors.accountId?.[0]}
+          />
 
           <TextField
             isRequired

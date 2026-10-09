@@ -5,14 +5,29 @@ import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
 import { originCurrencyGroups, originRateLine } from "./utils";
 
 describe("originCurrencyGroups", () => {
-  it("lists the crypto assets first, in registry order, named after the asset", () => {
+  it("lists every crypto asset first, in registry order, named after the asset", () => {
     const { crypto } = originCurrencyGroups("ARS");
 
     expect(crypto).toEqual([
       { code: "USDC", label: "USDC - USD Coin" },
       { code: "USDT", label: "USDT - Tether" },
       { code: "DAI", label: "DAI - Dai" },
+      { code: "BTC", label: "BTC - Bitcoin" },
+      { code: "ETH", label: "ETH - Ethereum" },
+      { code: "XMR", label: "XMR - Monero" },
+      { code: "SOL", label: "SOL - Solana" },
+      { code: "BNB", label: "BNB - BNB" },
+      { code: "LTC", label: "LTC - Litecoin" },
+      { code: "TRX", label: "TRX - TRON" },
     ]);
+  });
+
+  it("leaves a crypto net currency out of the crypto group, and keeps the others", () => {
+    const codes = originCurrencyGroups("USDC").crypto.map(({ code }) => code);
+
+    expect(codes).toHaveLength(9);
+    expect(codes).toContain("USDT");
+    expect(codes).not.toContain("USDC");
   });
 
   it("lists every ISO currency except the net one, in the order of the currency picker", () => {

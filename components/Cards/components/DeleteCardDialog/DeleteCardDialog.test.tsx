@@ -6,33 +6,11 @@ const actions = vi.hoisted(() => ({ deleteCardAction: vi.fn() }));
 
 vi.mock("@/core/cards/actions", () => actions);
 
+import { creditCardRow } from "../../testRows";
 import type { CardRow } from "../../types";
 import { DeleteCardDialog } from "./DeleteCardDialog";
 
-const CARD: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 0,
-  monthUsed: 0,
-  used: 0,
-  available: 30000000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 0,00 de $ 300.000,00",
-  availableLabel: "$ 300.000,00",
-  limitDecimal: "300000.00",
-  percent: 0,
-};
+const CARD: CardRow = creditCardRow();
 
 const renderDialog = (card: CardRow | null = CARD) => {
   const onClose = vi.fn();

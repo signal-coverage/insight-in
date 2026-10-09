@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { ExpenseStatusField } from "./ExpenseStatusField";
 
@@ -47,5 +47,20 @@ describe("ExpenseStatusField", () => {
     const form = document.querySelector("form") as HTMLFormElement;
 
     expect(new FormData(form).get("status")).toBe("COVERED");
+  });
+});
+
+describe("ExpenseStatusField onChange", () => {
+  it("reports the status the user picks, and nothing before that", () => {
+    const onChange = vi.fn();
+
+    render(<ExpenseStatusField defaultStatus="SETTLED" onChange={onChange} />);
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Pendiente" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("PLANNED");
   });
 });

@@ -32,7 +32,6 @@ import type {
 } from "./types";
 import {
   confirmationText,
-  dropMismatchedCard,
   firstInstallmentText,
   initialValues,
   needsConfirmation,
@@ -41,6 +40,7 @@ import {
   recommendationItems,
   toPayload,
   toTicketLines,
+  withPurchaseChange,
 } from "./utils";
 
 // Mounted with a fresh key on every opening, so each one starts from the defaults. The data of the
@@ -49,6 +49,7 @@ import {
 export function InstallmentPlannerContent({
   categories,
   cards,
+  accounts,
   defaultDate,
   onClose,
 }: InstallmentPlannerContentProps) {
@@ -62,18 +63,18 @@ export function InstallmentPlannerContent({
 
   // "This month" is the month of the day the planner opened (the Argentine date).
   const currentMonth = monthOf(defaultDate);
-  const summary = parsePurchase(values, cards);
+  const summary = parsePurchase(values, cards, accounts);
   const categoryName =
     categories.find(({ id }) => id === values.categoryId)?.name ?? "";
 
-  // A currency change leaves behind a card of the old one.
+  // A currency change leaves behind a card and an account of the old one.
   const handleChange = (patch: Partial<PurchaseValues>) =>
-    setValues((current) => dropMismatchedCard({ ...current, ...patch }, cards));
+    setValues((current) => withPurchaseChange(current, patch, cards));
 
   const handleSave = () => {
     startTransition(async () => {
       const result = await createInstallmentPlanAction(
-        toPayload(values, cards),
+        toPayload(values, cards, accounts),
       );
 
       setIsConfirming(false);
@@ -119,6 +120,7 @@ export function InstallmentPlannerContent({
             values={values}
             categories={categories}
             cards={cards}
+            accounts={accounts}
             preview={summary ? previewText(summary) : null}
             recommendations={recommendationItems(values, cards)}
             firstInstallment={firstInstallmentText(values, cards)}

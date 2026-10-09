@@ -22,13 +22,6 @@ enum EntryStatus {
   COVERED
 }
 
-// Where the money moved: an account (digital) or physical cash (the wallet). The two keep
-// separate balances.
-enum PaymentMedium {
-  DIGITAL
-  CASH
-}
-
 model Income {
   id             String         @id @default(cuid())
   // Clerk user id — every record belongs to exactly one user.
@@ -44,7 +37,9 @@ model Income {
   notes          String?
   // Existing and manually added incomes default to collected; generated ones start planned.
   status         EntryStatus    @default(SETTLED)
-  medium         PaymentMedium  @default(DIGITAL)
+  // The account the money arrived in.
+  accountId      String
+  account        Account        @relation(fields: [accountId], references: [id], onDelete: Restrict)
   // Where the net `amount` came from, kept only as a reference (the implied rate, later statistics):
   // a crypto code (USDC, USDT, DAI) or an ISO code, and the amount in that currency's minor units
   // (6 decimals for crypto). Both are set or both are null (a CHECK constraint of the migration
@@ -80,6 +75,7 @@ model Income {
   @@index([recurringIncomeId])
   @@index([installmentPlanId])
   @@index([reimbursesExpenseId])
+  @@index([accountId])
 }
 
 // A template that generates an Income on every occurrence between startDate and endDate.
@@ -94,7 +90,9 @@ model RecurringIncome {
   categoryId  String
   category    IncomeCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   notes       String?
-  medium      PaymentMedium      @default(DIGITAL)
+  // Copied onto every income the template generates.
+  accountId   String
+  account     Account            @relation(fields: [accountId], references: [id], onDelete: Restrict)
   frequency   RecurringFrequency
   startDate   DateTime           @db.Date
   // null = the series never ends.
@@ -104,6 +102,7 @@ model RecurringIncome {
   incomes     Income[]
 
   @@index([userId])
+  @@index([accountId])
 }
 
 model IncomeCategory {
@@ -133,7 +132,9 @@ model Expense {
   category              ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   notes                 String?
   status                EntryStatus     @default(SETTLED)
-  medium                PaymentMedium   @default(DIGITAL)
+  // The account the money left (for a credit-card expense, the account that pays the statement).
+  accountId             String
+  account               Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
   // True exactly when the expense is linked to a template (set at write time).
   isRecurring           Boolean         @default(false)
   // The price the expense was quoted in when it really cost another currency (a 20 USD subscription
@@ -181,6 +182,7 @@ model Expense {
   @@index([recurringExpenseId])
   @@index([installmentPlanId])
   @@index([cardId])
+  @@index([accountId])
 }
 
 // Which way the money of a plan goes: a purchase the user pays in installments (an expense plan) or a
@@ -205,7 +207,9 @@ model InstallmentPlan {
   // Minor units, like Expense.amount. The installments always add up to exactly this.
   totalAmount      BigInt
   currency         String
-  medium           PaymentMedium    @default(DIGITAL)
+  // Copied onto every installment of the plan.
+  accountId        String
+  account          Account          @relation(fields: [accountId], references: [id], onDelete: Restrict)
   // The category of an expense plan; null for an income plan.
   categoryId       String?
   category         ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -229,6 +233,7 @@ model InstallmentPlan {
   @@index([categoryId])
   @@index([incomeCategoryId])
   @@index([cardId])
+  @@index([accountId])
 }
 
 enum CardBrand {
@@ -244,32 +249,57 @@ enum CardLimitMode {
   TOTAL
 }
 
-// A credit card, only as a reference: no sensitive data is stored, just the last 4 digits, the
-// brand (illustrative), when its statement closes and is paid, and a spending cap.
+// CREDIT: bought now and paid with the statement, bounded by a cap per currency the user chooses.
+// DEBIT (prepaid cards too): spends money that is already in an account of its bank.
+enum CardKind {
+  CREDIT
+  DEBIT
+}
+
+// A card, only as a reference: no sensitive data is stored, just the last 4 digits and the brand
+// (illustrative). Every card belongs to a bank. A credit card also has the day its statement closes,
+// the day it is paid, one limit mode and one cap per currency (CardLimit); a debit card has none of
+// them (a CHECK constraint of the migration enforces both shapes) and spends from the bank's active
+// account in the currency of the purchase.
 model Card {
-  id          String            @id @default(cuid())
+  id         String            @id @default(cuid())
   // Clerk user id — cards are private to their owner.
-  userId      String
+  userId     String
+  kind       CardKind
+  bankId     String
+  bank       Bank              @relation(fields: [bankId], references: [id], onDelete: Restrict)
   // Exactly 4 digits.
-  last4       String
-  brand       CardBrand
-  // 1..31: the day the statement closes; a shorter month uses its last day.
-  closingDay  Int
-  // 1..31: the day the statement is paid; a shorter month uses its last day.
-  dueDay      Int
-  // ISO 4217 code of the cap.
-  currency    String
-  limitMode   CardLimitMode
-  // Minor units, like Expense.amount. The cap the user wants to respect: the real limit of the
-  // card or something lower.
-  limitAmount BigInt
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  plans       InstallmentPlan[]
-  expenses    Expense[]
+  last4      String
+  brand      CardBrand
+  // Credit only. 1..31: the day the statement closes; a shorter month uses its last day.
+  closingDay Int?
+  // Credit only. 1..31: the day the statement is paid; a shorter month uses its last day.
+  dueDay     Int?
+  // Credit only.
+  limitMode  CardLimitMode?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  limits     CardLimit[]
+  plans      InstallmentPlan[]
+  expenses   Expense[]
 
   @@unique([userId, last4, brand])
   @@index([userId])
+  @@index([bankId])
+}
+
+// The cap of a credit card in one currency: the most the user wants to respect (the real limit or
+// something lower). Caps in different currencies are never added together.
+model CardLimit {
+  id       String @id @default(cuid())
+  cardId   String
+  card     Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  // ISO 4217 code.
+  currency String
+  // Minor units of `currency`. Always positive (a CHECK constraint of the migration enforces it).
+  amount   BigInt
+
+  @@unique([cardId, currency])
 }
 
 // What the user decided about a template for one month.
@@ -290,7 +320,9 @@ model RecurringExpense {
   categoryId     String
   category       ExpenseCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   notes          String?
-  medium         PaymentMedium              @default(DIGITAL)
+  // Copied onto every expense the wizard creates from the template.
+  accountId      String
+  account        Account                    @relation(fields: [accountId], references: [id], onDelete: Restrict)
   // The reference price the template remembers (20 USD for a subscription that costs 35.000 ARS),
   // copied onto every expense it creates. Both are set or both are null (a CHECK constraint of the
   // migration enforces it).
@@ -305,6 +337,7 @@ model RecurringExpense {
 
   @@index([userId])
   @@index([categoryId])
+  @@index([accountId])
 }
 
 model RecurringExpenseDecision {
@@ -319,22 +352,24 @@ model RecurringExpenseDecision {
   @@unique([recurringExpenseId, month])
 }
 
-// The money the user held at the START of `month`, per currency and medium. Every row of a user
-// shares the same month. Earlier months do not count and later ones accumulate on top of it.
+// The money the user held in each account at the START of `month`, one row per account. Every row of a
+// user shares the same month. Earlier months do not count and later ones accumulate on top of it.
 model OpeningBalance {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   // Clerk user id — balances are private to their owner.
   userId    String
-  currency  String
-  medium    PaymentMedium
+  // The account the amount was held in; the account decides the money it is in.
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Restrict)
   // Minor units, like Income.amount.
   amount    BigInt
   // "YYYY-MM".
   month     String
-  updatedAt DateTime      @updatedAt
+  updatedAt DateTime @updatedAt
 
-  @@unique([userId, currency, medium])
+  @@unique([userId, accountId])
   @@index([userId])
+  @@index([accountId])
 }
 
 model ExpenseCategory {
@@ -358,6 +393,9 @@ model UserSettings {
   userId                 String   @id
   // Whether incomes still to collect count towards the target remainder.
   includeExpectedIncomes Boolean  @default(true)
+  // Currencies the user hides from the month tabs of the summary (display only). Empty = all shown,
+  // so a currency the user starts using later appears by default.
+  hiddenSummaryCurrencies String[] @default([])
   updatedAt              DateTime @updatedAt
 }
 
@@ -384,4 +422,89 @@ model BoardItem {
   updatedAt   DateTime    @updatedAt
 
   @@index([userId, status, position])
+}
+
+// ENTITY: a bank (or the cash), which holds legal tender only. WALLET: a virtual wallet (Mercado Pago,
+// AstroPay...), which may also hold the crypto assets the app knows. The services enforce both.
+enum BankKind {
+  ENTITY
+  WALLET
+}
+
+// A place that holds the user's money: a bank, a virtual wallet or the cash drawer. It only groups
+// accounts. A bank the user gives up is archived, never deleted, so history can keep pointing at it.
+model Bank {
+  id         String    @id @default(cuid())
+  // Clerk user id — banks are private to their owner.
+  userId     String
+  name       String
+  // Decides which currencies its accounts can hold. Every bank starts as an entity.
+  kind       BankKind  @default(ENTITY)
+  // Set when the user gives the bank up; null while it is in use. It can be set only when every
+  // account of the bank is archived (the service enforces it).
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  accounts   Account[]
+  // The cards issued by the bank. The foreign key restricts, so a bank with cards is never deleted.
+  cards      Card[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// Where money sits: it belongs to exactly one bank and holds exactly one currency. Archived, never
+// deleted, so history can keep pointing at it.
+model Account {
+  id                String             @id @default(cuid())
+  // Clerk user id — accounts are private to their owner.
+  userId            String
+  bankId            String
+  bank              Bank               @relation(fields: [bankId], references: [id], onDelete: Restrict)
+  name              String
+  // ISO 4217 code, validated against the Dinero currency list at the boundary.
+  currency          String
+  archivedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  // Everything that points at the account. The foreign keys restrict, so an account with movements
+  // can never be deleted (it is archived instead).
+  incomes           Income[]
+  expenses          Expense[]
+  recurringIncomes  RecurringIncome[]
+  recurringExpenses RecurringExpense[]
+  installmentPlans  InstallmentPlan[]
+  openingBalances   OpeningBalance[]
+  // The transfers that take money out of the account and the ones that bring it in. The foreign keys
+  // restrict, so an account with transfers can never be deleted (it is archived instead).
+  transfersOut      Transfer[]         @relation("TransferFrom")
+  transfersIn       Transfer[]         @relation("TransferTo")
+
+  @@unique([bankId, name])
+  @@index([userId])
+}
+
+// Money moved between two accounts of the same user and the same currency. It is its own model, not an
+// income or an expense, so no total of incomes or expenses can include it by mistake. The accounts
+// decide the currency (the service checks they match), so none is stored here. A CHECK constraint of
+// the migration keeps the amount positive and the two accounts different.
+model Transfer {
+  id            String   @id @default(cuid())
+  // Clerk user id — transfers are private to their owner.
+  userId        String
+  fromAccountId String
+  fromAccount   Account  @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccountId   String
+  toAccount     Account  @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  // Minor units, like Income.amount. Always positive.
+  amount        BigInt
+  // The day the money moved. Never after today (Argentine time); the service enforces it.
+  date          DateTime @db.Date
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, date(sort: Desc)])
+  @@index([fromAccountId])
+  @@index([toAccountId])
 }

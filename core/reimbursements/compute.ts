@@ -1,3 +1,5 @@
+import { compareCurrencyCodes } from "@/core/currencies/crypto";
+
 import type {
   ExpectedExpense,
   PendingReimbursement,
@@ -37,5 +39,5 @@ export const pendingByCurrency = (
 
   return [...byCurrency.entries()]
     .map(([currency, amount]) => ({ currency, amount }))
-    .sort((a, b) => a.currency.localeCompare(b.currency));
+    .sort((a, b) => compareCurrencyCodes(a.currency, b.currency));
 };

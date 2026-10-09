@@ -1,45 +1,28 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
-import {
-  Button,
-  Description,
-  Drawer,
-  FieldError,
-  Form,
-  Input,
-  Label,
-  ListBox,
-  Select,
-  TextField,
-} from "@heroui/react";
+import { Button, Drawer, Form } from "@heroui/react";
 import { useState, useTransition } from "react";
 import type { FormEvent } from "react";
 
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
-import {
-  CANCEL_LABEL,
-  CURRENCY_LABEL,
-  CURRENCY_PLACEHOLDER,
-} from "@/components/Entries/formConsts";
+import { CANCEL_LABEL } from "@/components/Entries/formConsts";
 import {
   AMOUNT_ROW_CLASS_NAME,
   DRAWER_DESCRIPTION_CLASS_NAME,
-  FIELD_CLASS_NAME,
-  FIELD_HEIGHT_CLASS_NAME,
-  FIELD_VARIANT,
   FORM_CLASS_NAME,
-  SELECT_TRIGGER_CLASS_NAME,
 } from "@/components/Entries/styles";
 import { InlineAlert } from "@/components/shared/InlineAlert";
 import { PendingButton } from "@/components/shared/PendingButton";
 import { createCardAction, updateCardAction } from "@/core/cards/actions";
 import type { CardFieldErrors } from "@/core/cards/types";
-import { DEFAULT_CURRENCY_CODE } from "@/core/incomes/consts";
 
+import { BankField } from "./components/BankField";
 import { BrandField } from "./components/BrandField";
+import { CardIdentity } from "./components/CardIdentity";
 import { CardPreview } from "./components/CardPreview";
 import { DayField } from "./components/DayField";
-import { LimitModeField } from "./components/LimitModeField";
+import { KindField } from "./components/KindField";
 import { Last4Field } from "./components/Last4Field";
+import { LimitModeField } from "./components/LimitModeField";
+import { LimitsField } from "./components/LimitsField";
 import {
   CLOSING_DAY_FIELD_NAME,
   CLOSING_DAY_HINT,
@@ -57,20 +40,24 @@ import {
   EDIT_PENDING_LABEL,
   EDIT_SUBMIT_LABEL,
   FORM_ID,
-  LIMIT_AMOUNT_FIELD_NAME,
-  LIMIT_AMOUNT_HINT,
-  LIMIT_AMOUNT_LABEL,
 } from "./consts";
 import type { CardFormContentProps } from "./types";
 import { useCardDraft } from "./useCardDraft";
 
-// Mounted with a fresh key on every opening, so field defaults and errors always reset.
-export function CardFormContent({ target, onClose }: CardFormContentProps) {
+// Mounted with a fresh key on every opening, so field defaults and errors always reset. A new card
+// chooses its kind and bank; an edit shows them and sends them back unchanged. Only a credit card has
+// the cycle, the kind of cap and the caps per currency.
+export function CardFormContent({
+  target,
+  banks,
+  onClose,
+}: CardFormContentProps) {
   const { card } = target;
   const draft = useCardDraft(card);
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<CardFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const isCredit = draft.kind === "CREDIT";
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -112,75 +99,60 @@ export function CardFormContent({ target, onClose }: CardFormContentProps) {
           <CardPreview
             brand={draft.brand}
             last4={draft.last4}
-            closingDay={draft.closingDay}
-            dueDay={draft.dueDay}
+            cycle={
+              isCredit
+                ? { closingDay: draft.closingDay, dueDay: draft.dueDay }
+                : null
+            }
           />
+
+          {card ? (
+            <CardIdentity
+              kind={card.kind}
+              bankId={card.bankId}
+              bankName={card.bankName}
+              errorMessage={fieldErrors.kind?.[0] ?? fieldErrors.bankId?.[0]}
+            />
+          ) : (
+            <>
+              <KindField value={draft.kind} onChange={draft.setKind} />
+              <BankField banks={banks} />
+            </>
+          )}
 
           <Last4Field value={draft.last4} onChange={draft.setLast4} />
 
           <BrandField value={draft.brand} onChange={draft.setBrand} />
 
-          <div className={AMOUNT_ROW_CLASS_NAME}>
-            <DayField
-              name={CLOSING_DAY_FIELD_NAME}
-              label={CLOSING_DAY_LABEL}
-              hint={CLOSING_DAY_HINT}
-              value={draft.closingDay}
-              onChange={draft.setClosingDay}
-            />
-            <DayField
-              name={DUE_DAY_FIELD_NAME}
-              label={DUE_DAY_LABEL}
-              hint={DUE_DAY_HINT}
-              value={draft.dueDay}
-              onChange={draft.setDueDay}
-            />
-          </div>
+          {isCredit ? (
+            <>
+              <div className={AMOUNT_ROW_CLASS_NAME}>
+                <DayField
+                  name={CLOSING_DAY_FIELD_NAME}
+                  label={CLOSING_DAY_LABEL}
+                  hint={CLOSING_DAY_HINT}
+                  value={draft.closingDay}
+                  onChange={draft.setClosingDay}
+                />
+                <DayField
+                  name={DUE_DAY_FIELD_NAME}
+                  label={DUE_DAY_LABEL}
+                  hint={DUE_DAY_HINT}
+                  value={draft.dueDay}
+                  onChange={draft.setDueDay}
+                />
+              </div>
 
-          <Select
-            isRequired
-            variant={FIELD_VARIANT}
-            className={FIELD_CLASS_NAME}
-            name="currency"
-            placeholder={CURRENCY_PLACEHOLDER}
-            defaultValue={card?.currency ?? DEFAULT_CURRENCY_CODE}
-          >
-            <Label>{CURRENCY_LABEL}</Label>
-            <Select.Trigger className={SELECT_TRIGGER_CLASS_NAME}>
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                {CURRENCY_OPTIONS.map(({ code, label }) => (
-                  <ListBox.Item key={code} id={code} textValue={label}>
-                    {label}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Select.Popover>
-            <FieldError />
-          </Select>
+              <LimitModeField
+                defaultMode={card?.limitMode ?? DEFAULT_LIMIT_MODE}
+              />
 
-          <LimitModeField defaultMode={card?.limitMode ?? DEFAULT_LIMIT_MODE} />
-
-          <TextField
-            isRequired
-            className={FIELD_CLASS_NAME}
-            name={LIMIT_AMOUNT_FIELD_NAME}
-            inputMode="decimal"
-            defaultValue={card?.limitDecimal}
-          >
-            <Label>{LIMIT_AMOUNT_LABEL}</Label>
-            <Input
-              variant={FIELD_VARIANT}
-              className={FIELD_HEIGHT_CLASS_NAME}
-              placeholder="0.00"
-            />
-            <Description>{LIMIT_AMOUNT_HINT}</Description>
-            <FieldError />
-          </TextField>
+              <LimitsField
+                defaultLimits={card?.limits ?? []}
+                fieldErrors={fieldErrors}
+              />
+            </>
+          ) : null}
 
           {formError ? (
             <InlineAlert variant="error">{formError}</InlineAlert>

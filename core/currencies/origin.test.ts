@@ -19,8 +19,12 @@ describe("originExponent", () => {
     expect(originExponent("JPY")).toBe(0);
   });
 
+  it("is 6 for every registered asset", () => {
+    expect(originExponent("BTC")).toBe(6);
+  });
+
   it("is null for an unknown code", () => {
-    expect(originExponent("BTC")).toBeNull();
+    expect(originExponent("ZZZ")).toBeNull();
   });
 });
 
@@ -38,7 +42,16 @@ describe("isOriginCurrencyCode", () => {
     expect(isOriginCurrencyCode("ARS", "ARS")).toBe(false);
   });
 
-  it.each(["BTC", "", "usdc", "ZZZ"])("rejects an unknown code %j", (code) => {
+  it("accepts any registered asset, and an ISO origin for a crypto net amount", () => {
+    expect(isOriginCurrencyCode("BTC", "ARS")).toBe(true);
+    expect(isOriginCurrencyCode("ARS", "USDC")).toBe(true);
+  });
+
+  it("rejects a crypto origin equal to a crypto net currency", () => {
+    expect(isOriginCurrencyCode("USDC", "USDC")).toBe(false);
+  });
+
+  it.each(["XRP", "", "usdc", "ZZZ"])("rejects an unknown code %j", (code) => {
     expect(isOriginCurrencyCode(code, "ARS")).toBe(false);
   });
 });
@@ -78,7 +91,11 @@ describe("toOriginMinorUnits", () => {
   });
 
   it("rejects an unknown code", () => {
-    expect(toOriginMinorUnits("10", "BTC")).toBeNull();
+    expect(toOriginMinorUnits("10", "ZZZ")).toBeNull();
+  });
+
+  it("parses any registered asset", () => {
+    expect(toOriginMinorUnits("0.5", "BTC")).toBe(500000);
   });
 });
 
@@ -155,7 +172,12 @@ describe("impliedRate", () => {
     expect(impliedRate(1200, "ARS", 0, "USDC")).toBeNull();
     expect(impliedRate(0, "ARS", 1000000, "USDC")).toBeNull();
     expect(impliedRate(1200, "ZZZ", 1000000, "USDC")).toBeNull();
-    expect(impliedRate(1200, "ARS", 1000000, "BTC")).toBeNull();
+    expect(impliedRate(1200, "ARS", 1000000, "ZZZ")).toBeNull();
+  });
+
+  it("works with a crypto net amount", () => {
+    // 1,00 USDC net out of $ 1.250,00.
+    expect(impliedRate(1000000, "USDC", 125000, "ARS")).toBe(0.0008);
   });
 });
 
@@ -178,5 +200,20 @@ describe("formatRateMoney", () => {
 
   it("shows 4 decimals under 1", () => {
     expect(formatRateMoney(0.0008, "ARS")).toMatch(/^\$\s0,0008$/);
+  });
+
+  it("writes the rate and then the code for a crypto net currency, never through Intl", () => {
+    expect(formatRateMoney(0.0008, "USDC")).toBe("0,0008 USDC");
+    expect(formatRateMoney(1200, "BTC")).toBe("1.200,00 BTC");
+  });
+
+  it("keeps significant digits for a tiny rate in a crypto net currency instead of printing zero", () => {
+    expect(formatRateMoney(0.00001234, "BTC")).toBe("0,00001234 BTC");
+    expect(formatRateMoney(0.0000001, "ETH")).toBe("0,0000001 ETH");
+    expect(formatRateMoney(0.0001, "BTC")).toBe("0,0001 BTC");
+  });
+
+  it("keeps the currency prefix for a legal tender net currency", () => {
+    expect(formatRateMoney(1200, "USD")).toMatch(/^US\$\s1\.200,00$/);
   });
 });

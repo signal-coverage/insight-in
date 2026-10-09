@@ -11,12 +11,14 @@ const installments = vi.hoisted(() => ({ listInstallmentPlans: vi.fn() }));
 const progress = vi.hoisted(() => ({ listExpensePlanProgress: vi.fn() }));
 
 const cardsService = vi.hoisted(() => ({ listCardsWithCharges: vi.fn() }));
+const choices = vi.hoisted(() => ({ listAccountChoices: vi.fn() }));
 
 vi.mock("./service", () => service);
 vi.mock("./recurringService", () => recurring);
 vi.mock("@/core/installments/service", () => installments);
 vi.mock("@/core/installments/progress", () => progress);
 vi.mock("@/core/cards/service", () => cardsService);
+vi.mock("@/core/accounts/choices", () => choices);
 
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 
@@ -56,6 +58,12 @@ const PLAN = {
   nextAmount: 100000,
   defaultCount: 1,
 };
+const ACCOUNT = {
+  id: "acc_1",
+  currency: "ARS",
+  label: "Banco Galicia · Caja de ahorro",
+  archived: false,
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -69,6 +77,7 @@ beforeEach(() => {
   recurring.listRecurringExpenses.mockResolvedValue([TEMPLATE]);
   installments.listInstallmentPlans.mockResolvedValue([PLAN]);
   cardsService.listCardsWithCharges.mockResolvedValue([CARD]);
+  choices.listAccountChoices.mockResolvedValue([ACCOUNT]);
   progress.listExpensePlanProgress.mockResolvedValue({});
 });
 
@@ -90,8 +99,10 @@ describe("loadExpensesPageData", () => {
       currencies: ["ARS"],
       recurring: { month: "2026-10", items: [TEMPLATE], plans: [PLAN] },
       cards: [CARD],
+      accounts: [ACCOUNT],
     });
     expect(cardsService.listCardsWithCharges).toHaveBeenCalledWith("user_1");
+    expect(choices.listAccountChoices).toHaveBeenCalledWith("user_1");
     expect(installments.listInstallmentPlans).toHaveBeenCalledWith(
       "user_1",
       "2026-10",

@@ -43,16 +43,6 @@ export const LEGEND_GROUPS: readonly LegendGroup[] = [
     title: BESIDE_DESCRIPTION_TITLE,
     entries: [
       {
-        id: "cash",
-        name: MARKERS.cash.label,
-        description:
-          "El dinero se pagó o se cobró en efectivo, no por una cuenta.",
-        appearsIn: [EXPENSES_TITLE, INCOMES_TITLE],
-        tone: "neutral",
-        icon: MARKERS.cash.icon,
-        marker: { label: MARKERS.cash.label },
-      },
-      {
         id: "recurring",
         name: MARKERS.recurring.label,
         description:

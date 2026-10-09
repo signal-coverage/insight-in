@@ -7,14 +7,15 @@ import {
   Form,
   Input,
   Label,
-  ListBox,
   Select,
   TextArea,
   TextField,
 } from "@heroui/react";
-import { MediumField } from "@/components/Entries/components/MediumField";
+import {
+  AccountField,
+  resolveAccountId,
+} from "@/components/Entries/components/AccountField";
 import { StatusSwitch } from "@/components/Entries/components/StatusSwitch";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 import { InlineAlert } from "@/components/shared/InlineAlert";
 import { PendingButton } from "@/components/shared/PendingButton";
 import { useState, useTransition } from "react";
@@ -73,7 +74,7 @@ import { ORIGIN_SECTION_COPY, STATUS_SWITCH_LABEL } from "../../consts";
 import { CategoryField } from "@/components/Entries/components/CategoryField";
 import { DatePickerField } from "@/components/Entries/components/DatePickerField";
 import type { IncomeFormContentProps } from "./types";
-import { CURRENCY_OPTIONS } from "@/components/Entries/currencyOptions";
+import { CurrencyListBox } from "@/components/Entries/components/CurrencyListBox";
 import {
   ReimbursesField,
   REIMBURSES_FIELD,
@@ -85,6 +86,7 @@ export function IncomeFormContent({
   target,
   categories,
   reimbursables,
+  accounts,
   onClose,
 }: IncomeFormContentProps) {
   const { income, defaultDate } = target;
@@ -97,6 +99,15 @@ export function IncomeFormContent({
   const [currency, setCurrency] = useState(
     income?.currency ?? DEFAULT_CURRENCY_CODE,
   );
+  // The account the money arrives in: a currency change drops it, an edit keeps its own (even archived).
+  const keepAccountId = income?.accountId ?? null;
+  const [accountId, setAccountId] = useState<string | null>(keepAccountId);
+  const account = resolveAccountId(
+    accounts,
+    currency,
+    accountId,
+    keepAccountId,
+  );
   // The expense this income pays back. An installment of a loan repaid in cuotas has no such link, and
   // an expense in another currency than the income is never kept as the choice.
   const [reimbursesId, setReimbursesId] = useState<string | null>(
@@ -106,9 +117,10 @@ export function IncomeFormContent({
   const reimbursed = choices.find(
     (option) => option.id === reimbursesId && option.currency === currency,
   );
+  // A row of a repayment plan keeps the currency of its plan.
+  const isRepayment = income !== null && income.installmentPlanId !== null;
   const canReimburse =
-    (income === null || income.installmentPlanId === null) &&
-    choices.some((option) => option.currency === currency);
+    !isRepayment && choices.some((option) => option.currency === currency);
   const hasOriginErrors = Boolean(
     fieldErrors.originCurrency || fieldErrors.originAmount,
   );
@@ -191,12 +203,14 @@ export function IncomeFormContent({
               variant={FIELD_VARIANT}
               isRequired
               className={FIELD_CLASS_NAME}
-              name="currency"
+              name={isRepayment ? undefined : "currency"}
+              isDisabled={isRepayment}
               placeholder={CURRENCY_PLACEHOLDER}
               value={currency}
               onChange={(value) => {
                 if (typeof value === "string") {
                   setCurrency(value);
+                  setAccountId(null);
                 }
               }}
             >
@@ -206,17 +220,14 @@ export function IncomeFormContent({
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover>
-                <ListBox>
-                  {CURRENCY_OPTIONS.map(({ code, label }) => (
-                    <ListBox.Item key={code} id={code} textValue={label}>
-                      {label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
+                <CurrencyListBox includeCrypto />
               </Select.Popover>
               <FieldError />
             </Select>
+            {/* A disabled select sends nothing, so the plan's currency travels in a hidden field. */}
+            {isRepayment ? (
+              <input type="hidden" name="currency" value={currency} />
+            ) : null}
           </div>
 
           <OriginSection
@@ -259,8 +270,13 @@ export function IncomeFormContent({
             onCreate={createCategoryAction}
           />
 
-          <MediumField
-            defaultMedium={income?.medium ?? DEFAULT_PAYMENT_MEDIUM}
+          <AccountField
+            accounts={accounts}
+            currency={currency}
+            value={account}
+            keepAccountId={keepAccountId}
+            onChange={setAccountId}
+            errorMessage={fieldErrors.accountId?.[0]}
           />
 
           <StatusSwitch

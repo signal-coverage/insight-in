@@ -2,11 +2,11 @@ import {
   BanknotesIcon,
   ReceiptPercentIcon,
   ScaleIcon,
-  WalletIcon,
 } from "@heroicons/react/24/outline";
 
 import { DEFAULT_CURRENCY_CODE } from "@/core/incomes/consts";
 import { formatMoney } from "@/core/incomes/money";
+import type { AttentionKind } from "@/core/summary/types";
 
 import type { SummaryRow, SummaryRowSpec } from "./types";
 
@@ -62,40 +62,22 @@ export const SUMMARY_ROWS: readonly SummaryRowSpec[] = [
     emphasis: true,
     cards: [
       {
+        id: "previous",
+        label: "Saldo previo",
+        emphasis: false,
+        description: "Lo que sumaban tus cuentas al empezar el mes.",
+      },
+      {
         id: "current",
         label: "Actual",
-        description: "Saldo previo más lo cobrado menos lo pagado, en cuentas.",
+        description:
+          "Saldo previo más lo cobrado menos lo pagado en el mes, sumando todas tus cuentas.",
       },
       {
         id: "target",
         label: "Objetivo",
         description:
           "Cómo terminaría el mes pagando lo pendiente y, si lo sumás, cobrando lo que falta.",
-      },
-    ],
-  },
-  {
-    id: "balances",
-    title: "Saldos",
-    tone: "balance",
-    Icon: WalletIcon,
-    emphasis: false,
-    cards: [
-      {
-        id: "previous",
-        label: "Saldo previo",
-        description: "Lo que quedó de los meses anteriores, en cuentas.",
-      },
-      {
-        id: "wallet",
-        label: "Billetera",
-        description: "El efectivo que tenés en mano.",
-      },
-      {
-        id: "available",
-        label: "Total disponible",
-        emphasis: true,
-        description: "Remanente actual más billetera: lo que tenés hoy.",
       },
     ],
   },
@@ -113,8 +95,33 @@ export const EMPTY_ROWS: readonly SummaryRow[] = [
     previous: ZERO,
     current: ZERO,
     target: ZERO,
-    wallet: ZERO,
-    available: ZERO,
     reimbursements: ZERO,
+    paidPercent: 0,
   },
 ];
+
+// The address parameter of the currency tab the month block shows (`?currency=USD`). ARS, the
+// default, is never written.
+export const CURRENCY_PARAM = "currency";
+
+// The key of the "Otras" bar of the category chart (it folds several categories, so it has no id).
+export const OTHER_CATEGORY_KEY = "other";
+
+// What each group of the attention block is called and what its link says.
+export const ATTENTION_COPY: Readonly<
+  Record<AttentionKind, { title: string; linkLabel: string }>
+> = {
+  overdueExpense: { title: "Gastos vencidos", linkLabel: "Ver gastos" },
+  negativeAccount: { title: "Cuentas en negativo", linkLabel: "Ver Bancos" },
+  cardLimit: { title: "Tarjetas cerca del tope", linkLabel: "Ver Tarjetas" },
+  upcomingExpense: {
+    title: "Gastos de los próximos 7 días",
+    linkLabel: "Ver gastos",
+  },
+  overdueIncome: { title: "Ingresos atrasados", linkLabel: "Ver ingresos" },
+  reimbursement: { title: "Reintegros pendientes", linkLabel: "Ver ingresos" },
+};
+
+// The address parameter of the section tab the page shows (`?section=month`). The first section
+// (accounts), the default, is never written.
+export const SECTION_PARAM = "section";

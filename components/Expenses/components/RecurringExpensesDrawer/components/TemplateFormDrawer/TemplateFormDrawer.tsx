@@ -11,6 +11,7 @@ export function TemplateFormDrawer({
   onClose,
   target,
   categories,
+  accounts,
 }: TemplateFormDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -21,6 +22,7 @@ export function TemplateFormDrawer({
               key={target.key}
               template={target.template}
               categories={categories}
+              accounts={accounts}
               onClose={onClose}
             />
           ) : null}

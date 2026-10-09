@@ -8,3 +8,5 @@ export const DUE_HEADER = "Vencimiento";
 export const LIMIT_HEADER = "Tope";
 export const USAGE_HEADER = "Uso";
 export const AVAILABLE_HEADER = "Disponible";
+export const KIND_HEADER = "Tipo";
+export const BANK_HEADER = "Banco";

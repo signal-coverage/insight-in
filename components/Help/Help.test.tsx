@@ -53,11 +53,13 @@ describe("Help page", () => {
   it("explains the markers in simple words", () => {
     render(<Help />);
 
+    // The cash marker is gone (the account column says where the money is), so the legend no longer
+    // explains it.
     expect(
-      screen.getByText(
+      screen.queryByText(
         "El dinero se pagó o se cobró en efectivo, no por una cuenta.",
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "La pagó otra persona. No se descuenta de tu plata ni cuenta en los totales.",

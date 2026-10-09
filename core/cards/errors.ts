@@ -37,3 +37,36 @@ export class CardCurrencyMismatchError extends Error {
     this.name = "CardCurrencyMismatchError";
   }
 }
+
+// A card never changes kind: a credit card may have plans hanging from it.
+export class CardKindLockedError extends Error {
+  constructor() {
+    super("The kind of a card cannot change");
+    this.name = "CardKindLockedError";
+  }
+}
+
+// A card never moves to another bank.
+export class CardBankLockedError extends Error {
+  constructor() {
+    super("The bank of a card cannot change");
+    this.name = "CardBankLockedError";
+  }
+}
+
+// Only a credit card can pay this (a purchase in installments).
+export class CardKindNotAllowedError extends Error {
+  constructor() {
+    super("Only a credit card can be used here");
+    this.name = "CardKindNotAllowedError";
+  }
+}
+
+// The bank of a debit card has no active account in the currency of the expense (or the one it had was
+// archived or changed while the expense was being saved).
+export class CardBankWithoutAccountError extends Error {
+  constructor(readonly currency: string) {
+    super(`The bank of the card has no active account in ${currency}`);
+    this.name = "CardBankWithoutAccountError";
+  }
+}

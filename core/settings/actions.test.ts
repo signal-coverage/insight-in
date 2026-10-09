@@ -4,15 +4,20 @@ const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   revalidatePath: vi.fn(),
   saveIncludeExpectedIncomes: vi.fn(),
+  saveHiddenSummaryCurrencies: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: mocks.auth }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("./service", () => ({
   saveIncludeExpectedIncomes: mocks.saveIncludeExpectedIncomes,
+  saveHiddenSummaryCurrencies: mocks.saveHiddenSummaryCurrencies,
 }));
 
-import { saveIncludeExpectedIncomesAction } from "./actions";
+import {
+  saveHiddenSummaryCurrenciesAction,
+  saveIncludeExpectedIncomesAction,
+} from "./actions";
 
 const USER_ID = "user_123";
 
@@ -21,6 +26,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   mocks.auth.mockResolvedValue({ userId: USER_ID });
   mocks.saveIncludeExpectedIncomes.mockResolvedValue(undefined);
+  mocks.saveHiddenSummaryCurrencies.mockResolvedValue(undefined);
 });
 
 describe("saveIncludeExpectedIncomesAction", () => {
@@ -77,6 +83,81 @@ describe("saveIncludeExpectedIncomesAction", () => {
     );
 
     expect(await saveIncludeExpectedIncomesAction(true)).toEqual({
+      status: "error",
+      message: "Algo salió mal. Inténtalo de nuevo.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveHiddenSummaryCurrenciesAction", () => {
+  it("rejects unauthenticated callers without touching the service", async () => {
+    mocks.auth.mockResolvedValue({ userId: null });
+
+    expect(await saveHiddenSummaryCurrenciesAction(["USD"])).toEqual({
+      status: "error",
+      message: "Debes iniciar sesión.",
+    });
+    expect(mocks.saveHiddenSummaryCurrencies).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("saves the list for the signed-in user, normalised and without repeats", async () => {
+    expect(
+      await saveHiddenSummaryCurrenciesAction(["usd", "USD", " eur ", "USDC"]),
+    ).toEqual({ status: "success" });
+    expect(mocks.saveHiddenSummaryCurrencies).toHaveBeenCalledWith(USER_ID, [
+      "USD",
+      "EUR",
+      "USDC",
+    ]);
+  });
+
+  it("saves an empty list: nothing hidden", async () => {
+    expect(await saveHiddenSummaryCurrenciesAction([])).toEqual({
+      status: "success",
+    });
+    expect(mocks.saveHiddenSummaryCurrencies).toHaveBeenCalledWith(USER_ID, []);
+  });
+
+  it("refreshes only the summary after a success", async () => {
+    await saveHiddenSummaryCurrenciesAction(["USD"]);
+
+    expect(mocks.revalidatePath).toHaveBeenCalledTimes(1);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/overview");
+  });
+
+  it.each([
+    "USD",
+    null,
+    undefined,
+    [1],
+    [null],
+    { 0: "USD" },
+    ["USD", "ZZZ"],
+    [""],
+    Array.from({ length: 200 }, () => "USD"),
+  ])("refuses %j and saves nothing", async (value) => {
+    const result = await saveHiddenSummaryCurrenciesAction(value);
+
+    expect(result.status).toBe("error");
+    expect(mocks.saveHiddenSummaryCurrencies).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("says why an unknown currency is refused, in Spanish", async () => {
+    expect(await saveHiddenSummaryCurrenciesAction(["ZZZ"])).toEqual({
+      status: "error",
+      message: "Elegí solo monedas que la app soporta.",
+    });
+  });
+
+  it("answers with a generic message when saving fails, without refreshing", async () => {
+    mocks.saveHiddenSummaryCurrencies.mockRejectedValue(
+      new Error("database down"),
+    );
+
+    expect(await saveHiddenSummaryCurrenciesAction(["USD"])).toEqual({
       status: "error",
       message: "Algo salió mal. Inténtalo de nuevo.",
     });

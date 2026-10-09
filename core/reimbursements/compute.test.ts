@@ -58,6 +58,18 @@ describe("pendingByCurrency", () => {
     expect(pendingByCurrency([], [])).toEqual([]);
   });
 
+  it("sorts a crypto currency after the legal tender ones", () => {
+    expect(
+      pendingByCurrency(
+        [
+          { id: "x", currency: "BTC", expectedReimbursement: 1 },
+          { id: "z", currency: "USD", expectedReimbursement: 1 },
+        ],
+        [],
+      ).map(({ currency }) => currency),
+    ).toEqual(["USD", "BTC"]);
+  });
+
   it("sorts the currencies", () => {
     expect(
       pendingByCurrency(

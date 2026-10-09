@@ -1,2 +1,7 @@
 export { OpeningBalanceDrawer } from "./OpeningBalanceDrawer";
-export type { OpeningBalanceData, OpeningBalanceRow } from "./types";
+export { openingRowLabel } from "./rowLabel";
+export type {
+  OpeningAccountRow,
+  OpeningBalanceData,
+  OpeningBankGroup,
+} from "./types";

@@ -16,6 +16,8 @@ const incomes = vi.hoisted(() => ({ createCategoryAction: vi.fn() }));
 vi.mock("@/core/installments/actions", () => installments);
 vi.mock("@/core/incomes/actions", () => incomes);
 
+import type { AccountChoice } from "@/core/accounts/types";
+
 import { RepaymentPlannerDrawer } from "./RepaymentPlannerDrawer";
 
 const CATEGORIES = [
@@ -23,7 +25,22 @@ const CATEGORIES = [
   { id: "c2", name: "Sueldo" },
 ];
 
-const renderPlanner = () => {
+const ACCOUNTS: AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
+const renderPlanner = (accounts: AccountChoice[] = ACCOUNTS) => {
   const onClose = vi.fn();
   const onOpenChange = vi.fn();
 
@@ -35,6 +52,7 @@ const renderPlanner = () => {
       sessionKey={1}
       defaultDate="2026-10-01"
       categories={CATEGORIES}
+      accounts={accounts}
     />,
   );
 
@@ -52,6 +70,7 @@ const pickCategory = async (name: string) => {
   fireEvent.keyUp(option, { key: "Enter" });
 };
 
+const accountButton = () => screen.getByRole("button", { name: /Cuenta$/ });
 const conceptInput = () => screen.getByRole("textbox", { name: /Concepto/ });
 const amountInput = () => screen.getByRole("textbox", { name: /^Monto\b/ });
 const cuotasInput = () =>
@@ -114,7 +133,7 @@ describe("step 1: the data of the repayment", () => {
     ).toBeVisible();
   });
 
-  it("asks for the concept, category, amount, currency, medium, number of cuotas, first date and notes", () => {
+  it("asks for the concept, category, amount, currency, account, number of cuotas, first date and notes", () => {
     renderPlanner();
 
     expect(conceptInput()).toBeVisible();
@@ -125,7 +144,7 @@ describe("step 1: the data of the repayment", () => {
     ).toBeVisible();
     expect(amountInput()).toBeVisible();
     expect(screen.getByRole("button", { name: /Moneda/ })).toBeVisible();
-    expect(screen.getByRole("radiogroup", { name: "Medio" })).toBeVisible();
+    expect(accountButton()).toBeVisible();
     expect(cuotasInput()).toBeVisible();
     expect(screen.getByText("Fecha de la primera cuota")).toBeVisible();
     expect(screen.getByRole("textbox", { name: /Notas/ })).toBeVisible();
@@ -142,13 +161,13 @@ describe("step 1: the data of the repayment", () => {
     expect(screen.queryByText("Fecha de la compra")).toBeNull();
   });
 
-  it("starts in pesos, digital, with the total amount and twelve cuotas", () => {
+  it("starts in pesos, in the only account of pesos, with the total amount and twelve cuotas", () => {
     renderPlanner();
 
     expect(screen.getByRole("button", { name: /Moneda/ })).toHaveTextContent(
       "ARS",
     );
-    expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
+    expect(accountButton()).toHaveTextContent("Banco Galicia · Caja de ahorro");
     expect(screen.getByRole("radio", { name: "Monto total" })).toBeChecked();
     expect(cuotasInput()).toHaveValue("12");
   });
@@ -365,7 +384,7 @@ describe("step 2: the ticket", () => {
       "Monto total",
       "Primera cuota",
       "Última cuota estimada",
-      "Medio",
+      "Cuenta",
     ]);
   });
 
@@ -385,20 +404,7 @@ describe("step 2: the ticket", () => {
     expect(value("Monto total")).toMatch(/^\$\s600\.000,00$/);
     expect(value("Primera cuota")).toBe("1 oct 2026");
     expect(value("Última cuota estimada")).toBe("Marzo de 2027");
-    expect(value("Medio")).toBe("Digital");
-  });
-
-  it("shows the medium that was chosen", async () => {
-    renderPlanner();
-
-    await fillRepayment();
-    fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
-    fireEvent.click(continueButton());
-    await screen.findByText(REVIEW_STEP);
-
-    expect(
-      screen.getByText("Medio", { selector: "dt" }).nextElementSibling,
-    ).toHaveTextContent("Efectivo");
+    expect(value("Cuenta")).toBe("Banco Galicia · Caja de ahorro");
   });
 
   it("shows the amount of an installment with ≈ when the total does not divide evenly, without any remark", async () => {
@@ -473,7 +479,7 @@ describe("step 2: the ticket", () => {
         description: "Préstamo a Juan",
         categoryId: "c1",
         currency: "ARS",
-        medium: "DIGITAL",
+        accountId: "acc_1",
         notes: "",
         amount: "600000",
         amountMode: "total",
@@ -500,26 +506,6 @@ describe("step 2: the ticket", () => {
       expect(
         installments.createInstallmentPlanAction.mock.calls[0][0],
       ).toMatchObject({ amount: "100000", amountMode: "perInstallment" });
-    });
-
-    it("sends cash when the money arrives in cash", async () => {
-      installments.createInstallmentPlanAction.mockResolvedValue({
-        status: "success",
-      });
-      renderPlanner();
-
-      await fillRepayment();
-      fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
-      fireEvent.click(continueButton());
-      await screen.findByText(REVIEW_STEP);
-      save();
-
-      await waitFor(() =>
-        expect(installments.createInstallmentPlanAction).toHaveBeenCalled(),
-      );
-      expect(
-        installments.createInstallmentPlanAction.mock.calls[0][0],
-      ).toMatchObject({ medium: "CASH" });
     });
 
     it("sends nothing about cards", async () => {
@@ -626,5 +612,119 @@ describe("step 2: the ticket", () => {
         screen.queryByText("Algo salió mal. Inténtalo de nuevo."),
       ).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("the account the money arrives in", () => {
+  it("drops the account when the currency changes and takes the only one of the new currency", async () => {
+    renderPlanner();
+
+    expect(accountButton()).toHaveTextContent("Banco Galicia · Caja de ahorro");
+
+    fireEvent.keyDown(screen.getByRole("button", { name: /Moneda/ }), {
+      key: "ArrowDown",
+    });
+
+    const dollars = await screen.findByRole("option", { name: /^USD/ });
+
+    fireEvent.keyDown(dollars, { key: "Enter" });
+    fireEvent.keyUp(dollars, { key: "Enter" });
+
+    expect(accountButton()).toHaveTextContent(
+      "Banco Galicia · Cuenta en dólares",
+    );
+  });
+
+  it("links to Bancos when the currency has no account", () => {
+    renderPlanner([]);
+
+    expect(
+      screen.getByRole("link", { name: "Creá una en Bancos" }),
+    ).toHaveAttribute("href", "/dashboard/banks");
+  });
+
+  it("offers no link to Bancos while the currency has an account", () => {
+    renderPlanner();
+
+    expect(
+      screen.queryByRole("link", { name: "Creá una en Bancos" }),
+    ).toBeNull();
+  });
+
+  it("keeps Continuar disabled when there is no account to put the money in", async () => {
+    renderPlanner([]);
+
+    await fillRepayment();
+
+    expect(continueButton()).toBeDisabled();
+  });
+
+  describe("with several accounts in the currency", () => {
+    const TWO_ARS: AccountChoice[] = [
+      ...ACCOUNTS,
+      {
+        id: "acc_cash",
+        currency: "ARS",
+        label: "Efectivo · Efectivo",
+        archived: false,
+      },
+    ];
+
+    it("keeps Continuar disabled until one is chosen, and sends the one chosen", async () => {
+      installments.createInstallmentPlanAction.mockResolvedValue({
+        status: "success",
+      });
+      renderPlanner(TWO_ARS);
+
+      await fillRepayment();
+
+      expect(accountButton()).not.toHaveTextContent("Banco");
+      expect(continueButton()).toBeDisabled();
+
+      fireEvent.keyDown(accountButton(), { key: "ArrowDown" });
+
+      const cash = await screen.findByRole("option", {
+        name: "Efectivo · Efectivo",
+      });
+
+      fireEvent.keyDown(cash, { key: "Enter" });
+      fireEvent.keyUp(cash, { key: "Enter" });
+
+      expect(continueButton()).toBeEnabled();
+
+      fireEvent.click(continueButton());
+      await screen.findByText(REVIEW_STEP);
+      save();
+
+      await waitFor(() =>
+        expect(installments.createInstallmentPlanAction).toHaveBeenCalled(),
+      );
+      expect(
+        installments.createInstallmentPlanAction.mock.calls[0][0],
+      ).toMatchObject({ kind: "income", accountId: "acc_cash" });
+    });
+  });
+
+  it("shows on the ticket the account refusal of the server, and stays open", async () => {
+    installments.createInstallmentPlanAction.mockResolvedValue({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: {
+        accountId: [
+          "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+        ],
+      },
+    });
+    const { onClose } = renderPlanner();
+
+    await goToReview();
+    save();
+
+    expect(
+      await screen.findByText(
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ),
+    ).toBeVisible();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

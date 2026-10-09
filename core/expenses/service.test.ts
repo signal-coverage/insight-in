@@ -37,12 +37,22 @@ const db = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+const usable = vi.hoisted(() => ({ assertUsableAccount: vi.fn() }));
 
+vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
+vi.mock("@/core/accounts/usable", () => usable);
+
+import {
+  AccountArchivedError,
+  AccountNotFoundError,
+} from "@/core/accounts/errors";
+import { InstallmentCurrencyLockedError } from "@/core/entries/errors";
 import {
   CardCurrencyMismatchError,
   CardNotFoundError,
 } from "@/core/cards/errors";
+import { WITH_CARD_DETAILS } from "@/core/cards/service";
+import { creditCardRecord } from "@/core/cards/testFixtures";
 import { DEFAULT_ENTRIES_QUERY } from "@/core/entries/query";
 import type { EntriesQuery } from "@/core/entries/query";
 import {
@@ -66,6 +76,7 @@ import {
   setExpenseStatus,
   updateExpense,
 } from "./service";
+import { ExpenseChangedError } from "./errors";
 import type { ExpenseInput } from "./types";
 
 const {
@@ -78,12 +89,31 @@ const {
 } = db;
 
 const USER_ID = "user_123";
-const INCLUDE = { category: { select: { name: true } } };
+const ACCOUNT_ROW = {
+  name: "Caja de ahorro",
+  bank: { name: "Banco Galicia" },
+};
+const INCLUDE = {
+  category: { select: { name: true } },
+  account: { select: { name: true, bank: { select: { name: true } } } },
+};
 
 const query = (patch: Partial<EntriesQuery> = {}): EntriesQuery => ({
   ...DEFAULT_ENTRIES_QUERY,
   ...patch,
 });
+
+// What an update of the `found` expense is conditioned on: the record as it was read.
+const UNCHANGED_SINCE_READ = {
+  id: "exp_1",
+  userId: USER_ID,
+  status: "SETTLED",
+  amount: BigInt(35000050),
+  accountId: "acc_1",
+  cardId: null,
+  currency: "ARS",
+  date: new Date("2026-09-05T00:00:00.000Z"),
+};
 
 const input: ExpenseInput = {
   description: "Monthly rent",
@@ -93,7 +123,7 @@ const input: ExpenseInput = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   isRecurring: false,
   cardId: null,
   originCurrency: null,
@@ -105,21 +135,6 @@ const recurringInput: ExpenseInput = { ...input, isRecurring: true };
 
 // Closes on the 25th and is paid on the 5th: a purchase made on 2026-09-05 is in the statement that
 // closes on 2026-09-25, which is paid on 2026-10-05.
-const cardRow = (patch: Record<string, unknown> = {}) => ({
-  id: "card_1",
-  userId: USER_ID,
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: BigInt(30000000),
-  createdAt: new Date("2026-09-01T00:00:00.000Z"),
-  updatedAt: new Date("2026-09-01T00:00:00.000Z"),
-  ...patch,
-});
-
 const cardInput: ExpenseInput = { ...input, cardId: "card_1" };
 
 // What an expense outside any card writes on update, so a card that was removed is cleared.
@@ -142,7 +157,8 @@ const row = {
   category: { name: "Alquiler" },
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  account: ACCOUNT_ROW,
   isRecurring: false,
   originCurrency: null,
   originAmount: null,
@@ -162,7 +178,7 @@ const WRITABLE_DATA = {
   categoryId: "cat_1",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   expectedReimbursement: null,
@@ -174,7 +190,7 @@ const TEMPLATE_DATA = {
   currency: "ARS",
   categoryId: "cat_1",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -221,6 +237,7 @@ describe("createExpense", () => {
       ...input,
       id: "exp_1",
       categoryName: "Alquiler",
+      accountLabel: "Banco Galicia · Caja de ahorro",
       purchaseDate: null,
       reimbursementReceived: 0,
     });
@@ -228,7 +245,7 @@ describe("createExpense", () => {
 
   describe("with a card", () => {
     beforeEach(() => {
-      card.findFirst.mockResolvedValue(cardRow());
+      card.findFirst.mockResolvedValue(creditCardRecord());
       expense.create.mockResolvedValue({
         ...row,
         cardId: "card_1",
@@ -242,6 +259,7 @@ describe("createExpense", () => {
 
       expect(card.findFirst).toHaveBeenCalledWith({
         where: { id: "card_1", userId: USER_ID },
+        include: WITH_CARD_DETAILS,
       });
     });
 
@@ -287,12 +305,22 @@ describe("createExpense", () => {
     });
 
     it("rejects a card in another currency than the expense without writing", async () => {
-      card.findFirst.mockResolvedValue(cardRow({ currency: "USD" }));
+      card.findFirst.mockResolvedValue(creditCardRecord({ currency: "USD" }));
 
       await expect(createExpense(USER_ID, cardInput)).rejects.toBeInstanceOf(
         CardCurrencyMismatchError,
       );
       expect(expense.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a crypto expense on a credit card, which has no cap in it, and accepts the legal-tender twin", async () => {
+      await expect(
+        createExpense(USER_ID, { ...cardInput, currency: "USDC" }),
+      ).rejects.toBeInstanceOf(CardCurrencyMismatchError);
+      expect(expense.create).not.toHaveBeenCalled();
+
+      await expect(createExpense(USER_ID, cardInput)).resolves.toBeDefined();
+      expect(expense.create).toHaveBeenCalledTimes(1);
     });
 
     it("takes the template of a recurring expense from the charge date, which is the date the expense has", async () => {
@@ -322,15 +350,6 @@ describe("createExpense", () => {
     expect(expense.create.mock.calls[0][0].data).not.toHaveProperty(
       "purchaseDate",
     );
-  });
-
-  it("stores the medium it is given and returns it", async () => {
-    expense.create.mockResolvedValue({ ...row, medium: "CASH" });
-
-    const created = await createExpense(USER_ID, { ...input, medium: "CASH" });
-
-    expect(expense.create.mock.calls[0][0].data.medium).toBe("CASH");
-    expect(created.medium).toBe("CASH");
   });
 
   it("rejects a category the user does not own without writing", async () => {
@@ -422,12 +441,6 @@ describe("createExpense", () => {
       });
     });
 
-    it("gives the template the medium of the expense", async () => {
-      await createExpense(USER_ID, { ...recurringInput, medium: "CASH" });
-
-      expect(recurringExpense.create.mock.calls[0][0].data.medium).toBe("CASH");
-    });
-
     it("links the expense to the template and keeps the flag in step with the link", async () => {
       await createExpense(USER_ID, recurringInput);
 
@@ -475,6 +488,49 @@ describe("createExpense", () => {
       expect(db.$transaction).not.toHaveBeenCalled();
     });
   });
+
+  it("checks the account is the user's, active and in the expense's currency before writing", async () => {
+    expense.create.mockResolvedValue(row);
+
+    await createExpense(USER_ID, input);
+
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_1",
+      currency: "ARS",
+      keepAccountId: null,
+    });
+  });
+
+  it("writes nothing when the account is refused (another user's, archived or in another currency)", async () => {
+    usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+    await expect(createExpense(USER_ID, input)).rejects.toBeInstanceOf(
+      AccountArchivedError,
+    );
+    expect(expense.create).not.toHaveBeenCalled();
+    expect(recurringExpense.create).not.toHaveBeenCalled();
+  });
+
+  it("returns the account of the expense, labelled 'Banco · Cuenta'", async () => {
+    expense.create.mockResolvedValue(row);
+
+    await expect(createExpense(USER_ID, input)).resolves.toMatchObject({
+      accountId: "acc_1",
+      accountLabel: "Banco Galicia · Caja de ahorro",
+    });
+  });
+
+  it("gives the template of a recurring expense the expense's account", async () => {
+    recurringExpense.create.mockResolvedValue({ id: "rec_1" });
+    expense.create.mockResolvedValue({ ...row, isRecurring: true });
+
+    await createExpense(USER_ID, { ...recurringInput, accountId: "acc_7" });
+
+    expect(recurringExpense.create.mock.calls[0][0].data.accountId).toBe(
+      "acc_7",
+    );
+    expect(expense.create.mock.calls[0][0].data.accountId).toBe("acc_7");
+  });
 });
 
 describe("updateExpense", () => {
@@ -487,6 +543,11 @@ describe("updateExpense", () => {
       installmentPlanId,
       currency: "ARS",
       expectedReimbursement: null,
+      accountId: "acc_1",
+      cardId: null,
+      amount: BigInt(35000050),
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      status: "SETTLED",
     });
 
   it("looks the record up scoped to the user", async () => {
@@ -502,6 +563,11 @@ describe("updateExpense", () => {
         installmentPlanId: true,
         currency: true,
         expectedReimbursement: true,
+        accountId: true,
+        cardId: true,
+        amount: true,
+        date: true,
+        status: true,
       },
     });
   });
@@ -515,9 +581,25 @@ describe("updateExpense", () => {
         updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
       ).resolves.toBe(true);
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: { ...WRITABLE_DATA, status: "COVERED", isRecurring: false },
       });
+    });
+
+    it("keeps the currency of its plan: USDC and USD are refused on an ARS installment, ARS is accepted", async () => {
+      found(null, "plan_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", { ...input, currency: "USDC" }),
+      ).rejects.toBeInstanceOf(InstallmentCurrencyLockedError);
+      await expect(
+        updateExpense(USER_ID, "exp_1", { ...input, currency: "USD" }),
+      ).rejects.toBeInstanceOf(InstallmentCurrencyLockedError);
+      expect(expense.updateMany).not.toHaveBeenCalled();
+
+      await expect(updateExpense(USER_ID, "exp_1", input)).resolves.toBe(true);
+      expect(expense.updateMany).toHaveBeenCalledTimes(1);
     });
 
     it("never becomes recurring, even when the form sends the switch on", async () => {
@@ -569,7 +651,7 @@ describe("updateExpense", () => {
         updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
       ).resolves.toBe(true);
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: {
           ...WRITABLE_DATA,
           ...NO_CARD,
@@ -583,7 +665,7 @@ describe("updateExpense", () => {
       beforeEach(() => {
         found(null);
         expense.updateMany.mockResolvedValue({ count: 1 });
-        card.findFirst.mockResolvedValue(cardRow());
+        card.findFirst.mockResolvedValue(creditCardRecord());
       });
 
       it("recomputes the charge date from the card, whatever the client says, and stores the purchase day", async () => {
@@ -593,9 +675,10 @@ describe("updateExpense", () => {
 
         expect(card.findFirst).toHaveBeenCalledWith({
           where: { id: "card_1", userId: USER_ID },
+          include: WITH_CARD_DETAILS,
         });
         expect(expense.updateMany).toHaveBeenCalledWith({
-          where: { id: "exp_1", userId: USER_ID },
+          where: UNCHANGED_SINCE_READ,
           data: {
             ...WRITABLE_DATA,
             date: new Date("2026-10-05T00:00:00.000Z"),
@@ -615,7 +698,7 @@ describe("updateExpense", () => {
       });
 
       it("rejects a card in another currency without writing", async () => {
-        card.findFirst.mockResolvedValue(cardRow({ currency: "USD" }));
+        card.findFirst.mockResolvedValue(creditCardRecord({ currency: "USD" }));
 
         await expect(
           updateExpense(USER_ID, "exp_1", cardInput),
@@ -645,7 +728,7 @@ describe("updateExpense", () => {
       ).resolves.toBe(true);
       expect(db.$transaction).toHaveBeenCalledTimes(1);
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: {
           ...WRITABLE_DATA,
           ...NO_CARD,
@@ -664,7 +747,7 @@ describe("updateExpense", () => {
         updateExpense(USER_ID, "exp_1", { ...input, status: "COVERED" }),
       ).resolves.toBe(true);
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: {
           ...WRITABLE_DATA,
           ...NO_CARD,
@@ -690,7 +773,7 @@ describe("updateExpense", () => {
 
     await expect(updateExpense(USER_ID, "exp_1", input)).resolves.toBe(true);
     expect(expense.updateMany).toHaveBeenCalledWith({
-      where: { id: "exp_1", userId: USER_ID },
+      where: UNCHANGED_SINCE_READ,
       data: { ...WRITABLE_DATA, ...NO_CARD, isRecurring: false },
     });
   });
@@ -703,11 +786,13 @@ describe("updateExpense", () => {
     expect(recurringExpense.create).not.toHaveBeenCalled();
   });
 
-  it("returns false when the record disappears before the write", async () => {
+  it("refuses as changed, not as missing, when the record disappears or changes before the write", async () => {
     found(null);
     expense.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(updateExpense(USER_ID, "exp_1", input)).resolves.toBe(false);
+    await expect(updateExpense(USER_ID, "exp_1", input)).rejects.toBeInstanceOf(
+      ExpenseChangedError,
+    );
   });
 
   describe("an expense that is not linked to a template", () => {
@@ -726,7 +811,7 @@ describe("updateExpense", () => {
         data: { userId: USER_ID, ...TEMPLATE_DATA },
       });
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: {
           ...WRITABLE_DATA,
           ...NO_CARD,
@@ -764,8 +849,8 @@ describe("updateExpense", () => {
 
       await expect(
         updateExpense(USER_ID, "exp_1", recurringInput),
-      ).resolves.toBe(false);
-      expect(rolledBackWith).toBeInstanceOf(Error);
+      ).rejects.toBeInstanceOf(ExpenseChangedError);
+      expect(rolledBackWith).toBeInstanceOf(ExpenseChangedError);
     });
 
     it("creates nothing when the switch is off", async () => {
@@ -815,10 +900,128 @@ describe("updateExpense", () => {
         updateExpense(USER_ID, "exp_1", recurringInput),
       ).resolves.toBe(true);
       expect(expense.updateMany).toHaveBeenCalledWith({
-        where: { id: "exp_1", userId: USER_ID },
+        where: UNCHANGED_SINCE_READ,
         data: { ...WRITABLE_DATA, ...NO_CARD, isRecurring: true },
       });
     });
+  });
+
+  it("lets the edit keep the account the expense already has, even if it was archived since", async () => {
+    expense.findFirst.mockResolvedValue({
+      recurringExpenseId: null,
+      installmentPlanId: null,
+      currency: "ARS",
+      expectedReimbursement: null,
+      accountId: "acc_old",
+      cardId: null,
+      amount: BigInt(35000050),
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      status: "SETTLED",
+    });
+    expense.updateMany.mockResolvedValue({ count: 1 });
+
+    await updateExpense(USER_ID, "exp_1", { ...input, accountId: "acc_old" });
+
+    expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+      accountId: "acc_old",
+      currency: "ARS",
+      keepAccountId: "acc_old",
+    });
+  });
+
+  describe("the account exception for an archived account", () => {
+    const foundOn = (recurringExpenseId: string | null) =>
+      expense.findFirst.mockResolvedValue({
+        recurringExpenseId,
+        installmentPlanId: null,
+        currency: "ARS",
+        expectedReimbursement: null,
+        accountId: "acc_old",
+        cardId: null,
+        amount: BigInt(35000050),
+        date: new Date("2026-09-05T00:00:00.000Z"),
+        status: "SETTLED",
+      });
+
+    it("does not cover a NEW template: turning the switch on checks the account with no exception and writes nothing when it is archived", async () => {
+      foundOn(null);
+      usable.assertUsableAccount.mockRejectedValue(new AccountArchivedError());
+
+      await expect(
+        updateExpense(USER_ID, "exp_1", {
+          ...recurringInput,
+          accountId: "acc_old",
+        }),
+      ).rejects.toBeInstanceOf(AccountArchivedError);
+      expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+        accountId: "acc_old",
+        currency: "ARS",
+        keepAccountId: null,
+      });
+      expect(expense.updateMany).not.toHaveBeenCalled();
+      expect(recurringExpense.create).not.toHaveBeenCalled();
+      expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("still covers the existing record when the switch is off", async () => {
+      foundOn(null);
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await updateExpense(USER_ID, "exp_1", { ...input, accountId: "acc_old" });
+
+      expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+        accountId: "acc_old",
+        currency: "ARS",
+        keepAccountId: "acc_old",
+      });
+    });
+
+    it("still covers an expense that is already recurring, whatever the switch says", async () => {
+      foundOn("rec_1");
+      expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await updateExpense(USER_ID, "exp_1", {
+        ...recurringInput,
+        accountId: "acc_old",
+      });
+
+      expect(usable.assertUsableAccount).toHaveBeenCalledWith(USER_ID, {
+        accountId: "acc_old",
+        currency: "ARS",
+        keepAccountId: "acc_old",
+      });
+      expect(recurringExpense.create).not.toHaveBeenCalled();
+    });
+  });
+
+  it("writes nothing when the account is not the user's", async () => {
+    expense.findFirst.mockResolvedValue({
+      recurringExpenseId: null,
+      installmentPlanId: null,
+      currency: "ARS",
+      expectedReimbursement: null,
+      accountId: "acc_1",
+      cardId: null,
+      amount: BigInt(35000050),
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      status: "SETTLED",
+    });
+    usable.assertUsableAccount.mockRejectedValue(new AccountNotFoundError());
+
+    await expect(
+      updateExpense(USER_ID, "exp_1", {
+        ...input,
+        accountId: "acc_of_someone_else",
+      }),
+    ).rejects.toBeInstanceOf(AccountNotFoundError);
+    expect(expense.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not check any account for an expense that is not the user's", async () => {
+    expense.findFirst.mockResolvedValue(null);
+
+    await expect(updateExpense(USER_ID, "exp_9", input)).resolves.toBe(false);
+    expect(usable.assertUsableAccount).not.toHaveBeenCalled();
   });
 });
 
@@ -835,12 +1038,31 @@ describe("setExpenseStatus", () => {
     });
   });
 
-  it("returns false when the record is not the user's", async () => {
+  it("refuses as changed, not as missing, a paid mark that matches nothing any more", async () => {
+    // A pending, card-less expense that is gone or changed by the time of the write.
+    expense.findFirst.mockResolvedValue({
+      status: "PLANNED",
+      amount: BigInt(35000050),
+      currency: "ARS",
+      date: new Date("2026-09-05T00:00:00.000Z"),
+      accountId: "acc_1",
+      cardId: null,
+      card: null,
+    });
     expense.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      setExpenseStatus(USER_ID, "exp_9", "SETTLED"),
+    ).rejects.toBeInstanceOf(ExpenseChangedError);
+  });
+
+  it("returns false when the record is not the user's", async () => {
+    expense.findFirst.mockResolvedValue(null);
 
     await expect(setExpenseStatus(USER_ID, "exp_9", "SETTLED")).resolves.toBe(
       false,
     );
+    expect(expense.updateMany).not.toHaveBeenCalled();
   });
 
   describe("COVERED", () => {

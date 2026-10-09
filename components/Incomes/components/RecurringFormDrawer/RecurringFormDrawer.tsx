@@ -10,6 +10,7 @@ export function RecurringFormDrawer({
   onClose,
   target,
   categories,
+  accounts,
 }: RecurringFormDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -19,6 +20,7 @@ export function RecurringFormDrawer({
             key={target.key}
             target={target}
             categories={categories}
+            accounts={accounts}
             onClose={onClose}
           />
         </Drawer.Dialog>

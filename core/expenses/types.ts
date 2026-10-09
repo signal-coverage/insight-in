@@ -1,4 +1,3 @@
-import type { PaymentMedium } from "@/core/entries/medium";
 import type { EntryStatus } from "@/core/entries/status";
 
 import type { RECURRING_CHOICES } from "./consts";
@@ -15,8 +14,10 @@ export interface ExpenseInput {
   categoryId: string;
   notes: string | null;
   status: EntryStatus;
-  // Whether the money left an account or came out of the wallet.
-  medium: PaymentMedium;
+  // The account the money left (for a credit card, the account that pays the statement): the user's and
+  // in the currency of the expense (the service checks it). Null when a card is chosen and the form sent
+  // none: a debit card's account is decided on the server, a credit card's is still required.
+  accountId: string | null;
   // The form's switch. On save it creates a template when the expense is not linked to one yet.
   isRecurring: boolean;
   // The card the purchase was paid with, or null. With a card `date` is the purchase day on the way
@@ -32,11 +33,15 @@ export interface ExpenseInput {
   expectedReimbursement: number | null;
 }
 
-export interface Expense extends ExpenseInput {
+export interface Expense extends Omit<ExpenseInput, "accountId"> {
+  // A stored expense always has an account.
+  accountId: string;
   // What the incomes linked to this expense add up to, whatever their status (minor units).
   reimbursementReceived: number;
   id: string;
   categoryName: string;
+  // "Banco · Cuenta" of the account, for the table.
+  accountLabel: string;
   // The day a purchase paid with a card was made: `date` is then the day the card statement is paid.
   // Null for an expense without a card and for the installments of a plan.
   purchaseDate: string | null;
@@ -60,8 +65,8 @@ export interface RecurringExpenseItem {
   categoryId: string;
   categoryName: string;
   notes: string | null;
-  // Copied onto the expense the wizard creates from it.
-  medium: PaymentMedium;
+  // The account the wizard creates the month's expense in.
+  accountId: string;
   // The reference price the template remembers (20 USD for a subscription that costs 35.000 ARS),
   // copied onto the expense the wizard creates: a currency and its amount in minor units, both set
   // or both null.
@@ -78,7 +83,7 @@ export interface RecurringExpenseInput {
   currency: string;
   categoryId: string;
   notes: string | null;
-  medium: PaymentMedium;
+  accountId: string;
   // The reference price (see RecurringExpenseItem); both set or both null.
   originCurrency: string | null;
   originAmount: number | null;

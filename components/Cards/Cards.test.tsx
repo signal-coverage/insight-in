@@ -12,36 +12,17 @@ vi.mock("@/core/cards/actions", () => ({
   deleteCardsAction: vi.fn(),
 }));
 
+import type { BankChoice } from "@/core/banks/types";
+
 import { Cards } from "./Cards";
+import { creditCardRow } from "./testRows";
 import type { CardRow, CardsTableData } from "./types";
 
-const ROW: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 0,
-  monthUsed: 7500000,
-  used: 7500000,
-  available: 22500000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 75.000,00 de $ 300.000,00",
-  availableLabel: "$ 225.000,00",
-  limitDecimal: "300000.00",
-  percent: 25,
-};
+const ROW: CardRow = creditCardRow();
 
 const WITH_CARDS: CardsTableData = { rows: [ROW] };
 const NO_CARDS: CardsTableData = { rows: [] };
+const BANKS: BankChoice[] = [{ id: "bank_1", name: "Banco Galicia" }];
 
 const NOTE =
   "El tope puede ser el límite real de la tarjeta o uno menor que quieras respetar.";
@@ -60,18 +41,20 @@ beforeEach(() => {
 
 describe("Cards page", () => {
   it("shows the title and what the page is for", () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     expect(
       screen.getByRole("heading", { name: "Tarjetas" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Tus tarjetas de crédito y cuánto querés destinarles."),
+      screen.getByText(
+        "Tus tarjetas de crédito y débito, y cuánto querés destinarles.",
+      ),
     ).toBeInTheDocument();
   });
 
   it("offers Agregar tarjeta and the icon help in the Actions menu, and nothing else", async () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     await openMenu();
 
@@ -81,7 +64,7 @@ describe("Cards page", () => {
   });
 
   it("takes the user to the help page from Ayuda de íconos", async () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     await openMenu();
 
@@ -95,14 +78,14 @@ describe("Cards page", () => {
   });
 
   it("lists the cards in the table", () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     expect(screen.getByText("Visa •••• 1234")).toBeInTheDocument();
     expect(screen.getByText("$ 300.000,00 por mes")).toBeInTheDocument();
   });
 
   it("says under the table that the cap can be the real limit or a lower one", () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     const note = screen.getByText(NOTE);
     const table = screen.getByRole("grid");
@@ -113,7 +96,7 @@ describe("Cards page", () => {
   });
 
   it("invites the user to add the first card when there are none, without the note", () => {
-    render(<Cards table={NO_CARDS} />);
+    render(<Cards table={NO_CARDS} banks={BANKS} />);
 
     expect(screen.getByText("Todavía no tenés tarjetas")).toBeInTheDocument();
     expect(
@@ -123,7 +106,7 @@ describe("Cards page", () => {
   });
 
   it("opens the form to add a card from the empty state", async () => {
-    render(<Cards table={NO_CARDS} />);
+    render(<Cards table={NO_CARDS} banks={BANKS} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Agregar tarjeta" }));
 
@@ -132,8 +115,18 @@ describe("Cards page", () => {
     ).toBeInTheDocument();
   });
 
+  it("offers the user's banks in the form, the only one preselected", async () => {
+    render(<Cards table={NO_CARDS} banks={BANKS} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Agregar tarjeta" }));
+
+    expect(
+      await screen.findByRole("button", { name: /Banco Galicia Banco$/ }),
+    ).toBeInTheDocument();
+  });
+
   it("opens the form to add a card from the Actions menu", async () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     await openMenu();
 
@@ -149,7 +142,7 @@ describe("Cards page", () => {
   });
 
   it("opens the form with the card's data to edit it", async () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Editar Visa •••• 1234" }),
@@ -167,7 +160,7 @@ describe("Cards page", () => {
   });
 
   it("asks for confirmation before deleting a card, naming it", async () => {
-    render(<Cards table={WITH_CARDS} />);
+    render(<Cards table={WITH_CARDS} banks={BANKS} />);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Eliminar Visa •••• 1234" }),
@@ -181,7 +174,7 @@ describe("Cards page", () => {
 
 describe("Cards page while the data is on its way", () => {
   it("shows its structure at once, with the table as a skeleton", () => {
-    render(<Cards table={new Promise(() => {})} />);
+    render(<Cards table={new Promise(() => {})} banks={BANKS} />);
 
     expect(
       screen.getByRole("heading", { name: "Tarjetas" }),
@@ -195,7 +188,7 @@ describe("Cards page while the data is on its way", () => {
     const data = Promise.resolve(WITH_CARDS);
 
     await act(async () => {
-      render(<Cards table={data} />);
+      render(<Cards table={data} banks={BANKS} />);
     });
 
     expect(await screen.findByText("Visa •••• 1234")).toBeInTheDocument();

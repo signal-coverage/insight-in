@@ -22,7 +22,8 @@ const EXPENSE = {
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL" as const,
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   status: "SETTLED" as const,
   isRecurring: true,
 };
@@ -181,7 +182,7 @@ const TEMPLATE: RecurringExpenseItem = {
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,

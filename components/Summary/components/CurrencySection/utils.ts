@@ -11,7 +11,7 @@ export const sectionLabel = (currency: string): string =>
   `${SECTION_LABEL} en ${currency}`;
 
 // The formatted amount a card of a row shows: the incomes and the expenses have a side of their
-// own, and the remainders and the balances hang directly from the summary row.
+// own, and the remainders hang directly from the summary row.
 export const valueFor = (
   summary: SummaryRow,
   row: SummaryRowSpec,
@@ -24,11 +24,7 @@ export const valueFor = (
   }
   if (row.id === "expenses") return summary.expenses[toSideKey(card)];
 
-  if (row.id === "balances") {
-    if (card.id === "wallet") return summary.wallet;
-
-    return card.id === "available" ? summary.available : summary.previous;
-  }
+  if (card.id === "previous") return summary.previous;
 
   return card.id === "target" ? summary.target : summary.current;
 };

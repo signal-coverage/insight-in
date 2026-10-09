@@ -24,7 +24,10 @@ vi.mock("./service", () => ({
   deleteCategory: mocks.deleteCategory,
 }));
 
+import { AccountArchivedError } from "@/core/accounts/errors";
+import { InstallmentCurrencyLockedError } from "@/core/entries/errors";
 import {
+  CardBankWithoutAccountError,
   CardCurrencyMismatchError,
   CardNotFoundError,
 } from "@/core/cards/errors";
@@ -45,6 +48,12 @@ import {
 } from "@/core/incomes/errors";
 
 import {
+  ExpenseAccountRequiredError,
+  ExpenseChangedError,
+  ExpenseFutureDebitError,
+  ExpenseInsufficientFundsError,
+} from "./errors";
+import {
   createCategoryAction,
   createExpenseAction,
   deleteCategoryAction,
@@ -63,6 +72,7 @@ const buildFormData = (overrides: Record<string, string> = {}): FormData => {
     currency: "ARS",
     date: "2026-09-05",
     categoryId: "cat_1",
+    accountId: "acc_1",
     notes: "",
     status: "SETTLED",
     isRecurring: "true",
@@ -120,7 +130,7 @@ describe("createExpenseAction", () => {
       categoryId: "cat_1",
       notes: null,
       status: "SETTLED",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       isRecurring: true,
       cardId: null,
       originCurrency: null,
@@ -220,7 +230,7 @@ describe("createExpenseAction", () => {
     );
 
     expect(result.status === "error" && result.fieldErrors).toEqual({
-      cardId: ["La tarjeta tiene que estar en la misma moneda que la compra."],
+      cardId: ["La tarjeta no tiene un tope en la moneda de la compra."],
     });
   });
 
@@ -255,6 +265,22 @@ describe("createExpenseAction", () => {
     });
   });
 
+  it("maps a currency change on an installment to the currency field, and lets a plain save through", async () => {
+    mocks.updateExpense.mockRejectedValue(new InstallmentCurrencyLockedError());
+
+    const refused = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(refused.status === "error" && refused.fieldErrors).toEqual({
+      currency: ["Una cuota conserva la moneda de su plan."],
+    });
+
+    mocks.updateExpense.mockResolvedValue(true);
+
+    expect(await updateExpenseAction("exp_1", buildFormData())).toEqual({
+      status: "success",
+    });
+  });
+
   it("maps clearing a reimbursement refused because of linked incomes to its field error", async () => {
     mocks.updateExpense.mockRejectedValue(new ReimbursementLockedError());
 
@@ -265,12 +291,33 @@ describe("createExpenseAction", () => {
     });
   });
 
-  it("passes on the medium the form sends", async () => {
+  it("passes on the account the form sends", async () => {
     mocks.createExpense.mockResolvedValue({ id: "exp_1" });
 
-    await createExpenseAction(buildFormData({ medium: "CASH" }));
+    await createExpenseAction(buildFormData({ accountId: "acc_9" }));
 
-    expect(mocks.createExpense.mock.calls[0][1].medium).toBe("CASH");
+    expect(mocks.createExpense.mock.calls[0][1].accountId).toBe("acc_9");
+  });
+
+  it("refuses a form without an account, without touching the service", async () => {
+    const result = await createExpenseAction(buildFormData({ accountId: "" }));
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: ["Elegí una cuenta."],
+    });
+    expect(mocks.createExpense).not.toHaveBeenCalled();
+  });
+
+  it("puts an archived account refused by the service on the Cuenta field", async () => {
+    mocks.updateExpense.mockRejectedValue(new AccountArchivedError());
+
+    const result = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: [
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ],
+    });
   });
 
   it("ignores a userId submitted in the form", async () => {
@@ -577,6 +624,220 @@ describe("deleteCategoryAction", () => {
     expect(await deleteCategoryAction("c1")).toEqual({
       status: "error",
       message: "Se necesita al menos una categoría.",
+    });
+  });
+});
+
+describe("the refusals of a debit card's expense", () => {
+  const FUNDS =
+    /^La cuenta no tiene fondos suficientes para este gasto: tenía \$\s300,00\.$/;
+
+  it("puts an account that cannot cover a paid expense under Monto, and refreshes nothing", async () => {
+    mocks.createExpense.mockRejectedValue(
+      new ExpenseInsufficientFundsError(30000, "ARS"),
+    );
+
+    expect(await createExpenseAction(buildFormData())).toEqual({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: { amount: [expect.stringMatching(FUNDS)] },
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("puts the same refusal under Monto on an edit", async () => {
+    mocks.updateExpense.mockRejectedValue(
+      new ExpenseInsufficientFundsError(30000, "ARS"),
+    );
+
+    const result = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      amount: [expect.stringMatching(FUNDS)],
+    });
+  });
+
+  it("puts a bank without an account in the currency under Tarjeta, pointing to Bancos", async () => {
+    mocks.createExpense.mockRejectedValue(
+      new CardBankWithoutAccountError("EUR"),
+    );
+
+    const result = await createExpenseAction(buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      cardId: [
+        "El banco de esta tarjeta no tiene una cuenta activa en EUR. Creá una en Bancos.",
+      ],
+    });
+  });
+
+  it("asks for the account of a credit card's expense under Cuenta", async () => {
+    mocks.createExpense.mockRejectedValue(new ExpenseAccountRequiredError());
+
+    const result = await createExpenseAction(buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: ["Elegí una cuenta."],
+    });
+  });
+
+  it("sends a debit card's expense with no account to the service", async () => {
+    const formData = buildFormData({ cardId: "card_9" });
+
+    formData.delete("accountId");
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    expect(await createExpenseAction(formData)).toEqual({ status: "success" });
+    expect(mocks.createExpense.mock.calls[0][1]).toMatchObject({
+      cardId: "card_9",
+      accountId: null,
+    });
+  });
+
+  it("says why a debit expense cannot be marked paid as a plain message, the checkbox having no fields", async () => {
+    mocks.setExpenseStatus.mockRejectedValue(
+      new ExpenseInsufficientFundsError(30000, "ARS"),
+    );
+
+    expect(await setExpenseStatusAction("exp_1", "SETTLED")).toEqual({
+      status: "error",
+      message: expect.stringMatching(FUNDS),
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("ids that are not text", () => {
+  it("are refused by the edit and the status before the service is called", async () => {
+    expect(
+      await updateExpenseAction(undefined as never, buildFormData()),
+    ).toEqual({ status: "error", message: "No se encontró el gasto." });
+    expect(await setExpenseStatusAction(undefined as never, "SETTLED")).toEqual(
+      { status: "error", message: "No se encontró el gasto." },
+    );
+    expect(mocks.updateExpense).not.toHaveBeenCalled();
+    expect(mocks.setExpenseStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("an expense that changed while it was saved", () => {
+  const CHANGED = "El gasto cambió mientras lo guardabas. Volvé a intentarlo.";
+
+  it("is a general error on create and edit, refreshing nothing", async () => {
+    mocks.createExpense.mockRejectedValue(new ExpenseChangedError());
+    mocks.updateExpense.mockRejectedValue(new ExpenseChangedError());
+
+    expect(await createExpenseAction(buildFormData())).toEqual({
+      status: "error",
+      message: CHANGED,
+    });
+    expect(await updateExpenseAction("exp_1", buildFormData())).toEqual({
+      status: "error",
+      message: CHANGED,
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("is a plain message on the status checkbox, refreshing nothing", async () => {
+    mocks.setExpenseStatus.mockRejectedValue(new ExpenseChangedError());
+
+    expect(await setExpenseStatusAction("exp_1", "SETTLED")).toEqual({
+      status: "error",
+      message: CHANGED,
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("is told apart from a missing expense", async () => {
+    mocks.updateExpense.mockResolvedValue(false);
+
+    expect(await updateExpenseAction("exp_1", buildFormData())).toEqual({
+      status: "error",
+      message: "No se encontró el gasto.",
+    });
+  });
+});
+
+describe("a paid debit expense dated in the future", () => {
+  const FUTURE =
+    "Un gasto pagado con débito no puede tener fecha posterior a hoy. Usá la fecha de hoy o dejalo por pagar.";
+
+  it("puts the refusal under Fecha on create and edit, and as a plain message on the checkbox", async () => {
+    mocks.createExpense.mockRejectedValue(new ExpenseFutureDebitError());
+    mocks.updateExpense.mockRejectedValue(new ExpenseFutureDebitError());
+    mocks.setExpenseStatus.mockRejectedValue(new ExpenseFutureDebitError());
+
+    expect(await createExpenseAction(buildFormData())).toEqual({
+      status: "error",
+      message: "Corrige los campos resaltados.",
+      fieldErrors: { date: [FUTURE] },
+    });
+    const edited = await updateExpenseAction("exp_1", buildFormData());
+
+    expect(edited.status === "error" && edited.fieldErrors).toEqual({
+      date: [FUTURE],
+    });
+    expect(await setExpenseStatusAction("exp_1", "SETTLED")).toEqual({
+      status: "error",
+      message: FUTURE,
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteExpenseAction with an id that is not text", () => {
+  it.each([
+    ["undefined", undefined],
+    ["an empty id", ""],
+    ["a number", 7],
+    ["null", null],
+  ])(
+    "refuses %s before the service is called, so no filter is ever dropped",
+    async (_label, id) => {
+      expect(await deleteExpenseAction(id as never)).toEqual({
+        status: "error",
+        message: "No se encontró el gasto.",
+      });
+      expect(mocks.deleteExpense).not.toHaveBeenCalled();
+      expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    },
+  );
+
+  it("still deletes a real id", async () => {
+    mocks.deleteExpense.mockResolvedValue(true);
+
+    expect(await deleteExpenseAction("exp_1")).toEqual({ status: "success" });
+    expect(mocks.deleteExpense).toHaveBeenCalledWith(USER_ID, "exp_1");
+  });
+});
+
+describe("an expense in a crypto currency", () => {
+  it("hands the service the amount in millionths", async () => {
+    mocks.createExpense.mockResolvedValue({ id: "exp_1" });
+
+    await createExpenseAction(
+      buildFormData({ currency: "USDC", amount: "1.5" }),
+    );
+
+    expect(mocks.createExpense.mock.calls[0][1]).toMatchObject({
+      currency: "USDC",
+      amount: 1500000,
+    });
+  });
+
+  it("says what a wallet's account held when its debit card cannot cover the expense", async () => {
+    mocks.createExpense.mockRejectedValue(
+      new ExpenseInsufficientFundsError(1500000, "USDC"),
+    );
+
+    const result = await createExpenseAction(
+      buildFormData({ currency: "USDC", amount: "2" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      amount: [
+        "La cuenta no tiene fondos suficientes para este gasto: tenía 1,50 USDC.",
+      ],
     });
   });
 });

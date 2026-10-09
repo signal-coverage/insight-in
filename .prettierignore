@@ -6,3 +6,6 @@ coverage
 # `next dev` rewrites AGENTS.md, and the skill registry is built by the agent tooling.
 AGENTS.md
 .atl
+
+# The agent workspace (diffs, reports, scripts): git-ignored scratch, never part of the project.
+.superpowers

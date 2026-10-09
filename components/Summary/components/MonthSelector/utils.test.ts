@@ -21,4 +21,20 @@ describe("monthHref", () => {
     );
     expect(monthHref("2026-09", "2026-09", base)).toBe(base);
   });
+
+  it("keeps the extra parameters it is given after the month", () => {
+    expect(
+      monthHref("2026-08", "2026-09", "/dashboard/overview", {
+        currency: "USD",
+      }),
+    ).toBe("/dashboard/overview?month=2026-08&currency=USD");
+  });
+
+  it("keeps them on the bare address of the month in course", () => {
+    expect(
+      monthHref("2026-09", "2026-09", "/dashboard/overview", {
+        currency: "USDC",
+      }),
+    ).toBe("/dashboard/overview?currency=USDC");
+  });
 });

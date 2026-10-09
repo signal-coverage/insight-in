@@ -2,43 +2,20 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { creditCardRow } from "../../testRows";
 import type { CardRow } from "../../types";
 import { CardsTable } from "./CardsTable";
 import type { CardsTableProps } from "./types";
 
-const VISA: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 90000000,
-  monthUsed: 7500000,
-  used: 7500000,
-  available: 22500000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 75.000,00 de $ 300.000,00",
-  availableLabel: "$ 225.000,00",
-  limitDecimal: "300000.00",
-  percent: 25,
-};
+const VISA: CardRow = creditCardRow();
 
-const MASTERCARD: CardRow = {
-  ...VISA,
+const MASTERCARD: CardRow = creditCardRow({
   id: "card_2",
   last4: "9876",
   brand: "MASTERCARD",
   title: "Mastercard •••• 9876",
   brandName: "Mastercard",
-};
+});
 
 const renderTable = (props: Partial<CardsTableProps> = {}) => {
   const handlers = {
@@ -72,7 +49,7 @@ describe("CardsTable selection", () => {
       }),
     ).toBeInTheDocument();
     expect(headers[1]).toHaveTextContent("Acciones");
-    expect(headers).toHaveLength(8);
+    expect(headers).toHaveLength(10);
   });
 
   it("names each row's checkbox after the card and reports the ids", () => {
@@ -104,7 +81,7 @@ describe("CardsTable selection", () => {
   it("has no selection column when nothing listens to it", () => {
     renderTable({ onSelectionChange: undefined });
 
-    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(9);
   });
 
   it("keeps the same column classes while loading, the checkbox column included", () => {

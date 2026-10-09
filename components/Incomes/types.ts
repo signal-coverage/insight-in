@@ -1,4 +1,5 @@
 import type { Source } from "@/components/shared/Await";
+import type { AccountChoice } from "@/core/accounts/types";
 import type { EntriesQuery } from "@/core/entries/query";
 import type {
   CategoryWithCount,
@@ -60,6 +61,8 @@ export interface IncomesProps {
   repayments: Source<RepaymentData>;
   // The expenses an income can pay back, for the income form.
   reimbursables: Source<ReimbursableOption[]>;
+  // Every account of the user, for the "Cuenta" field of the forms.
+  accounts: Source<AccountChoice[]>;
 }
 
 // What the repayment planner opens with: the key remounts it on every opening, and the date is where

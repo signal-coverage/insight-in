@@ -13,7 +13,7 @@ const ROW: RecurringRow = {
   categoryId: "c1",
   categoryName: "Servicios",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,

@@ -1,6 +1,7 @@
 import type { DineroCurrency } from "dinero.js";
 import * as dineroCurrencies from "dinero.js/currencies";
 
+import { CRYPTO_CURRENCY_CODES } from "@/core/currencies/consts";
 import { DISPLAY_LOCALE } from "@/lib/locale";
 
 // Only base-10 currencies are supported: the decimal <-> minor units conversion in
@@ -8,15 +9,24 @@ import { DISPLAY_LOCALE } from "@/lib/locale";
 const isBase10 = (currency: DineroCurrency<number>): boolean =>
   currency.base === 10;
 
-const ALL_CURRENCIES = Object.values(
+const DINERO_CURRENCIES = Object.values(
   dineroCurrencies,
 ) as DineroCurrency<number>[];
 
-export const SUPPORTED_CURRENCIES: readonly DineroCurrency<number>[] =
-  ALL_CURRENCIES.filter(isBase10);
+// The ISO 4217 currencies the app supports: what an entity bank, a credit card cap or a plan in
+// installments can be in.
+export const LEGAL_TENDER_CURRENCIES: readonly DineroCurrency<number>[] =
+  DINERO_CURRENCIES.filter(isBase10);
 
-export const SUPPORTED_CURRENCY_CODES: readonly string[] =
-  SUPPORTED_CURRENCIES.map((currency) => currency.code);
+export const LEGAL_TENDER_CURRENCY_CODES: readonly string[] =
+  LEGAL_TENDER_CURRENCIES.map((currency) => currency.code);
+
+// Every currency an account can hold: the legal tender above, then the crypto assets of the registry
+// (a virtual wallet's).
+export const ALL_CURRENCY_CODES: readonly string[] = [
+  ...LEGAL_TENDER_CURRENCY_CODES,
+  ...CRYPTO_CURRENCY_CODES,
+];
 
 // Listed first in the currency picker; the rest follow alphabetically.
 export const PRIORITY_CURRENCY_CODES: readonly string[] = [
@@ -49,7 +59,7 @@ export const INCOME_FORM_FIELDS = [
   "categoryId",
   "notes",
   "status",
-  "medium",
+  "accountId",
   "originCurrency",
   "originAmount",
   "reimbursesExpenseId",
@@ -78,6 +88,10 @@ export const DUPLICATE_CATEGORY_MESSAGE =
   "Ya tienes una categoría con este nombre.";
 export const CATEGORY_NOT_FOUND_MESSAGE = "No se encontró la categoría.";
 export const LAST_CATEGORY_MESSAGE = "Se necesita al menos una categoría.";
+// An installment of a plan cannot change currency: the plan, its list and its card are in one.
+export const INSTALLMENT_CURRENCY_LOCKED_MESSAGE =
+  "Una cuota conserva la moneda de su plan.";
+
 // COVERED was asked for something that is not an expense: only expenses can be paid by someone else.
 export const COVERED_NOT_ALLOWED_MESSAGE =
   "Solo los gastos pueden estar cubiertos por otra persona.";
@@ -137,7 +151,7 @@ export const RECURRING_FORM_FIELDS = [
   "currency",
   "categoryId",
   "notes",
-  "medium",
+  "accountId",
   "frequency",
   "startDate",
   "endDate",

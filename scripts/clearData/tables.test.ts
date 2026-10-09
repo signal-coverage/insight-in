@@ -4,14 +4,30 @@ import { CLEAR_ORDER, buildCountQuery, buildDeleteQuery } from "./tables.ts";
 // Foreign keys of prisma/schema.prisma: child -> parents it points at.
 const PARENTS: Record<string, string[]> = {
   RecurringExpenseDecision: ["RecurringExpense"],
-  Expense: ["ExpenseCategory", "RecurringExpense", "InstallmentPlan", "Card"],
-  Income: ["IncomeCategory", "RecurringIncome", "InstallmentPlan", "Expense"],
-  InstallmentPlan: ["ExpenseCategory", "IncomeCategory", "Card"],
-  RecurringExpense: ["ExpenseCategory"],
-  RecurringIncome: ["IncomeCategory"],
-  Card: [],
+  Expense: [
+    "ExpenseCategory",
+    "RecurringExpense",
+    "InstallmentPlan",
+    "Card",
+    "Account",
+  ],
+  Income: [
+    "IncomeCategory",
+    "RecurringIncome",
+    "InstallmentPlan",
+    "Expense",
+    "Account",
+  ],
+  InstallmentPlan: ["ExpenseCategory", "IncomeCategory", "Card", "Account"],
+  RecurringExpense: ["ExpenseCategory", "Account"],
+  RecurringIncome: ["IncomeCategory", "Account"],
+  Card: ["Bank"],
+  CardLimit: ["Card"],
+  OpeningBalance: ["Account"],
+  Transfer: ["Account"],
+  Account: ["Bank"],
+  Bank: [],
   BoardItem: [],
-  OpeningBalance: [],
   ExpenseCategory: [],
   IncomeCategory: [],
 };
@@ -59,6 +75,17 @@ describe("buildDeleteQuery", () => {
     });
   });
 
+  it("scopes the caps of a card through the card, which owns the userId", () => {
+    expect(buildDeleteQuery("CardLimit", "user_1")).toEqual({
+      text: 'DELETE FROM "CardLimit" WHERE "cardId" IN (SELECT "id" FROM "Card" WHERE "userId" = $1)',
+      values: ["user_1"],
+    });
+    expect(buildDeleteQuery("CardLimit", null)).toEqual({
+      text: 'DELETE FROM "CardLimit"',
+      values: [],
+    });
+  });
+
   it("never interpolates the user id into the SQL text", () => {
     const query = buildDeleteQuery("Card", 'x\'; DROP TABLE "Card"; --');
     expect(query.text).not.toContain("DROP");
@@ -76,6 +103,12 @@ describe("buildCountQuery", () => {
       text: 'SELECT COUNT(*) AS "count" FROM "Card" WHERE "userId" = $1',
       values: ["user_1"],
     });
+  });
+
+  it("scopes the caps of a card through the card", () => {
+    expect(buildCountQuery("CardLimit", "user_1").text).toContain(
+      'IN (SELECT "id" FROM "Card" WHERE "userId" = $1)',
+    );
   });
 
   it("scopes decisions through their template", () => {

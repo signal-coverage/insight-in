@@ -53,7 +53,7 @@ const formOf = (patch: Record<string, string> = {}): FormData => {
     currency: "USD",
     categoryId: "cat_2",
     notes: "",
-    medium: "CASH",
+    accountId: "acc_1",
     dayOfMonth: "20",
     ...patch,
   }).forEach(([key, value]) => formData.set(key, value));
@@ -85,7 +85,7 @@ describe("updateRecurringExpenseAction", () => {
         currency: "USD",
         categoryId: "cat_2",
         notes: null,
-        medium: "CASH",
+        accountId: "acc_1",
         originCurrency: null,
         originAmount: null,
         dayOfMonth: 20,

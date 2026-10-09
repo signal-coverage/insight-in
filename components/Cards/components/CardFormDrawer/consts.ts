@@ -23,11 +23,6 @@ export const DUE_DAY_FIELD_NAME = "dueDay";
 export const DUE_DAY_LABEL = "Día de vencimiento";
 export const DUE_DAY_HINT = "El día del mes en que se paga el resumen";
 
-export const LIMIT_AMOUNT_FIELD_NAME = "limitAmount";
-export const LIMIT_AMOUNT_LABEL = "Monto del tope";
-export const LIMIT_AMOUNT_HINT =
-  "Puede ser el límite real de la tarjeta o uno menor que quieras respetar.";
-
 // What a new card starts as.
 export const DEFAULT_BRAND: CardBrand = "VISA";
 export const DEFAULT_CLOSING_DAY = 1;

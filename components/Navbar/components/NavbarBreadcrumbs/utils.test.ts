@@ -17,6 +17,20 @@ describe("buildCrumbs", () => {
     ]);
   });
 
+  it("names the banks page Bancos", () => {
+    expect(buildCrumbs("/dashboard/banks")).toEqual([
+      { label: "Panel", href: "/dashboard" },
+      { label: "Bancos" },
+    ]);
+  });
+
+  it("names the transfers page Transferencias", () => {
+    expect(buildCrumbs("/dashboard/transfers")).toEqual([
+      { label: "Panel", href: "/dashboard" },
+      { label: "Transferencias" },
+    ]);
+  });
+
   it("names the roadmap page Hoja de ruta", () => {
     expect(buildCrumbs("/dashboard/roadmap")).toEqual([
       { label: "Panel", href: "/dashboard" },

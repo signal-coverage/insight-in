@@ -10,7 +10,7 @@ import type { FormTarget } from "./types";
 
 export const PAGE_TITLE = "Tarjetas";
 export const PAGE_DESCRIPTION =
-  "Tus tarjetas de crédito y cuánto querés destinarles.";
+  "Tus tarjetas de crédito y débito, y cuánto querés destinarles.";
 export const ACTIONS_LABEL = "Acciones";
 export const ADD_CARD_LABEL = "Agregar tarjeta";
 export const ADD_CARD_ACTION = "add-card";
@@ -73,3 +73,12 @@ export const cardTitle = (brandName: string, last4: string): string =>
   `${brandName} •••• ${last4}`;
 
 export const INITIAL_FORM_TARGET: FormTarget = { key: 0, card: null };
+
+// What a cell says when the card has nothing there (a debit card's cycle, use and availability).
+export const NO_VALUE_LABEL = "—";
+
+// The Tope cell of a debit card whose bank has no active account.
+export const NO_ACTIVE_ACCOUNTS_LABEL = "Sin cuentas activas";
+
+// Between the currencies of a debit card: "ARS · USD".
+export const CURRENCIES_SEPARATOR = " · ";

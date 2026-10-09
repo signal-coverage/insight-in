@@ -1,4 +1,3 @@
-import type { PaymentMedium } from "@/core/entries/medium";
 import type { EntryStatus } from "@/core/entries/status";
 
 export type { CurrencyTotal } from "@/core/entries/types";
@@ -13,8 +12,9 @@ export interface IncomeInput {
   categoryId: string;
   notes: string | null;
   status: EntryStatus;
-  // Whether the money arrived in an account or as cash.
-  medium: PaymentMedium;
+  // The account the money arrived in. It is the user's and in the currency of the income (the service
+  // checks it).
+  accountId: string;
   // What the net amount came from, kept as a reference (never part of any total): a crypto asset or
   // another currency, and the amount in its minor units. Both are set or both are null.
   originCurrency: string | null;
@@ -29,6 +29,8 @@ export interface Income extends IncomeInput {
   reimbursesExpenseDescription: string | null;
   id: string;
   categoryName: string;
+  // "Banco · Cuenta" of the account, for the table.
+  accountLabel: string;
   // Set when the income was generated from a recurring template.
   recurringIncomeId: string | null;
   // Set for an installment of a loan repaid in cuotas, with its fixed number 1..N.
@@ -70,8 +72,8 @@ export interface RecurringIncomeInput {
   currency: string;
   categoryId: string;
   notes: string | null;
-  // Copied onto every income the template generates.
-  medium: PaymentMedium;
+  // The account every generated income goes to.
+  accountId: string;
   frequency: "WEEKLY" | "MONTHLY" | "YEARLY";
   startDate: string;
   endDate: string | null;

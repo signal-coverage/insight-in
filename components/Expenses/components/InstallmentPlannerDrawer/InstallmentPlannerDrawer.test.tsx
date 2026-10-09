@@ -18,6 +18,9 @@ vi.mock("@/core/installments/actions", () => installments);
 vi.mock("@/core/expenses/actions", () => expenses);
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
+import type { AccountChoice } from "@/core/accounts/types";
+
+import { creditOption, debitOption } from "../../testCards";
 import type { CardOption } from "../../types";
 import { InstallmentPlannerDrawer } from "./InstallmentPlannerDrawer";
 
@@ -28,55 +31,70 @@ const CATEGORIES = [
 
 // Closes on the 25th and is paid on the 5th, with room for a purchase of $ 1.200.000: bought on
 // October 1 it goes in the October statement, paid on November 5.
-const VISA: CardOption = {
+const VISA: CardOption = creditOption({
   id: "visa",
-  title: "Visa •••• 1234",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
   limitMode: "TOTAL",
   limitAmount: 200000000,
-  charges: [],
-};
+});
 // $ 1.300.000 of cap: the purchase fits but leaves less than a fifth of it.
-const TIGHT: CardOption = {
-  ...VISA,
+const TIGHT: CardOption = creditOption({
   id: "tight",
   title: "Mastercard •••• 9999",
   brand: "MASTERCARD",
   last4: "9999",
   closingDay: 28,
+  limitMode: "TOTAL",
   limitAmount: 130000000,
-};
+});
 // $ 1.000.000 of cap: the purchase does not fit.
-const SMALL: CardOption = {
-  ...VISA,
+const SMALL: CardOption = creditOption({
   id: "small",
   title: "Visa •••• 5555",
   last4: "5555",
   closingDay: 30,
+  limitMode: "TOTAL",
   limitAmount: 100000000,
-};
+});
 // Closes on the 5th and is paid on the 28th: bought on October 1 it is charged this very month.
-const THIS_MONTH: CardOption = {
-  ...VISA,
+const THIS_MONTH: CardOption = creditOption({
   id: "now",
   title: "Visa •••• 7777",
   last4: "7777",
   closingDay: 5,
   dueDay: 28,
-};
-const DOLLARS: CardOption = {
-  ...VISA,
+  limitMode: "TOTAL",
+  limitAmount: 200000000,
+});
+const DOLLARS: CardOption = creditOption({
   id: "usd",
   title: "Visa •••• 4321",
   last4: "4321",
   currency: "USD",
-};
+  limitMode: "TOTAL",
+  limitAmount: 200000000,
+});
+// A debit card of the same currency: the planner must never offer it.
+const DEBIT: CardOption = debitOption({ id: "debit", title: "Visa •••• 9999" });
 
-const renderPlanner = (cards: readonly CardOption[] = []) => {
+const ACCOUNTS: AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
+const renderPlanner = (
+  cards: readonly CardOption[] = [],
+  accounts: readonly AccountChoice[] = ACCOUNTS,
+) => {
   const onClose = vi.fn();
   const onOpenChange = vi.fn();
 
@@ -89,6 +107,7 @@ const renderPlanner = (cards: readonly CardOption[] = []) => {
       defaultDate="2026-10-01"
       categories={CATEGORIES}
       cards={cards}
+      accounts={accounts}
     />,
   );
 
@@ -114,7 +133,7 @@ const continueButton = () => screen.getByRole("button", { name: "Continuar" });
 const cardButton = () => screen.getByRole("button", { name: /Tarjeta/ });
 const ownershipGroup = () =>
   screen.getByRole("radiogroup", { name: "Tarjeta" });
-const mediumGroup = () => screen.queryByRole("radiogroup", { name: "Medio" });
+const accountButton = () => screen.getByRole("button", { name: /Cuenta$/ });
 
 const BORROWED_HINT =
   "Usás la tarjeta de otra persona y después le pagás a ella.";
@@ -193,13 +212,13 @@ describe("step 1: the data of the purchase", () => {
     expect(screen.getByText("Paso 1 de 2 · Datos de la compra")).toBeVisible();
   });
 
-  it("asks for the product, category, whose card, medium, amount, currency, number of cuotas, first date and notes", () => {
+  it("asks for the product, category, whose card, account, amount, currency, number of cuotas, first date and notes", () => {
     renderPlanner();
 
     expect(productInput()).toBeVisible();
     expect(screen.getByRole("button", { name: /Categoría/ })).toBeVisible();
     expect(ownershipGroup()).toBeVisible();
-    expect(mediumGroup()).toBeVisible();
+    expect(accountButton()).toBeVisible();
     expect(screen.getByRole("radio", { name: "Monto total" })).toBeVisible();
     expect(
       screen.getByRole("radio", { name: "Monto por cuota" }),
@@ -211,13 +230,13 @@ describe("step 1: the data of the purchase", () => {
     expect(screen.getByRole("textbox", { name: /Notas/ })).toBeVisible();
   });
 
-  it("starts in pesos, digital, with the total amount and twelve cuotas", () => {
+  it("starts in pesos, on the only peso account, with the total amount and twelve cuotas", () => {
     renderPlanner();
 
     expect(screen.getByRole("button", { name: /Moneda/ })).toHaveTextContent(
       "ARS",
     );
-    expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
+    expect(accountButton()).toHaveTextContent("Banco Galicia · Caja de ahorro");
     expect(screen.getByRole("radio", { name: "Monto total" })).toBeChecked();
     expect(cuotasInput()).toHaveValue("12");
   });
@@ -367,11 +386,11 @@ describe("whose card pays the purchase", () => {
   });
 
   describe("Propia", () => {
-    it("asks for one of the user's cards, with no 'Sin tarjeta' option, and not for the medium", async () => {
+    it("asks for one of the user's cards, with no 'Sin tarjeta' option, and for the account that pays it", async () => {
       renderPlanner([VISA, TIGHT]);
 
       expect(cardButton()).toHaveTextContent("Elegí una tarjeta");
-      expect(mediumGroup()).not.toBeInTheDocument();
+      expect(accountButton()).toBeVisible();
 
       fireEvent.keyDown(cardButton(), { key: "ArrowDown" });
 
@@ -393,6 +412,28 @@ describe("whose card pays the purchase", () => {
       expect(options.map((option) => option.textContent)).toEqual([
         "Visa •••• 1234",
       ]);
+    });
+
+    it("never offers a debit card: a purchase in installments is paid with a credit card", async () => {
+      renderPlanner([VISA, DEBIT]);
+
+      fireEvent.keyDown(cardButton(), { key: "ArrowDown" });
+
+      const options = await screen.findAllByRole("option");
+
+      expect(options.map((option) => option.textContent)).toEqual([
+        "Visa •••• 1234",
+      ]);
+    });
+
+    it("treats a user whose only card is a debit card like one with no cards: a borrowed card", () => {
+      renderPlanner([DEBIT]);
+
+      expect(screen.getByRole("radio", { name: /Prestada/ })).toBeChecked();
+      expect(screen.getByRole("radio", { name: /Propia/ })).not.toBeChecked();
+      expect(
+        screen.queryByRole("button", { name: /Tarjeta/ }),
+      ).not.toBeInTheDocument();
     });
 
     it("calls the date 'Fecha de la compra' and tells when the first installment is, once a card is chosen", async () => {
@@ -426,7 +467,7 @@ describe("whose card pays the purchase", () => {
 
       expect(
         screen.getByText(
-          "Todavía no tenés tarjetas. Agregá una desde Tarjetas.",
+          "Todavía no tenés tarjetas de crédito. Agregá una desde Tarjetas.",
         ),
       ).toBeVisible();
       expect(
@@ -461,13 +502,12 @@ describe("whose card pays the purchase", () => {
   });
 
   describe("Prestada", () => {
-    it("asks for the medium, to repay the lender, and for the first date as typed", async () => {
+    it("asks for the account, and for the first date as typed", async () => {
       renderPlanner([VISA]);
 
       chooseOwnership("Prestada");
 
-      expect(mediumGroup()).toBeVisible();
-      expect(screen.getByRole("radio", { name: "Digital" })).toBeChecked();
+      expect(accountButton()).toBeVisible();
       expect(screen.getByText("Fecha de la primera cuota")).toBeVisible();
       expect(
         screen.queryByRole("button", { name: /Elegí una tarjeta/ }),
@@ -486,17 +526,13 @@ describe("whose card pays the purchase", () => {
       expect(continueButton()).toBeEnabled();
     });
 
-    it("remembers the medium and the card when going back and forth", async () => {
+    it("remembers the card when going back and forth", async () => {
       renderPlanner([VISA]);
 
       chooseOwnership("Prestada");
-      fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
       chooseOwnership("Propia");
       await pickCard("Visa •••• 1234");
       chooseOwnership("Prestada");
-
-      expect(screen.getByRole("radio", { name: "Efectivo" })).toBeChecked();
-
       chooseOwnership("Propia");
 
       expect(cardButton()).toHaveTextContent("Visa •••• 1234");
@@ -636,7 +672,7 @@ describe("step 2: reviewing the ticket", () => {
   });
 
   describe("of a borrowed card", () => {
-    it("lists the product, category, cuotas, amounts, dates, the card as borrowed and the medium", async () => {
+    it("lists the product, category, cuotas, amounts, dates, the card as borrowed and the account", async () => {
       renderPlanner();
 
       await goToReview();
@@ -653,18 +689,9 @@ describe("step 2: reviewing the ticket", () => {
         "Septiembre de 2027",
       );
       expect(line("Tarjeta")).toHaveTextContent("Prestada");
-      expect(line("Medio")).toHaveTextContent("Digital");
-    });
-
-    it("shows cash as Efectivo", async () => {
-      renderPlanner();
-
-      await fillPurchase();
-      fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
-      fireEvent.click(continueButton());
-      await screen.findByText(REVIEW_STEP);
-
-      expect(line("Medio")).toHaveTextContent("Efectivo");
+      expect(line("Cuenta")).toHaveTextContent(
+        "Banco Galicia · Caja de ahorro",
+      );
     });
 
     it("adds no note about the first cuota", async () => {
@@ -747,6 +774,7 @@ describe("step 2: reviewing the ticket", () => {
     expect(screen.getByRole("button", { name: /Categoría/ })).toHaveTextContent(
       "Hogar",
     );
+    expect(accountButton()).toHaveTextContent("Banco Galicia · Caja de ahorro");
     expect(continueButton()).toBeEnabled();
   });
 
@@ -766,7 +794,7 @@ describe("step 2: reviewing the ticket", () => {
         description: "Heladera",
         categoryId: "c1",
         currency: "ARS",
-        medium: "DIGITAL",
+        accountId: "acc_1",
         notes: "",
         amount: "1200000",
         amountMode: "total",
@@ -794,26 +822,6 @@ describe("step 2: reviewing the ticket", () => {
       expect(
         installments.createInstallmentPlanAction.mock.calls[0][0],
       ).toMatchObject({ amount: "100000", amountMode: "perInstallment" });
-    });
-
-    it("sends cash when the borrowed card is repaid in cash", async () => {
-      installments.createInstallmentPlanAction.mockResolvedValue({
-        status: "success",
-      });
-      renderPlanner();
-
-      await fillPurchase();
-      fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
-      fireEvent.click(continueButton());
-      await screen.findByText(REVIEW_STEP);
-      save();
-
-      await waitFor(() =>
-        expect(installments.createInstallmentPlanAction).toHaveBeenCalled(),
-      );
-      expect(
-        installments.createInstallmentPlanAction.mock.calls[0][0],
-      ).toMatchObject({ medium: "CASH", cardOwnership: "borrowed" });
     });
 
     it("shows 'Guardando…' with a spinner, and locks Volver, while it saves", async () => {
@@ -901,7 +909,7 @@ describe("paying with one of the user's cards", () => {
     screen.getByRole("region", { name: "Resumen de la compra" });
 
   describe("the ticket", () => {
-    it("says the card is the user's own, with its name, and has no medium line", async () => {
+    it("says the card is the user's own, with its name, and names the account", async () => {
       renderPlanner([VISA]);
 
       await goToReviewWithCard("Visa •••• 1234");
@@ -909,6 +917,10 @@ describe("paying with one of the user's cards", () => {
       expect(within(ticket()).getByText("Tarjeta")).toBeVisible();
       expect(
         within(ticket()).getByText("Propia · Visa •••• 1234"),
+      ).toBeVisible();
+      expect(within(ticket()).getByText("Cuenta")).toBeInTheDocument();
+      expect(
+        within(ticket()).getByText("Banco Galicia · Caja de ahorro"),
       ).toBeVisible();
       expect(within(ticket()).queryByText("Medio")).not.toBeInTheDocument();
       expect(within(ticket()).queryByText("Prestada")).not.toBeInTheDocument();
@@ -939,7 +951,7 @@ describe("paying with one of the user's cards", () => {
   });
 
   describe("saving, when the first installment is not this month", () => {
-    it("sends the card, the day of the purchase, the first date its cycle gives and digital money", async () => {
+    it("sends the card, the day of the purchase, the first date its cycle gives and the account", async () => {
       installments.createInstallmentPlanAction.mockResolvedValue({
         status: "success",
       });
@@ -953,7 +965,7 @@ describe("paying with one of the user's cards", () => {
         description: "Heladera",
         categoryId: "c1",
         currency: "ARS",
-        medium: "DIGITAL",
+        accountId: "acc_1",
         notes: "",
         amount: "1200000",
         amountMode: "total",
@@ -979,26 +991,6 @@ describe("paying with one of the user's cards", () => {
       );
       expect(screen.queryByText(POPUP_TITLE)).not.toBeInTheDocument();
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    });
-
-    it("sends digital money even if cash was chosen on a borrowed card before", async () => {
-      installments.createInstallmentPlanAction.mockResolvedValue({
-        status: "success",
-      });
-      renderPlanner([VISA]);
-
-      chooseOwnership("Prestada");
-      fireEvent.click(screen.getByRole("radio", { name: "Efectivo" }));
-      chooseOwnership("Propia");
-      await goToReviewWithCard("Visa •••• 1234");
-      save();
-
-      await waitFor(() =>
-        expect(installments.createInstallmentPlanAction).toHaveBeenCalled(),
-      );
-      expect(
-        installments.createInstallmentPlanAction.mock.calls[0][0],
-      ).toMatchObject({ medium: "DIGITAL", cardOwnership: "own" });
     });
 
     it("sends nothing about cards when the user went back to a borrowed one", async () => {
@@ -1116,7 +1108,7 @@ describe("paying with one of the user's cards", () => {
         cardId: "now",
         purchaseDate: "2026-10-01",
         firstDate: "2026-10-28",
-        medium: "DIGITAL",
+        accountId: "acc_1",
       });
     });
 
@@ -1163,6 +1155,88 @@ describe("paying with one of the user's cards", () => {
       await waitFor(() =>
         expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
       );
+    });
+  });
+});
+
+describe("the account that pays the purchase", () => {
+  it("drops the account when the currency changes and takes the only one of the new currency", async () => {
+    renderPlanner();
+
+    fireEvent.keyDown(screen.getByRole("button", { name: /Moneda/ }), {
+      key: "ArrowDown",
+    });
+
+    const dollars = await screen.findByRole("option", { name: /^USD/ });
+
+    fireEvent.keyDown(dollars, { key: "Enter" });
+    fireEvent.keyUp(dollars, { key: "Enter" });
+
+    expect(accountButton()).toHaveTextContent(
+      "Banco Galicia · Cuenta en dólares",
+    );
+  });
+
+  it("links to Bancos when the currency has no account", () => {
+    renderPlanner([], []);
+
+    expect(
+      screen.getByRole("link", { name: "Creá una en Bancos" }),
+    ).toHaveAttribute("href", "/dashboard/banks");
+  });
+
+  it("offers no link to Bancos while the currency has an account", () => {
+    renderPlanner();
+
+    expect(
+      screen.queryByRole("link", { name: "Creá una en Bancos" }),
+    ).toBeNull();
+  });
+
+  describe("with several accounts in the currency", () => {
+    const TWO_ARS: AccountChoice[] = [
+      ...ACCOUNTS,
+      {
+        id: "acc_cash",
+        currency: "ARS",
+        label: "Efectivo · Efectivo",
+        archived: false,
+      },
+    ];
+
+    it("keeps Continuar disabled until one is chosen, and sends the one chosen with an own card", async () => {
+      installments.createInstallmentPlanAction.mockResolvedValue({
+        status: "success",
+      });
+      renderPlanner([VISA], TWO_ARS);
+
+      await fillPurchase();
+      await pickCard("Visa •••• 1234");
+
+      expect(accountButton()).not.toHaveTextContent("Banco");
+      expect(continueButton()).toBeDisabled();
+
+      fireEvent.keyDown(accountButton(), { key: "ArrowDown" });
+
+      const cash = await screen.findByRole("option", {
+        name: "Efectivo · Efectivo",
+      });
+
+      fireEvent.keyDown(cash, { key: "Enter" });
+      fireEvent.keyUp(cash, { key: "Enter" });
+
+      expect(continueButton()).toBeEnabled();
+
+      fireEvent.click(continueButton());
+      await screen.findByText(REVIEW_STEP);
+      fireEvent.click(screen.getByRole("button", { name: "Guardar compra" }));
+
+      await waitFor(() =>
+        expect(installments.createInstallmentPlanAction).toHaveBeenCalled(),
+      );
+      expect(
+        installments.createInstallmentPlanAction.mock.calls[0][0],
+      ).toMatchObject({ accountId: "acc_cash", cardOwnership: "own" });
     });
   });
 });

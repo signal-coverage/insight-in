@@ -2,7 +2,7 @@ import { monthOf } from "@/core/summary/month";
 
 import { NEAR_LIMIT_PERCENT } from "./consts";
 import type {
-  Card,
+  CardCap,
   CardCharge,
   CardFit,
   CardTier,
@@ -13,8 +13,6 @@ import type {
 // What a card has committed and how that compares with its cap. Pure: it works on the charges it is
 // given, which the service reads (installments and purchases in one payment alike). Amounts in
 // different currencies are never added together, and a charge somebody else covered never counts.
-
-type CapOf = Pick<Card, "currency" | "limitMode" | "limitAmount">;
 
 const chargesIn = (
   charges: readonly CardCharge[],
@@ -66,7 +64,7 @@ export const tierOf = (used: number, limit: number): CardTier => {
 // The usage of a card in `currentMonth`: a TOTAL card is measured by everything it has committed,
 // a MONTHLY one by what falls in that month.
 export const usageOf = (
-  card: CapOf,
+  card: CardCap,
   charges: readonly CardCharge[],
   currentMonth: string,
 ): CardUsage => {
@@ -111,9 +109,9 @@ const toFit = (margin: number, month?: string): CardFit =>
 // Whether a purchase fits the cap of a card, and by how much. A TOTAL card needs the whole purchase
 // to fit in what it still has available. A MONTHLY card needs every month the purchase touches to
 // stay within the cap, counting what the card already has in it; the answer is about the month with
-// the least room. A card in another currency than the purchase never fits.
+// the least room. A cap in another currency than the purchase never fits.
 export const fitOf = (
-  card: CapOf,
+  card: CardCap,
   charges: readonly CardCharge[],
   purchase: PurchaseProjection,
 ): CardFit => {

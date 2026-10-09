@@ -238,6 +238,47 @@ describe("toOriginStrings", () => {
     });
   });
 
+  it("keeps the digits of a tiny rate in a crypto net currency in the tooltip instead of printing zeros", () => {
+    const tooltip = toOriginStrings(
+      {
+        amount: 1000,
+        currency: "BTC",
+        originCurrency: "ARS",
+        originAmount: 10000000,
+      },
+      "Se cotizó en",
+    ).originTooltip;
+
+    expect(tooltip).toMatch(/0,00000001$/);
+    expect(tooltip).not.toContain("0,0000 ");
+    expect(tooltip).not.toMatch(/0,0000$/);
+  });
+
+  it("still prints a normal rate with 4 decimals under 1 in the tooltip", () => {
+    expect(
+      toOriginStrings(
+        {
+          amount: 1250000,
+          currency: "USDC",
+          originCurrency: "ARS",
+          originAmount: 125,
+        },
+        "Se cotizó en",
+      ).originTooltip,
+    ).toMatch(/cotización 1,00$/);
+    expect(
+      toOriginStrings(
+        {
+          amount: 1000000,
+          currency: "USDC",
+          originCurrency: "ARS",
+          originAmount: 125000,
+        },
+        "Se cotizó en",
+      ).originTooltip,
+    ).toMatch(/cotización 0,0008$/);
+  });
+
   it("gives the tooltip no rate when the amount is not positive", () => {
     expect(
       toOriginStrings({ ...entry, amount: 0 }, "Viene de").originTooltip,
@@ -257,6 +298,17 @@ describe("originRate", () => {
 
   it("says what one unit of the origin cost in the net currency", () => {
     expect(rate()).toMatch(/^1 USD = \$\s1\.750,00$/);
+  });
+
+  it("works when the net amount is in a crypto currency", () => {
+    expect(
+      rate({
+        netAmount: "1",
+        netCurrency: "USDC",
+        originAmount: "1250",
+        originCurrency: "ARS",
+      }),
+    ).toBe("1 ARS = 0,0008 USDC");
   });
 
   it.each([

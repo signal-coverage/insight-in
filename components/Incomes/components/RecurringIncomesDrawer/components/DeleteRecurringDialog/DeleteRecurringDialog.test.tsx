@@ -13,7 +13,7 @@ const RECURRING: RecurringRow = {
   categoryId: "c1",
   categoryName: "Salary",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   frequency: "MONTHLY",
   startDate: "2026-01-05",
   endDate: null,

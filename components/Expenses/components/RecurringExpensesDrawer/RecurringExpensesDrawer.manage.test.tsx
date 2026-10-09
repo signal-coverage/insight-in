@@ -18,6 +18,8 @@ const actions = vi.hoisted(() => ({
 vi.mock("@/core/expenses/recurringActions", () => actions);
 vi.mock("@/core/expenses/actions", () => ({ createCategoryAction: vi.fn() }));
 
+import type { AccountChoice } from "@/core/accounts/types";
+
 import type { RecurringData, RecurringRow } from "../../types";
 import { RecurringExpensesDrawer } from "./RecurringExpensesDrawer";
 
@@ -29,7 +31,7 @@ const row = (patch: Partial<RecurringRow>): RecurringRow => ({
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,
@@ -61,6 +63,21 @@ const CATEGORIES = [
   { id: "c2", name: "Servicios" },
 ];
 
+const ACCOUNTS: readonly AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const dataOf = (
   pending: RecurringRow[],
   decided: RecurringRow[] = [],
@@ -84,6 +101,7 @@ const renderDrawer = (data = dataOf([RENT], [INTERNET, CABLE])) => {
       sessionKey={1}
       data={data}
       categories={CATEGORIES}
+      accounts={ACCOUNTS}
     />,
   );
 
@@ -210,6 +228,9 @@ describe("editing a template", () => {
     expect(form.getByLabelText(/Descripción/)).toHaveValue("Monthly rent");
     expect(form.getByLabelText(/Monto/)).toHaveValue("350000.50");
     expect(form.getByLabelText(/Día del mes/)).toHaveValue("5");
+    expect(form.getByRole("button", { name: /Cuenta$/ })).toHaveTextContent(
+      "Banco Galicia · Caja de ahorro",
+    );
   });
 
   it("works from a decided row as well, with that row's template", async () => {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  accountIdField,
   amountField,
   categoryIdField,
   categoryIdSchema,
@@ -9,7 +10,6 @@ import {
   currencyField,
   dateField,
   descriptionField,
-  mediumField,
   notesField,
   statusField,
   toAmount,
@@ -39,7 +39,7 @@ export const incomeInputSchema = z
     categoryId: categoryIdField,
     notes: notesField,
     status: statusField,
-    medium: mediumField,
+    accountId: accountIdField,
     originCurrency: originCurrencyField,
     originAmount: originAmountField,
     reimbursesExpenseId: reimbursesExpenseIdField,
@@ -75,7 +75,7 @@ export const recurringIncomeInputSchema = z
     currency: currencyField,
     categoryId: categoryIdField,
     notes: notesField,
-    medium: mediumField,
+    accountId: accountIdField,
     frequency: frequencyField,
     startDate: dateField,
     endDate: endDateField,

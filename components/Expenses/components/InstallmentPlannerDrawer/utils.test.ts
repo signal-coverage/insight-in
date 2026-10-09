@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import type { CardOption } from "../../types";
+import type { AccountChoice } from "@/core/accounts/types";
+
+import type { CreditCardPatch } from "@/core/cards/testFixtures";
+import type { CardCharge } from "@/core/cards/types";
+
+import { creditOption } from "../../testCards";
+import type { CreditCardOption } from "../../types";
 import type { PurchaseValues } from "./types";
 import {
   cardOf,
@@ -14,28 +20,42 @@ import {
   toPayload,
   toTicketLines,
   initialValues,
+  withPurchaseChange,
 } from "./utils";
 
-const card = (patch: Partial<CardOption> = {}): CardOption => ({
-  id: "visa",
-  title: "Visa •••• 1234",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "TOTAL",
-  // $ 2.000.000,00.
-  limitAmount: 200000000,
-  charges: [],
-  ...patch,
-});
+const ACCOUNTS: AccountChoice[] = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
+const ARS_ONLY = ACCOUNTS.filter(({ currency }) => currency === "ARS");
+
+// $ 2.000.000,00 of TOTAL cap, closing on the 25th and paid on the 5th.
+const card = (
+  patch: CreditCardPatch & { title?: string; charges?: CardCharge[] } = {},
+): CreditCardOption =>
+  creditOption({
+    id: "visa",
+    limitMode: "TOTAL",
+    limitAmount: 200000000,
+    ...patch,
+  });
 
 const values = (patch: Partial<PurchaseValues> = {}): PurchaseValues => ({
   description: "Heladera",
   categoryId: "cat_1",
   currency: "ARS",
-  medium: "DIGITAL",
+  accountId: null,
   amountMode: "total",
   amount: "1200000",
   totalCuotas: 12,
@@ -48,12 +68,12 @@ const values = (patch: Partial<PurchaseValues> = {}): PurchaseValues => ({
 });
 
 describe("initialValues", () => {
-  it("starts empty, in pesos, digital, twelve installments, the first one today", () => {
+  it("starts empty, in pesos, with no account, twelve installments, the first one today", () => {
     expect(initialValues("2026-10-01", [])).toEqual({
       description: "",
       categoryId: null,
       currency: "ARS",
-      medium: "DIGITAL",
+      accountId: null,
       amountMode: "total",
       amount: "",
       totalCuotas: 12,
@@ -84,7 +104,7 @@ describe("toPayload", () => {
       description: "Heladera",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "DIGITAL",
+      accountId: "",
       notes: "",
       amount: "1200000",
       amountMode: "total",
@@ -102,7 +122,7 @@ describe("toPayload", () => {
 
 describe("parsePurchase", () => {
   it("summarises a valid purchase with an even split", () => {
-    expect(parsePurchase(values())).toMatchObject({
+    expect(parsePurchase(values(), [], ACCOUNTS)).toMatchObject({
       input: { totalCuotas: 12, totalAmount: 120000000 },
       installmentAmount: 10000000,
       isApproximate: false,
@@ -112,7 +132,11 @@ describe("parsePurchase", () => {
 
   it("reads the amount of one installment when that is what was typed", () => {
     expect(
-      parsePurchase(values({ amountMode: "perInstallment", amount: "100000" })),
+      parsePurchase(
+        values({ amountMode: "perInstallment", amount: "100000" }),
+        [],
+        ACCOUNTS,
+      ),
     ).toMatchObject({
       input: { totalAmount: 120000000 },
       installmentAmount: 10000000,
@@ -122,7 +146,11 @@ describe("parsePurchase", () => {
 
   it("takes the first installment as the amount, and calls it approximate, when the total does not divide evenly", () => {
     expect(
-      parsePurchase(values({ amount: "1000.01", totalCuotas: 3 })),
+      parsePurchase(
+        values({ amount: "1000.01", totalCuotas: 3 }),
+        [],
+        ACCOUNTS,
+      ),
     ).toMatchObject({ installmentAmount: 33334, isApproximate: true });
   });
 
@@ -138,13 +166,13 @@ describe("parsePurchase", () => {
     ["no first date", { firstDate: null }],
     ["a first date outside the supported years", { firstDate: "1999-01-01" }],
   ] as const)("is null for %s", (_name, patch) => {
-    expect(parsePurchase(values(patch))).toBeNull();
+    expect(parsePurchase(values(patch), [], ACCOUNTS)).toBeNull();
   });
 });
 
 describe("previewText", () => {
   it("says how many installments of how much, and the total", () => {
-    const text = previewText(parsePurchase(values())!);
+    const text = previewText(parsePurchase(values(), [], ACCOUNTS)!);
 
     expect(text).toMatch(
       /^12 cuotas de \$\s100\.000,00 · total \$\s1\.200\.000,00$/,
@@ -153,7 +181,11 @@ describe("previewText", () => {
 
   it("shows the approximate amount of the first installment, with no note, when it does not divide evenly", () => {
     const text = previewText(
-      parsePurchase(values({ amount: "1000.01", totalCuotas: 3 }))!,
+      parsePurchase(
+        values({ amount: "1000.01", totalCuotas: 3 }),
+        [],
+        ACCOUNTS,
+      )!,
     );
 
     expect(text).toMatch(/^3 cuotas de ≈ \$\s333,34 · total \$\s1\.000,01$/);
@@ -164,6 +196,8 @@ describe("previewText", () => {
     const text = previewText(
       parsePurchase(
         values({ currency: "USD", amount: "600", totalCuotas: 6 }),
+        [],
+        ACCOUNTS,
       )!,
     );
 
@@ -173,9 +207,13 @@ describe("previewText", () => {
 
 describe("toTicketLines", () => {
   const lines = (patch: Partial<PurchaseValues> = {}) =>
-    toTicketLines(parsePurchase(values(patch))!, "Hogar", "2026-10");
+    toTicketLines(
+      parsePurchase(values(patch), [], ARS_ONLY)!,
+      "Hogar",
+      "2026-10",
+    );
 
-  it("lists the data of the purchase in the order a receipt would, a borrowed card with its medium", () => {
+  it("lists the data of the purchase in the order a receipt would, a borrowed card, then the account", () => {
     expect(lines().map(({ label }) => label)).toEqual([
       "Producto",
       "Categoría",
@@ -185,7 +223,7 @@ describe("toTicketLines", () => {
       "Primera cuota",
       "Última cuota estimada",
       "Tarjeta",
-      "Medio",
+      "Cuenta",
     ]);
   });
 
@@ -206,16 +244,10 @@ describe("toTicketLines", () => {
       "Cantidad de cuotas": "12",
       "Primera cuota": "15 oct 2026",
       "Última cuota estimada": "Septiembre de 2027",
-      Medio: "Digital",
+      Cuenta: "Banco Galicia · Caja de ahorro",
     });
     expect(byLabel["Monto por cuota"]).toMatch(/^\$\s100\.000,00$/);
     expect(byLabel["Monto total"]).toMatch(/^\$\s1\.200\.000,00$/);
-  });
-
-  it("names cash as Efectivo", () => {
-    expect(
-      lines({ medium: "CASH" }).find(({ label }) => label === "Medio")?.value,
-    ).toBe("Efectivo");
   });
 
   it("adds no note when the installments are all equal", () => {
@@ -317,12 +349,6 @@ describe("with an own card", () => {
       ).toBe("2026-11-05");
     });
 
-    it("is always digital money: a credit card is never cash", () => {
-      expect(toPayload(withCard({ medium: "CASH" }), CARDS).medium).toBe(
-        "DIGITAL",
-      );
-    });
-
     it("sends no card keys, and no first date, while the card is still to be chosen", () => {
       const payload = toPayload(withoutCardYet(), CARDS);
 
@@ -330,25 +356,21 @@ describe("with an own card", () => {
       expect(payload.firstDate).toBe("");
     });
 
-    it("sends no card keys for a borrowed card: the typed first date counts, and so does the medium", () => {
-      const payload = toPayload(
-        withCard({ cardOwnership: "borrowed", medium: "CASH" }),
-        CARDS,
-      );
+    it("sends no card keys for a borrowed card: the typed first date counts", () => {
+      const payload = toPayload(withCard({ cardOwnership: "borrowed" }), CARDS);
 
       expect(payload).not.toHaveProperty("cardId");
       expect(payload).not.toHaveProperty("purchaseDate");
       expect(payload).toMatchObject({
         cardOwnership: "borrowed",
         firstDate: "2026-10-15",
-        medium: "CASH",
       });
     });
   });
 
   describe("parsePurchase", () => {
     it("keeps the card and the first installment the cycle gives", () => {
-      const summary = parsePurchase(withCard(), CARDS)!;
+      const summary = parsePurchase(withCard(), CARDS, ACCOUNTS)!;
 
       expect(summary.card).toBe(CARDS[0]);
       expect(summary.ownership).toBe("own");
@@ -356,24 +378,26 @@ describe("with an own card", () => {
         cardId: "visa",
         firstDate: "2026-11-05",
         purchaseDate: "2026-10-10",
-        medium: "DIGITAL",
+        accountId: "acc_1",
       });
       expect(summary.lastMonth).toBe("2027-10");
     });
 
     it("has no card for a borrowed purchase", () => {
-      const summary = parsePurchase(values(), CARDS)!;
+      const summary = parsePurchase(values(), CARDS, ACCOUNTS)!;
 
       expect(summary.card).toBeNull();
       expect(summary.ownership).toBe("borrowed");
     });
 
     it("is null while an own card is not chosen: a purchase in installments needs a card", () => {
-      expect(parsePurchase(withoutCardYet(), CARDS)).toBeNull();
+      expect(parsePurchase(withoutCardYet(), CARDS, ACCOUNTS)).toBeNull();
     });
 
     it("is null while the card is chosen but the purchase date is not", () => {
-      expect(parsePurchase(withCard({ purchaseDate: null }), CARDS)).toBeNull();
+      expect(
+        parsePurchase(withCard({ purchaseDate: null }), CARDS, ACCOUNTS),
+      ).toBeNull();
     });
   });
 
@@ -505,25 +529,33 @@ describe("with an own card", () => {
   describe("the ticket", () => {
     const lines = (currentMonth: string, patch: Partial<PurchaseValues> = {}) =>
       toTicketLines(
-        parsePurchase(withCard(patch), CARDS)!,
+        parsePurchase(withCard(patch), CARDS, ARS_ONLY)!,
         "Hogar",
         currentMonth,
       );
 
-    it("ends with the card, as an own one", () => {
+    it("ends with the card, as an own one, and then the account", () => {
       const result = lines("2026-10");
 
-      expect(result.map(({ label }) => label).slice(-2)).toEqual([
+      expect(result.map(({ label }) => label).slice(-3)).toEqual([
         "Última cuota estimada",
         "Tarjeta",
+        "Cuenta",
       ]);
       expect(result.find(({ label }) => label === "Tarjeta")?.value).toBe(
         "Propia · Visa •••• 1234",
       );
+      expect(result[result.length - 1]).toEqual({
+        label: "Cuenta",
+        value: "Banco Galicia · Caja de ahorro",
+      });
     });
 
-    it("has no medium line: a credit card is always digital money", () => {
-      expect(lines("2026-10").map(({ label }) => label)).not.toContain("Medio");
+    it("has no medium line: the account says where the money comes from", () => {
+      const labels = lines("2026-10").map(({ label }) => label);
+
+      expect(labels).toContain("Cuenta");
+      expect(labels).not.toContain("Medio");
     });
 
     it("lists the first installment on the date the cycle gives", () => {
@@ -552,7 +584,7 @@ describe("with an own card", () => {
 
     it("adds no note to a borrowed card: its cycle is unknown", () => {
       const borrowed = toTicketLines(
-        parsePurchase(values(), CARDS)!,
+        parsePurchase(values(), CARDS, ARS_ONLY)!,
         "Hogar",
         "2026-10",
       );
@@ -562,7 +594,7 @@ describe("with an own card", () => {
   });
 
   describe("the confirmation", () => {
-    const summary = () => parsePurchase(withCard(), CARDS)!;
+    const summary = () => parsePurchase(withCard(), CARDS, ACCOUNTS)!;
 
     it("is needed when the card charges the first installment this month", () => {
       expect(needsConfirmation(summary(), "2026-11")).toBe(true);
@@ -574,9 +606,9 @@ describe("with an own card", () => {
     });
 
     it("is not needed for a borrowed card", () => {
-      expect(needsConfirmation(parsePurchase(values())!, "2026-10")).toBe(
-        false,
-      );
+      expect(
+        needsConfirmation(parsePurchase(values(), [], ACCOUNTS)!, "2026-10"),
+      ).toBe(false);
     });
 
     it("tells the date and the month the first installment goes into", () => {
@@ -584,5 +616,109 @@ describe("with an own card", () => {
         "La primera cuota se cobra este mes (5 nov 2026) y se va a registrar en tu resumen de noviembre de 2026.",
       );
     });
+  });
+});
+
+describe("the account of the purchase", () => {
+  it("sends the account chosen", () => {
+    expect(
+      toPayload({ ...values(), accountId: "acc_1" }, [], ACCOUNTS).accountId,
+    ).toBe("acc_1");
+  });
+
+  it("sends the only account of the currency when none was chosen", () => {
+    expect(
+      toPayload({ ...values(), accountId: null }, [], ACCOUNTS).accountId,
+    ).toBe("acc_1");
+  });
+
+  it("sends no account while there are several in the currency and none was chosen", () => {
+    expect(
+      toPayload(
+        { ...values(), accountId: null },
+        [],
+        [
+          ...ACCOUNTS,
+          {
+            id: "acc_2",
+            currency: "ARS",
+            label: "Efectivo · Efectivo",
+            archived: false,
+          },
+        ],
+      ).accountId,
+    ).toBe("");
+  });
+
+  it("is not valid without an account", () => {
+    expect(parsePurchase({ ...values(), accountId: null }, [], [])).toBeNull();
+    // The twin: the same purchase is valid once its currency has an account.
+    expect(
+      parsePurchase({ ...values(), accountId: null }, [], ACCOUNTS),
+    ).not.toBeNull();
+  });
+
+  it("is not valid when the accounts argument is missing altogether", () => {
+    expect(parsePurchase({ ...values(), accountId: null })).toBeNull();
+  });
+
+  it("names the account on the ticket", () => {
+    const summary = parsePurchase(
+      { ...values(), accountId: "acc_1" },
+      [],
+      ACCOUNTS,
+    );
+
+    expect(summary?.accountLabel).toBe("Banco Galicia · Caja de ahorro");
+  });
+});
+
+describe("withPurchaseChange", () => {
+  it("drops the account when the currency changes", () => {
+    expect(
+      withPurchaseChange(
+        { ...values(), accountId: "acc_1" },
+        { currency: "USD" },
+        [],
+      ).accountId,
+    ).toBeNull();
+  });
+
+  it("keeps the account when anything else changes", () => {
+    expect(
+      withPurchaseChange(
+        { ...values(), accountId: "acc_1" },
+        { notes: "x" },
+        [],
+      ).accountId,
+    ).toBe("acc_1");
+  });
+
+  it("keeps the account when the currency is set to the one it already has", () => {
+    expect(
+      withPurchaseChange(
+        { ...values(), accountId: "acc_1" },
+        { currency: "ARS" },
+        [],
+      ).accountId,
+    ).toBe("acc_1");
+  });
+
+  it("still drops a card of another currency", () => {
+    expect(
+      withPurchaseChange(
+        { ...values(), cardOwnership: "own", cardId: "visa" },
+        { currency: "USD" },
+        [card()],
+      ).cardId,
+    ).toBeNull();
+    // The twin: a card of the purchase's currency stays.
+    expect(
+      withPurchaseChange(
+        { ...values(), cardOwnership: "own", cardId: "visa" },
+        { notes: "x" },
+        [card()],
+      ).cardId,
+    ).toBe("visa");
   });
 });

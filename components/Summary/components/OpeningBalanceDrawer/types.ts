@@ -1,22 +1,33 @@
-// One currency of the opening balance editor, its two amounts as decimal text ("1500.50") ready to
-// prefill an input, or "" when there is no amount saved.
-export interface OpeningBalanceRow {
+// One account of the opening balance editor. `index` is its position among all the rows: the input
+// is named by it, which is how the server points at the one in error. `amount` is decimal text
+// ("1500.50") ready to prefill the input, or "" when there is none saved.
+export interface OpeningAccountRow {
+  index: number;
+  accountId: string;
   currency: string;
-  digital: string;
-  cash: string;
+  // "Caja de ahorro (ARS)", with "· archivada" for an archived account.
+  label: string;
+  amount: string;
+}
+
+// The accounts of one bank, as one group of the editor.
+export interface OpeningBankGroup {
+  bankId: string;
+  bankName: string;
+  rows: OpeningAccountRow[];
 }
 
 // What the editor starts from: the month the saved opening balance is valid from (null when there
-// is none) and a row for every currency it offers.
+// is none) and the accounts it offers, grouped by bank.
 export interface OpeningBalanceData {
   month: string | null;
-  rows: OpeningBalanceRow[];
+  groups: OpeningBankGroup[];
 }
 
-// What "Guardar" sends to the server, amounts exactly as typed.
+// What "Guardar" sends to the server, amounts exactly as typed, one row per account.
 export interface OpeningBalancePayload {
   month: string;
-  balances: OpeningBalanceRow[];
+  balances: { accountId: string; currency: string; amount: string }[];
 }
 
 export interface MonthOption {
@@ -40,8 +51,6 @@ export type OpeningBalanceContentProps = Pick<
   "onClose" | "currentMonth" | "data"
 >;
 
-export interface CurrencyFieldsProps {
-  row: OpeningBalanceRow;
-  // Position of the row in the editor: the server reports its errors by it.
-  index: number;
+export interface BankFieldsProps {
+  group: OpeningBankGroup;
 }

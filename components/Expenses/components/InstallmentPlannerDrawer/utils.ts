@@ -1,23 +1,23 @@
 import {
+  ACCOUNT_LINE,
   CATEGORY_LINE,
   COUNT_LINE,
   FIRST_LINE,
   LAST_LINE,
-  MEDIUM_LINE,
   PER_INSTALLMENT_LINE,
   TOTAL_LINE,
 } from "@/components/Entries/components/InstallmentTicket/consts";
-import { MEDIUM_OPTIONS } from "@/components/Entries/components/MediumField/consts";
+import { resolveAccountId } from "@/components/Entries/components/AccountField";
 import type { TicketLine } from "@/components/Entries/types";
 import {
   installmentAmountLabel,
   installmentPreviewText,
   splitSummary,
 } from "@/components/Entries/utils";
+import type { AccountChoice } from "@/core/accounts/types";
 import { firstInstallmentDate } from "@/core/cards/cycle";
 import { recommendCards } from "@/core/cards/recommend";
 import type { CardRecommendation } from "@/core/cards/types";
-import { DEFAULT_PAYMENT_MEDIUM } from "@/core/entries/medium";
 import { DEFAULT_CURRENCY_CODE } from "@/core/incomes/consts";
 import { formatIncomeDate, isValidIsoDate } from "@/core/incomes/dates";
 import { formatMoney } from "@/core/incomes/money";
@@ -31,7 +31,7 @@ import { installmentPlanSchema } from "@/core/installments/schema";
 import type { InstallmentPlanPayload } from "@/core/installments/types";
 import { formatMonth, monthOf, shiftMonth } from "@/core/summary/month";
 
-import type { CardOption } from "../../types";
+import type { CreditCardOption } from "../../types";
 import {
   BORROWED_CARD_VALUE,
   CARD_LINE,
@@ -51,17 +51,17 @@ import type {
   PurchaseValues,
 } from "./types";
 
-// What the first step starts with: nothing typed, pesos, digital, a year of installments, an own card
+// What the first step starts with: nothing typed, pesos, no account yet, a year of installments, an own card
 // when the user has any (otherwise a borrowed one) with none chosen yet, and both the first
 // installment and the purchase today.
 export const initialValues = (
   defaultDate: string,
-  cards: readonly CardOption[],
+  cards: readonly CreditCardOption[],
 ): PurchaseValues => ({
   description: "",
   categoryId: null,
   currency: DEFAULT_CURRENCY_CODE,
-  medium: DEFAULT_PAYMENT_MEDIUM,
+  accountId: null,
   amountMode: "total",
   amount: "",
   totalCuotas: DEFAULT_TOTAL_CUOTAS,
@@ -72,22 +72,23 @@ export const initialValues = (
   notes: "",
 });
 
-// The card chosen, if it still exists and is in the currency of the purchase. A card in another
-// currency never pays a purchase.
+// The card chosen, if it still exists and has a cap in the currency of the purchase. A card in
+// another currency never pays a purchase.
 const chosenCard = (
   values: PurchaseValues,
-  cards: readonly CardOption[],
-): CardOption | null =>
+  cards: readonly CreditCardOption[],
+): CreditCardOption | null =>
   cards.find(
-    ({ id, currency }) => id === values.cardId && currency === values.currency,
+    ({ id, currencies }) =>
+      id === values.cardId && currencies.includes(values.currency),
   ) ?? null;
 
 // The own card that pays the purchase. A borrowed card has no record, so there is none, even if an
 // own card was chosen before switching.
 export const cardOf = (
   values: PurchaseValues,
-  cards: readonly CardOption[],
-): CardOption | null =>
+  cards: readonly CreditCardOption[],
+): CreditCardOption | null =>
   values.cardOwnership === "own" ? chosenCard(values, cards) : null;
 
 // Changing the currency leaves a card of the old one behind: the choice goes back to no card. It
@@ -95,17 +96,31 @@ export const cardOf = (
 // borrowed keeps it.
 export const dropMismatchedCard = (
   values: PurchaseValues,
-  cards: readonly CardOption[],
+  cards: readonly CreditCardOption[],
 ): PurchaseValues =>
   values.cardId !== null && chosenCard(values, cards) === null
     ? { ...values, cardId: null }
     : values;
 
+// A change of the first step: a currency change leaves behind a card and an account of the old
+// currency (the account field then offers the new currency's, preselecting it when it is the only one).
+export const withPurchaseChange = (
+  values: PurchaseValues,
+  patch: Partial<PurchaseValues>,
+  cards: readonly CreditCardOption[],
+): PurchaseValues => {
+  const next = dropMismatchedCard({ ...values, ...patch }, cards);
+
+  return patch.currency !== undefined && patch.currency !== values.currency
+    ? { ...next, accountId: null }
+    : next;
+};
+
 // When the first installment is charged: with a borrowed card, the date the user typed; with an own
 // card, the date its cycle gives for the day of the purchase. Null while there is none.
 const firstDateOf = (
   values: PurchaseValues,
-  card: CardOption | null,
+  card: CreditCardOption | null,
 ): string | null => {
   if (values.cardOwnership === "borrowed") {
     return values.firstDate;
@@ -123,7 +138,7 @@ const firstDateOf = (
 // "Primera cuota: 5 nov 2026", live under the purchase date once an own card is chosen.
 export const firstInstallmentText = (
   values: PurchaseValues,
-  cards: readonly CardOption[],
+  cards: readonly CreditCardOption[],
 ): string | null => {
   const card = cardOf(values, cards);
   const firstDate = card ? firstDateOf(values, card) : null;
@@ -131,13 +146,14 @@ export const firstInstallmentText = (
   return firstDate ? firstInstallmentLine(formatIncomeDate(firstDate)) : null;
 };
 
-// What the server receives. A piece with no value yet goes as a value the server's rules refuse.
-// With an own card the medium is digital (a credit card is never cash), the first date is the one
-// its cycle gives (the server works it out again), and the card and the day of the purchase travel
-// with it. A borrowed card sends nothing about cards: the typed date and the chosen medium count.
+// What the server receives. A piece with no value yet goes as a value the server's rules refuse. The
+// account is the one chosen, or the only one of the currency. With an own card the first date is the
+// one its cycle gives (the server works it out again), and the card and the day of the purchase travel
+// with it. A borrowed card sends nothing about cards: the typed date counts.
 export const toPayload = (
   values: PurchaseValues,
-  cards: readonly CardOption[] = [],
+  cards: readonly CreditCardOption[] = [],
+  accounts: readonly AccountChoice[] = [],
 ): InstallmentPlanPayload => {
   const card = cardOf(values, cards);
 
@@ -145,8 +161,8 @@ export const toPayload = (
     description: values.description,
     categoryId: values.categoryId ?? "",
     currency: values.currency,
-    medium:
-      values.cardOwnership === "own" ? DEFAULT_PAYMENT_MEDIUM : values.medium,
+    accountId:
+      resolveAccountId(accounts, values.currency, values.accountId) ?? "",
     notes: values.notes,
     amount: values.amount,
     amountMode: values.amountMode,
@@ -163,9 +179,12 @@ export const toPayload = (
 // schema, so the button and the live preview agree with what the save will accept.
 export const parsePurchase = (
   values: PurchaseValues,
-  cards: readonly CardOption[] = [],
+  cards: readonly CreditCardOption[] = [],
+  accounts: readonly AccountChoice[] = [],
 ): PurchaseSummary | null => {
-  const parsed = installmentPlanSchema.safeParse(toPayload(values, cards));
+  const parsed = installmentPlanSchema.safeParse(
+    toPayload(values, cards, accounts),
+  );
 
   if (!parsed.success) {
     return null;
@@ -177,6 +196,8 @@ export const parsePurchase = (
     input,
     card: cardOf(values, cards),
     ownership: values.cardOwnership,
+    accountLabel:
+      accounts.find(({ id }) => id === input.accountId)?.label ?? "",
     // What the bank charges for each one is up to it, so the amount shown is an approximation when
     // the total does not divide evenly.
     ...splitSummary(input.totalAmount, input.totalCuotas),
@@ -228,7 +249,7 @@ const verdictLabelFor = (
 // in the form (today until the user picks a card and moves it), whatever card is chosen.
 export const recommendationItems = (
   values: PurchaseValues,
-  cards: readonly CardOption[],
+  cards: readonly CreditCardOption[],
 ): CardRecommendationItem[] | null => {
   const { totalCuotas, purchaseDate } = values;
 
@@ -300,20 +321,14 @@ const monthName = (month: string): string => {
   return name.toLowerCase();
 };
 
-// The card of the purchase on the ticket. An own card is always digital money, so it has no medium
-// line; a borrowed one shows the medium it will be repaid with.
-const cardLines = ({ input, card }: PurchaseSummary): TicketLine[] => {
-  if (card) {
-    return [{ label: CARD_LINE, value: ownCardValue(card.title) }];
-  }
-
-  const medium = MEDIUM_OPTIONS.find(({ value }) => value === input.medium);
-
-  return [
-    { label: CARD_LINE, value: BORROWED_CARD_VALUE },
-    { label: MEDIUM_LINE, value: medium?.label ?? input.medium },
-  ];
-};
+// The card of the purchase on the ticket, then the account that pays it.
+const cardLines = ({ card, accountLabel }: PurchaseSummary): TicketLine[] => [
+  {
+    label: CARD_LINE,
+    value: card ? ownCardValue(card.title) : BORROWED_CARD_VALUE,
+  },
+  { label: ACCOUNT_LINE, value: accountLabel },
+];
 
 // The lines of the ticket, in the order a receipt would list them. `currentMonth` ("YYYY-MM") is
 // where "this month" is, to tell when an own card's first installment comes.

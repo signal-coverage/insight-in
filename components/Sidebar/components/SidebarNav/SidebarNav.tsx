@@ -1,36 +1,32 @@
-import { SidebarNavItem } from "./components/SidebarNavItem";
-import { NAV_ARIA_LABEL, NO_RESULTS_LABEL, SECTION_LABEL } from "./consts";
+import { SidebarNavSection } from "./components/SidebarNavSection";
+import { NAV_ARIA_LABEL, NO_RESULTS_LABEL } from "./consts";
 import {
   EMPTY_STATE_CLASS_NAME,
-  LIST_CLASS_NAME,
   NAV_CLASS_NAME,
-  SECTION_LABEL_CLASS_NAME,
+  SECTIONS_CLASS_NAME,
 } from "./styles";
 import type { SidebarNavProps } from "./types";
 
 export function SidebarNav({
-  items,
+  sections,
   isCollapsed,
   isSearchActive,
 }: SidebarNavProps) {
   return (
     <nav aria-label={NAV_ARIA_LABEL} className={NAV_CLASS_NAME}>
-      {!isCollapsed && (
-        <span className={SECTION_LABEL_CLASS_NAME}>{SECTION_LABEL}</span>
-      )}
-      {items.length === 0 ? (
+      {sections.length === 0 ? (
         <p className={EMPTY_STATE_CLASS_NAME}>{NO_RESULTS_LABEL}</p>
       ) : (
-        <ul className={LIST_CLASS_NAME}>
-          {items.map((item) => (
-            <SidebarNavItem
-              key={item.href}
-              item={item}
+        <div className={SECTIONS_CLASS_NAME}>
+          {sections.map((section, index) => (
+            <SidebarNavSection
+              key={section.label ?? `untitled-${index}`}
+              section={section}
               isCollapsed={isCollapsed}
-              forceExpanded={isSearchActive ? true : undefined}
+              isSearchActive={isSearchActive}
             />
           ))}
-        </ul>
+        </div>
       )}
     </nav>
   );

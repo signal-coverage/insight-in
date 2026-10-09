@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import type { CardBrand } from "@/core/cards/types";
+import { DEFAULT_CARD_KIND } from "@/core/cards/consts";
+import type { CardBrand, CardKind } from "@/core/cards/types";
 
 import type { CardRow } from "../../types";
 import { DEFAULT_BRAND, DEFAULT_CLOSING_DAY, DEFAULT_DUE_DAY } from "./consts";
@@ -9,6 +10,7 @@ import type { CardDraft } from "./types";
 // The values the form starts with — the stored ones on edit, the defaults for a new card — and the
 // state that follows them as the user types, so the card preview can show them live.
 export function useCardDraft(card: CardRow | null): CardDraft {
+  const [kind, setKind] = useState<CardKind>(card?.kind ?? DEFAULT_CARD_KIND);
   const [last4, setLast4] = useState(card?.last4 ?? "");
   const [brand, setBrand] = useState<CardBrand>(card?.brand ?? DEFAULT_BRAND);
   const [closingDay, setClosingDay] = useState(
@@ -17,6 +19,8 @@ export function useCardDraft(card: CardRow | null): CardDraft {
   const [dueDay, setDueDay] = useState(card?.dueDay ?? DEFAULT_DUE_DAY);
 
   return {
+    kind,
+    setKind,
     last4,
     brand,
     closingDay,

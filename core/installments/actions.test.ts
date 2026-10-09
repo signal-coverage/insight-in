@@ -22,6 +22,7 @@ vi.mock("./incomeService", () => ({
   applyIncomeInstallmentCounts: mocks.applyIncomeInstallmentCounts,
 }));
 
+import { AccountArchivedError } from "@/core/accounts/errors";
 import {
   CardCurrencyMismatchError,
   CardNotFoundError,
@@ -52,7 +53,7 @@ const payload = (
     description: "Heladera",
     categoryId: "cat_1",
     currency: "ARS",
-    medium: "DIGITAL",
+    accountId: "acc_1",
     notes: "",
     amount: "1200000",
     amountMode: "total",
@@ -103,7 +104,7 @@ describe("createInstallmentPlanAction", () => {
       description: "Heladera",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       notes: null,
       totalCuotas: 12,
       totalAmount: 120000000,
@@ -184,23 +185,42 @@ describe("createInstallmentPlanAction", () => {
     expect(mocks.createInstallmentPlan).not.toHaveBeenCalled();
   });
 
-  it("hands the service digital money for an own card even if cash was sent", async () => {
+  it("passes on the account chosen, also with an own card", async () => {
     await createInstallmentPlanAction(
       payload({
         cardOwnership: "own",
         cardId: "card_1",
         purchaseDate: "2026-10-10",
-        medium: "CASH",
+        accountId: "acc_cash",
       }),
     );
 
-    expect(mocks.createInstallmentPlan.mock.calls[0][1].medium).toBe("DIGITAL");
+    expect(mocks.createInstallmentPlan.mock.calls[0][1].accountId).toBe(
+      "acc_cash",
+    );
   });
 
-  it("keeps the medium of a borrowed card, which is how the lender is repaid", async () => {
-    await createInstallmentPlanAction(payload({ medium: "CASH" }));
+  it("refuses a purchase without an account, without touching the service", async () => {
+    const result = await createInstallmentPlanAction(
+      payload({ accountId: "" }),
+    );
 
-    expect(mocks.createInstallmentPlan.mock.calls[0][1].medium).toBe("CASH");
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: ["Elegí una cuenta."],
+    });
+    expect(mocks.createInstallmentPlan).not.toHaveBeenCalled();
+  });
+
+  it("puts an archived account refused by the service on the Cuenta field", async () => {
+    mocks.createInstallmentPlan.mockRejectedValue(new AccountArchivedError());
+
+    const result = await createInstallmentPlanAction(payload());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: [
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ],
+    });
   });
 
   it("maps a card that is not the user's to a cardId field error", async () => {
@@ -233,7 +253,7 @@ describe("createInstallmentPlanAction", () => {
     );
 
     expect(result.status === "error" && result.fieldErrors).toEqual({
-      cardId: ["La tarjeta tiene que estar en la misma moneda que la compra."],
+      cardId: ["La tarjeta no tiene un tope en la moneda de la compra."],
     });
   });
 
@@ -307,7 +327,7 @@ describe("createInstallmentPlanAction with kind income", () => {
       description: "Préstamo a Juan",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "CASH",
+      accountId: "acc_1",
       notes: "",
       amount: "600000",
       amountMode: "total",
@@ -338,7 +358,7 @@ describe("createInstallmentPlanAction with kind income", () => {
       description: "Préstamo a Juan",
       categoryId: "cat_1",
       currency: "ARS",
-      medium: "CASH",
+      accountId: "acc_1",
       notes: null,
       totalCuotas: 6,
       totalAmount: 60000000,
@@ -382,6 +402,31 @@ describe("createInstallmentPlanAction with kind income", () => {
 
     expect(result.status === "error" && result.fieldErrors).toEqual({
       categoryId: ["Selecciona una categoría válida."],
+    });
+  });
+
+  it("refuses a repayment without an account, without touching the service", async () => {
+    const result = await createInstallmentPlanAction(
+      repayment({ accountId: "" }),
+    );
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: ["Elegí una cuenta."],
+    });
+    expect(mocks.createIncomeInstallmentPlan).not.toHaveBeenCalled();
+  });
+
+  it("puts an archived account refused by the service on the Cuenta field", async () => {
+    mocks.createIncomeInstallmentPlan.mockRejectedValue(
+      new AccountArchivedError(),
+    );
+
+    const result = await createInstallmentPlanAction(repayment());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: [
+        "Esta cuenta está archivada. Elegí otra o reactivala en Bancos.",
+      ],
     });
   });
 

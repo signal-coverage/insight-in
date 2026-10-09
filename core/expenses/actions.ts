@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { ACCOUNT_REQUIRED_MESSAGE } from "@/core/accounts/consts";
+import { cardBankWithoutAccountMessage } from "@/core/cards/consts";
+import { CardBankWithoutAccountError } from "@/core/cards/errors";
 import {
   failure,
   fieldFailure,
@@ -25,14 +28,24 @@ import {
   CategoryNotFoundError,
   LastCategoryError,
 } from "@/core/incomes/errors";
+import { formatMoney } from "@/core/incomes/money";
 
 import {
+  EXPENSE_CHANGED_MESSAGE,
   EXPENSE_FORM_FIELDS,
+  EXPENSE_FUTURE_DEBIT_MESSAGE,
   EXPENSE_NOT_FOUND_MESSAGE,
   EXPENSES_NOT_FOUND_MESSAGE,
   EXPENSES_PATH,
   expenseCategoryInUseMessage,
+  expenseInsufficientFundsMessage,
 } from "./consts";
+import {
+  ExpenseAccountRequiredError,
+  ExpenseChangedError,
+  ExpenseFutureDebitError,
+  ExpenseInsufficientFundsError,
+} from "./errors";
 import { expenseInputSchema } from "./schema";
 import {
   createCategory,
@@ -86,6 +99,66 @@ const finish = (changed: boolean): ExpenseActionResult => {
   return SUCCESS;
 };
 
+// The refusals of a write that involves a debit card's money or a credit card's account, on the field
+// they are about, or as a plain message for the status checkbox (`plain`), which has no fields.
+// Anything else is left for runAuthenticated.
+const toExpenseFailure = (
+  error: unknown,
+  plain: boolean,
+): ActionFailure | undefined => {
+  if (error instanceof ExpenseInsufficientFundsError) {
+    const message = expenseInsufficientFundsMessage(
+      formatMoney(error.available, error.currency),
+    );
+
+    return plain ? failure(message) : fieldFailure({ amount: [message] });
+  }
+
+  if (error instanceof CardBankWithoutAccountError) {
+    const message = cardBankWithoutAccountMessage(error.currency);
+
+    return plain ? failure(message) : fieldFailure({ cardId: [message] });
+  }
+
+  if (error instanceof ExpenseFutureDebitError) {
+    return plain
+      ? failure(EXPENSE_FUTURE_DEBIT_MESSAGE)
+      : fieldFailure({ date: [EXPENSE_FUTURE_DEBIT_MESSAGE] });
+  }
+
+  // Not about any field: the form shows it as its general error, the checkbox as its message.
+  if (error instanceof ExpenseChangedError) {
+    return failure(EXPENSE_CHANGED_MESSAGE);
+  }
+
+  if (error instanceof ExpenseAccountRequiredError) {
+    return fieldFailure({ accountId: [ACCOUNT_REQUIRED_MESSAGE] });
+  }
+
+  return undefined;
+};
+
+const attempt = async (
+  run: () => Promise<ExpenseActionResult>,
+  plain: boolean,
+): Promise<ExpenseActionResult> => {
+  try {
+    return await run();
+  } catch (error) {
+    const known = toExpenseFailure(error, plain);
+
+    if (known) {
+      return known;
+    }
+
+    throw error;
+  }
+};
+
+// An id that is not text cannot be an expense of the user (and undefined would vanish from a where).
+const isUsableId = (id: unknown): id is string =>
+  typeof id === "string" && id.length > 0;
+
 export async function createExpenseAction(
   formData: FormData,
 ): Promise<ExpenseActionResult> {
@@ -96,9 +169,11 @@ export async function createExpenseAction(
       return parsed.error;
     }
 
-    await createExpense(userId, parsed.data);
+    return attempt(async () => {
+      await createExpense(userId, parsed.data);
 
-    return finish(true);
+      return finish(true);
+    }, false);
   });
 }
 
@@ -107,13 +182,20 @@ export async function updateExpenseAction(
   formData: FormData,
 ): Promise<ExpenseActionResult> {
   return runAuthenticated(async (userId) => {
+    if (!isUsableId(id)) {
+      return failure(EXPENSE_NOT_FOUND_MESSAGE);
+    }
+
     const parsed = parseExpenseForm(formData);
 
     if ("error" in parsed) {
       return parsed.error;
     }
 
-    return finish(await updateExpense(userId, id, parsed.data));
+    return attempt(
+      async () => finish(await updateExpense(userId, id, parsed.data)),
+      false,
+    );
   });
 }
 
@@ -123,20 +205,31 @@ export async function setExpenseStatusAction(
   status: EntryStatus,
 ): Promise<ExpenseActionResult> {
   return runAuthenticated(async (userId) => {
+    if (!isUsableId(id)) {
+      return failure(EXPENSE_NOT_FOUND_MESSAGE);
+    }
+
     if (!isEntryStatus(status)) {
       return failure(INVALID_FORM_MESSAGE);
     }
 
-    return finish(await setExpenseStatus(userId, id, status));
+    return attempt(
+      async () => finish(await setExpenseStatus(userId, id, status)),
+      true,
+    );
   });
 }
 
 export async function deleteExpenseAction(
   id: string,
 ): Promise<ExpenseActionResult> {
-  return runAuthenticated(async (userId) =>
-    finish(await deleteExpense(userId, id)),
-  );
+  return runAuthenticated(async (userId) => {
+    if (!isUsableId(id)) {
+      return failure(EXPENSE_NOT_FOUND_MESSAGE);
+    }
+
+    return finish(await deleteExpense(userId, id));
+  });
 }
 
 // Deletes the selected expenses of the table in one go. Only the user's own are deleted; the result

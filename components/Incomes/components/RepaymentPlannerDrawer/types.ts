@@ -1,5 +1,5 @@
 import type { EntryCategory } from "@/components/Entries/types";
-import type { PaymentMedium } from "@/core/entries/medium";
+import type { AccountChoice } from "@/core/accounts/types";
 import type {
   AmountMode,
   IncomeInstallmentPlanInput,
@@ -15,11 +15,13 @@ export interface RepaymentPlannerDrawerProps {
   defaultDate: string;
   // The user's income categories.
   categories: readonly EntryCategory[];
+  // Every account of the user (archived ones included): the form offers the ones of the currency.
+  accounts: readonly AccountChoice[];
 }
 
 export type RepaymentPlannerContentProps = Pick<
   RepaymentPlannerDrawerProps,
-  "onClose" | "defaultDate" | "categories"
+  "onClose" | "defaultDate" | "categories" | "accounts"
 >;
 
 // The steps: the data of the repayment, then the ticket to review before saving.
@@ -32,8 +34,8 @@ export interface RepaymentValues {
   description: string;
   categoryId: string | null;
   currency: string;
-  // How the money arrives.
-  medium: PaymentMedium;
+  // The account the money arrives in, or null while none is chosen (see resolveAccountId).
+  accountId: string | null;
   amountMode: AmountMode;
   amount: string;
   totalCuotas: number | null;
@@ -49,6 +51,8 @@ export interface RepaymentSummary {
   installmentAmount: number;
   // The total does not divide evenly, so the amount above is only close to what each one brings.
   isApproximate: boolean;
+  // "Banco · Cuenta" of the account.
+  accountLabel: string;
   // "YYYY-MM" of the last installment.
   lastMonth: string;
 }

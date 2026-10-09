@@ -1,4 +1,5 @@
 import type { EntryCategory } from "@/components/Entries/types";
+import type { AccountChoice } from "@/core/accounts/types";
 
 import type { RecurringRow } from "../../../../types";
 
@@ -15,10 +16,12 @@ export interface TemplateFormDrawerProps {
   onClose: () => void;
   target: TemplateFormTarget;
   categories: readonly EntryCategory[];
+  accounts: readonly AccountChoice[];
 }
 
 export interface TemplateFormContentProps {
   template: RecurringRow;
   categories: readonly EntryCategory[];
+  accounts: readonly AccountChoice[];
   onClose: () => void;
 }

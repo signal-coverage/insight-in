@@ -1,3 +1,4 @@
+import { compareCurrencyCodes } from "@/core/currencies/crypto";
 import { isoDateToDate } from "@/core/incomes/dates";
 import { minorUnitsToNumber } from "@/core/incomes/money";
 
@@ -80,6 +81,6 @@ export const foldCurrencyTotals = (
   }
 
   return [...byCurrency.values()].sort((a, b) =>
-    a.currency.localeCompare(b.currency),
+    compareCurrencyCodes(a.currency, b.currency),
   );
 };

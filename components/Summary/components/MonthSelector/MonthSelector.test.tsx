@@ -148,4 +148,21 @@ describe("MonthSelector", () => {
       expect(screen.getByRole("button", { name: "Mes actual" })).toBeEnabled();
     });
   });
+
+  it("keeps the currency in the address when it moves to another month", () => {
+    render(
+      <MonthSelector
+        month="2026-08"
+        label="Agosto de 2026"
+        currentMonth="2026-09"
+        params={{ currency: "USD" }}
+      />,
+    );
+
+    press("Mes anterior");
+
+    expect(router.push).toHaveBeenCalledWith(
+      "/dashboard/overview?month=2026-07&currency=USD",
+    );
+  });
 });

@@ -6,7 +6,11 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/infrastructure/db/client", () => ({ prisma: db }));
 
-import { getUserSettings, saveIncludeExpectedIncomes } from "./service";
+import {
+  getUserSettings,
+  saveHiddenSummaryCurrencies,
+  saveIncludeExpectedIncomes,
+} from "./service";
 
 const { userSettings } = db;
 
@@ -30,6 +34,7 @@ describe("getUserSettings", () => {
   it("gives the defaults when the user never saved a setting", async () => {
     await expect(getUserSettings(USER_ID)).resolves.toEqual({
       includeExpectedIncomes: true,
+      hiddenSummaryCurrencies: [],
     });
   });
 
@@ -37,13 +42,31 @@ describe("getUserSettings", () => {
     userSettings.findUnique.mockResolvedValue({
       userId: USER_ID,
       includeExpectedIncomes: false,
+      hiddenSummaryCurrencies: ["USD", "EUR"],
       updatedAt: new Date("2026-09-01T00:00:00.000Z"),
     });
 
     await expect(getUserSettings(USER_ID)).resolves.toEqual({
       includeExpectedIncomes: false,
+      hiddenSummaryCurrencies: ["USD", "EUR"],
     });
   });
+
+  it.each([null, undefined])(
+    "reads a row whose hidden currencies are %s as none hidden",
+    async (column) => {
+      userSettings.findUnique.mockResolvedValue({
+        userId: USER_ID,
+        includeExpectedIncomes: false,
+        hiddenSummaryCurrencies: column,
+      });
+
+      await expect(getUserSettings(USER_ID)).resolves.toEqual({
+        includeExpectedIncomes: false,
+        hiddenSummaryCurrencies: [],
+      });
+    },
+  );
 });
 
 describe("saveIncludeExpectedIncomes", () => {
@@ -62,6 +85,26 @@ describe("saveIncludeExpectedIncomes", () => {
 
     expect(userSettings.upsert.mock.calls[0][0].update).toEqual({
       includeExpectedIncomes: true,
+    });
+  });
+});
+
+describe("saveHiddenSummaryCurrencies", () => {
+  it("creates the row the first time and updates it afterwards, scoped to the user", async () => {
+    await saveHiddenSummaryCurrencies(USER_ID, ["USD", "EUR"]);
+
+    expect(userSettings.upsert).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+      create: { userId: USER_ID, hiddenSummaryCurrencies: ["USD", "EUR"] },
+      update: { hiddenSummaryCurrencies: ["USD", "EUR"] },
+    });
+  });
+
+  it("can save an empty list: every currency shown again", async () => {
+    await saveHiddenSummaryCurrencies(USER_ID, []);
+
+    expect(userSettings.upsert.mock.calls[0][0].update).toEqual({
+      hiddenSummaryCurrencies: [],
     });
   });
 });

@@ -15,7 +15,7 @@ const NETFLIX: RecurringRow = {
   categoryId: "c1",
   categoryName: "Servicios",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: "USD",
   originAmount: 2000,
   dayOfMonth: 5,

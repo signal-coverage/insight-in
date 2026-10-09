@@ -1,4 +1,5 @@
-import type { CardBrand } from "@/core/cards/types";
+import type { BankChoice } from "@/core/banks/types";
+import type { CardBrand, CardKind } from "@/core/cards/types";
 
 import type { FormTarget } from "../../types";
 
@@ -7,15 +8,19 @@ export interface CardFormDrawerProps {
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
   target: FormTarget;
+  // The user's active banks: a new card belongs to one of them.
+  banks: readonly BankChoice[];
 }
 
 // What the form holds while it is open, shared by the fields and the card preview.
 export interface CardDraft {
+  kind: CardKind;
   last4: string;
   brand: CardBrand;
   // NaN while a day field is empty.
   closingDay: number;
   dueDay: number;
+  setKind: (kind: CardKind) => void;
   setLast4: (last4: string) => void;
   setBrand: (brand: CardBrand) => void;
   setClosingDay: (day: number) => void;
@@ -24,5 +29,5 @@ export interface CardDraft {
 
 export type CardFormContentProps = Pick<
   CardFormDrawerProps,
-  "onClose" | "target"
+  "onClose" | "target" | "banks"
 >;

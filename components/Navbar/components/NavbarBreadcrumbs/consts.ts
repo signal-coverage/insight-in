@@ -7,6 +7,8 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   incomes: "Ingresos",
   expenses: "Gastos",
   cards: "Tarjetas",
+  banks: "Bancos",
+  transfers: "Transferencias",
   roadmap: "Hoja de ruta",
   overview: "Resumen",
   project: "Proyecto",

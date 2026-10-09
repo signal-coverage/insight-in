@@ -10,12 +10,18 @@ export function CardFormDrawer({
   onOpenChange,
   onClose,
   target,
+  banks,
 }: CardFormDrawerProps) {
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
       <Drawer.Content placement="right">
         <Drawer.Dialog className={DRAWER_DIALOG_CLASS_NAME}>
-          <CardFormContent key={target.key} target={target} onClose={onClose} />
+          <CardFormContent
+            key={target.key}
+            target={target}
+            banks={banks}
+            onClose={onClose}
+          />
         </Drawer.Dialog>
       </Drawer.Content>
     </Drawer.Backdrop>

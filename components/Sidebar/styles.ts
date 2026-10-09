@@ -2,7 +2,7 @@
 // straddle the card's edge — it needs `overflow: visible` here so that isn't clipped,
 // while the card itself keeps `overflow-hidden` for its own rounded corners.
 const OUTER_BASE =
-  "relative h-full shrink-0 transition-[width] duration-200 ease-in-out motion-reduce:transition-none";
+  "relative hidden h-full shrink-0 md:block transition-[width] duration-200 ease-in-out motion-reduce:transition-none";
 
 const ROOT_EXPANDED = "w-64";
 const ROOT_COLLAPSED = "w-16";

@@ -15,6 +15,21 @@ import { ExpenseFormDrawer } from "./ExpenseFormDrawer";
 
 const CATEGORIES = [{ id: "c1", name: "Salud" }];
 
+const ACCOUNTS = [
+  {
+    id: "acc_1",
+    currency: "ARS",
+    label: "Banco Galicia · Caja de ahorro",
+    archived: false,
+  },
+  {
+    id: "acc_usd",
+    currency: "USD",
+    label: "Banco Galicia · Cuenta en dólares",
+    archived: false,
+  },
+];
+
 const EXPENSE: ExpenseRow = {
   id: "exp_1",
   description: "Dentista",
@@ -25,7 +40,8 @@ const EXPENSE: ExpenseRow = {
   categoryName: "Salud",
   notes: null,
   status: "SETTLED",
-  medium: "DIGITAL",
+  accountId: "acc_1",
+  accountLabel: "Banco Galicia · Caja de ahorro",
   isRecurring: false,
   installmentPlanId: null,
   installmentNumber: null,
@@ -63,6 +79,7 @@ const renderForm = (expense: ExpenseRow | null) => {
       target={target}
       categories={CATEGORIES}
       cards={[]}
+      accounts={ACCOUNTS}
     />,
   );
 };

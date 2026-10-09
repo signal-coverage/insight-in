@@ -27,7 +27,11 @@ import {
   setIncomeStatusAction,
   updateIncomeAction,
 } from "./actions";
-import { CoveredNotAllowedError } from "@/core/entries/errors";
+import { AccountCurrencyMismatchError } from "@/core/accounts/errors";
+import {
+  CoveredNotAllowedError,
+  InstallmentCurrencyLockedError,
+} from "@/core/entries/errors";
 
 import {
   REIMBURSED_EXPENSE_NOT_FOUND_MESSAGE,
@@ -52,6 +56,7 @@ const buildFormData = (overrides: Record<string, string> = {}): FormData => {
     date: "2026-09-01",
     categoryId: "cat_1",
     notes: "",
+    accountId: "acc_1",
     ...overrides,
   };
   const formData = new FormData();
@@ -109,7 +114,7 @@ describe("createIncomeAction", () => {
       categoryId: "cat_1",
       notes: null,
       status: "SETTLED",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       originCurrency: null,
       originAmount: null,
       reimbursesExpenseId: null,
@@ -170,21 +175,33 @@ describe("createIncomeAction", () => {
     });
   });
 
-  it("passes on the medium the form sends", async () => {
+  it("passes on the account the form sends", async () => {
     mocks.createIncome.mockResolvedValue({ id: "inc_1" });
 
-    await createIncomeAction(buildFormData({ medium: "CASH" }));
+    await createIncomeAction(buildFormData({ accountId: "acc_9" }));
 
-    expect(mocks.createIncome.mock.calls[0][1].medium).toBe("CASH");
+    expect(mocks.createIncome.mock.calls[0][1].accountId).toBe("acc_9");
   });
 
-  it("refuses a medium that does not exist", async () => {
-    const result = await createIncomeAction(buildFormData({ medium: "CARD" }));
+  it("refuses a form without an account, without touching the service", async () => {
+    const result = await createIncomeAction(buildFormData({ accountId: "" }));
 
     expect(result.status === "error" && result.fieldErrors).toEqual(
-      expect.objectContaining({ medium: expect.any(Array) }),
+      expect.objectContaining({ accountId: ["Elegí una cuenta."] }),
     );
     expect(mocks.createIncome).not.toHaveBeenCalled();
+  });
+
+  it("puts an account in another currency on the Cuenta field", async () => {
+    mocks.createIncome.mockRejectedValue(new AccountCurrencyMismatchError());
+
+    const result = await createIncomeAction(buildFormData());
+
+    expect(result.status === "error" && result.fieldErrors).toEqual({
+      accountId: [
+        "Esta cuenta es de otra moneda. Elegí una cuenta en la moneda del movimiento.",
+      ],
+    });
   });
 
   it("ignores a userId submitted in the form", async () => {
@@ -485,6 +502,25 @@ describe("an income that pays an expense back", () => {
 
     expect(result.status === "error" && result.fieldErrors).toEqual({
       reimbursesExpenseId: [message],
+    });
+  });
+});
+
+describe("a currency change on a repayment plan's row", () => {
+  it("maps the refusal to the currency field, and lets a plain save through", async () => {
+    mocks.auth.mockResolvedValue({ userId: USER_ID });
+    mocks.updateIncome.mockRejectedValue(new InstallmentCurrencyLockedError());
+
+    const refused = await updateIncomeAction("inc_1", buildFormData());
+
+    expect(refused.status === "error" && refused.fieldErrors).toEqual({
+      currency: ["Una cuota conserva la moneda de su plan."],
+    });
+
+    mocks.updateIncome.mockResolvedValue(true);
+
+    expect(await updateIncomeAction("inc_1", buildFormData())).toEqual({
+      status: "success",
     });
   });
 });

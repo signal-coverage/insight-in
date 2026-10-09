@@ -1,7 +1,6 @@
 import { Description, Label, Radio, RadioGroup } from "@heroui/react";
 
 import { CardField } from "@/components/Entries/components/CardField";
-import { MediumField } from "@/components/Entries/components/MediumField";
 import { FIELD_CLASS_NAME } from "@/components/Entries/styles";
 
 import { CardRecommendations } from "../CardRecommendations";
@@ -9,10 +8,10 @@ import { NoCardsNotice } from "./components/NoCardsNotice";
 import { OWNERSHIP_LABEL, OWNERSHIP_OPTIONS } from "./consts";
 import type { CardOwnershipFieldsProps } from "./types";
 
-// Whose card pays the purchase, and what each answer asks next. An own card is one of the user's
-// (always digital money, so no medium): the list under it says which one suits the purchase, it
-// informs and never blocks. A borrowed card has no record, so the first installment's date is typed
-// (by the form) and the medium says how the lender is repaid.
+// Whose card pays the purchase, and what each answer asks next. An own card is one of the user's: the
+// list under it says which one suits the purchase, it informs and never blocks. A borrowed card has no
+// record, so the first installment's date is typed (by the form). The account is asked by the form,
+// for both.
 export function CardOwnershipFields({
   values,
   cards,
@@ -68,13 +67,6 @@ export function CardOwnershipFields({
           ) : null}
         </>
       ) : null}
-
-      {isOwn ? null : (
-        <MediumField
-          defaultMedium={values.medium}
-          onChange={(medium) => onChange({ medium })}
-        />
-      )}
     </>
   );
 }

@@ -11,7 +11,7 @@ const row = (id: string, amountDecimal = "100.00"): RecurringRow => ({
   categoryId: "c1",
   categoryName: "Alquiler",
   notes: null,
-  medium: "DIGITAL",
+  accountId: "acc_1",
   originCurrency: null,
   originAmount: null,
   dayOfMonth: 5,

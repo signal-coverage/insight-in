@@ -1,3 +1,4 @@
+import { assertUsableAccount } from "@/core/accounts/usable";
 import { moveExpenseDates } from "@/core/installments/dateMoves";
 import { listInstallmentPlanRows } from "@/core/installments/service";
 import { planCounts } from "@/core/installments/reflow";
@@ -35,7 +36,7 @@ const toItem = (row: TemplateWithDetails): RecurringExpenseItem => ({
   categoryId: row.categoryId,
   categoryName: row.category.name,
   notes: row.notes,
-  medium: row.medium,
+  accountId: row.accountId,
   originCurrency: row.originCurrency,
   originAmount:
     row.originAmount === null ? null : minorUnitsToNumber(row.originAmount),
@@ -164,7 +165,8 @@ export const applyRecurringDecisions = async (
             currency: template.currency,
             categoryId: template.categoryId,
             notes: template.notes,
-            medium: template.medium,
+            // The month's expense goes to the template's account.
+            accountId: template.accountId,
             // The template remembers the reference price; the expense carries it along.
             originCurrency: template.originCurrency,
             originAmount:
@@ -216,6 +218,22 @@ export const updateRecurringExpense = async (
 ): Promise<boolean> => {
   await assertCategoryOwnedBy(userId, input.categoryId);
 
+  const current = await prisma.recurringExpense.findFirst({
+    where: { id, userId },
+    select: { accountId: true },
+  });
+
+  if (!current) {
+    return false;
+  }
+
+  // The template may keep the account it has, even if it was archived since.
+  await assertUsableAccount(userId, {
+    accountId: input.accountId,
+    currency: input.currency,
+    keepAccountId: current.accountId,
+  });
+
   // Explicit field list: the owner and id can never be overridden by the payload.
   const { count } = await prisma.recurringExpense.updateMany({
     where: { id, userId },
@@ -225,7 +243,7 @@ export const updateRecurringExpense = async (
       currency: input.currency,
       categoryId: input.categoryId,
       notes: input.notes,
-      medium: input.medium,
+      accountId: input.accountId,
       // Written as a pair; nulls clear the reference price.
       originCurrency: input.originCurrency,
       originAmount:
@@ -296,7 +314,7 @@ export const setRecurringDecision = async (
               currency: template.currency,
               categoryId: template.categoryId,
               notes: template.notes,
-              medium: template.medium,
+              accountId: template.accountId,
               originCurrency: template.originCurrency,
               originAmount: template.originAmount,
               date: isoDateToDate(dateInMonth(month, template.dayOfMonth)),

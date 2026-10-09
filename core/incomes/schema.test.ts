@@ -9,6 +9,7 @@ const validInput = {
   date: "2026-09-01",
   categoryId: "cat_1",
   notes: "Paid by wire transfer",
+  accountId: "acc_1",
 };
 
 const errorPaths = (input: unknown): string[] => {
@@ -34,25 +35,35 @@ describe("incomeInputSchema", () => {
       categoryId: "cat_1",
       notes: "Paid by wire transfer",
       status: "SETTLED",
-      medium: "DIGITAL",
+      accountId: "acc_1",
       originCurrency: null,
       originAmount: null,
       reimbursesExpenseId: null,
     });
   });
 
-  it("defaults the medium to digital and accepts cash", () => {
-    expect(incomeInputSchema.safeParse(validInput).data?.medium).toBe(
-      "DIGITAL",
-    );
+  it("requires the account and trims it", () => {
     expect(
-      incomeInputSchema.safeParse({ ...validInput, medium: "CASH" }).data
-        ?.medium,
-    ).toBe("CASH");
+      incomeInputSchema.safeParse({ ...validInput, accountId: " acc_1 " }).data
+        ?.accountId,
+    ).toBe("acc_1");
+    expect(errorPaths({ ...validInput, accountId: "" })).toEqual(["accountId"]);
+
+    const withoutAccount: Record<string, unknown> = { ...validInput };
+
+    delete withoutAccount.accountId;
+
+    expect(errorPaths(withoutAccount)).toEqual(["accountId"]);
   });
 
-  it("rejects an unknown medium", () => {
-    expect(errorPaths({ ...validInput, medium: "CARD" })).toEqual(["medium"]);
+  it("no longer knows a medium: one that arrives is dropped", () => {
+    const parsed = incomeInputSchema.safeParse({
+      ...validInput,
+      medium: "CASH",
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data).not.toHaveProperty("medium");
   });
 
   it("defaults the status to settled and accepts planned", () => {

@@ -48,5 +48,7 @@ export const loadIncomesView = (
     reimbursables: data.then(({ reimbursables }) =>
       toReimbursableOptions(reimbursables),
     ),
+    // Every account of the user, for the "Cuenta" field of the forms.
+    accounts: data.then(({ accounts }) => accounts),
   };
 };

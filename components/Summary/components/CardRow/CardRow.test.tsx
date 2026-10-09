@@ -22,7 +22,7 @@ describe("CardRow", () => {
     renderRow();
 
     expect(
-      screen.getByRole("heading", { level: 3, name: "Ingresos" }),
+      screen.getByRole("heading", { level: 4, name: "Ingresos" }),
     ).toBeInTheDocument();
   });
 

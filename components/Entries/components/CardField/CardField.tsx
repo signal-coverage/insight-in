@@ -16,8 +16,8 @@ import type { CardFieldProps } from "./types";
 
 // The card a purchase is paid with. By default it is optional: "Sin tarjeta" is the default and a
 // real option. With `isRequired` there is no such option and the user has to pick a card. Only the
-// cards in the currency of the purchase are listed. It does not submit anything on its own: the form
-// that uses it sends the choice.
+// cards that can pay in the currency of the purchase are listed. It does not submit anything on its
+// own: the form that uses it sends the choice.
 export function CardField({
   cards,
   currency,
@@ -25,8 +25,11 @@ export function CardField({
   onChange,
   errorMessage,
   isRequired = false,
+  keepCardId = null,
 }: CardFieldProps) {
-  const options = cards.filter((card) => card.currency === currency);
+  const options = cards.filter(
+    (card) => card.currencies.includes(currency) || card.id === keepCardId,
+  );
 
   return (
     <Select

@@ -1,3 +1,4 @@
+import { listAccountChoices } from "@/core/accounts/choices";
 import { listCardsWithCharges } from "@/core/cards/service";
 import type { EntriesQuery } from "@/core/entries/query";
 import { todayIso } from "@/core/incomes/dates";
@@ -18,13 +19,13 @@ import {
 // page costs one round of database latency. The recurring templates and the installment plans are
 // always resolved for the current month (Argentine date), whatever range the list is filtered to.
 // The cards come with their charges, which is what the forms need to offer them and the planner to
-// recommend one.
+// recommend one. The accounts (archived ones flagged) feed the "Cuenta" field of every form.
 export const loadExpensesPageData = async (
   userId: string,
   query: EntriesQuery,
 ) => {
   const month = monthOf(todayIso());
-  const [page, totals, categories, currencies, items, plans, cards] =
+  const [page, totals, categories, currencies, items, plans, cards, accounts] =
     await Promise.all([
       listExpenses(userId, query),
       listExpenseTotals(userId, query),
@@ -33,6 +34,7 @@ export const loadExpensesPageData = async (
       listRecurringExpenses(userId, month),
       listInstallmentPlans(userId, month),
       listCardsWithCharges(userId),
+      listAccountChoices(userId),
     ]);
 
   // How far along each plan of the rows is, which the delete dialog quotes. One grouped query for the
@@ -50,5 +52,6 @@ export const loadExpensesPageData = async (
     currencies,
     recurring: { month, items, plans },
     cards,
+    accounts,
   };
 };

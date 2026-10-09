@@ -5,6 +5,7 @@ import {
   toPlanProgressField,
 } from "@/components/Entries/utils";
 import { BRAND_NAMES } from "@/core/cards/consts";
+import { cardCurrencies } from "@/core/cards/kinds";
 import type { CardWithCharges } from "@/core/cards/types";
 import { formatOrigin, toOriginDecimalString } from "@/core/currencies/origin";
 import { countPending, splitByDecision } from "@/core/expenses/recurrence";
@@ -78,13 +79,14 @@ export const toExpenseRows = (
     reimbursementTooltip: toReimbursementTooltip(expense),
   }));
 
-// The cards the forms offer, titled like the cards page does.
+// The cards the forms offer, titled like the cards page does, with the currencies each can pay in.
 export const toCardOptions = (
   cards: readonly CardWithCharges[],
 ): CardOption[] =>
   cards.map((card) => ({
     ...card,
     title: cardTitle(BRAND_NAMES[card.brand], card.last4),
+    currencies: cardCurrencies(card),
   }));
 
 const toRecurringRow = (item: RecurringExpenseItem): RecurringRow => ({

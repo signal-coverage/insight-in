@@ -15,16 +15,41 @@ vi.mock("@/core/balances/actions", () => actions);
 import { OpeningBalanceDrawer } from "./OpeningBalanceDrawer";
 import type { OpeningBalanceData } from "./types";
 
+const row = (
+  index: number,
+  accountId: string,
+  label: string,
+  amount = "",
+  currency = "ARS",
+) => ({ index, accountId, currency, label, amount });
+
 const EMPTY: OpeningBalanceData = {
   month: null,
-  rows: [{ currency: "ARS", digital: "", cash: "" }],
+  groups: [
+    {
+      bankId: "bank_cash",
+      bankName: "Efectivo",
+      rows: [row(0, "acc_cash", "Efectivo (ARS)")],
+    },
+  ],
 };
 
 const SAVED: OpeningBalanceData = {
   month: "2026-06",
-  rows: [
-    { currency: "ARS", digital: "5000.50", cash: "800" },
-    { currency: "USD", digital: "", cash: "120.25" },
+  groups: [
+    {
+      bankId: "bank_galicia",
+      bankName: "Banco Galicia",
+      rows: [
+        row(0, "acc_bank", "Caja de ahorro (ARS)", "5000.50"),
+        row(1, "acc_usd", "Dólares (USD)", "", "USD"),
+      ],
+    },
+    {
+      bankId: "bank_cash",
+      bankName: "Efectivo",
+      rows: [row(2, "acc_cash", "Efectivo (ARS)", "800")],
+    },
   ],
 };
 
@@ -45,8 +70,8 @@ const renderDrawer = (data: OpeningBalanceData = EMPTY) => {
   return { onClose };
 };
 
-const group = (currency: string) =>
-  within(screen.getByRole("group", { name: currency }));
+const group = (bankName: string) =>
+  within(screen.getByRole("group", { name: bankName }));
 
 const save = () =>
   fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
@@ -54,7 +79,7 @@ const save = () =>
 const saved = () =>
   actions.saveOpeningBalanceAction.mock.calls[0][0] as {
     month: string;
-    balances: { currency: string; digital: string; cash: string }[];
+    balances: { accountId: string; currency: string; amount: string }[];
   };
 
 // A promise the test settles by hand, to observe the form while a save is in flight.
@@ -80,7 +105,7 @@ describe("OpeningBalanceDrawer header", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Cuánto tenías al empezar el mes que elijas. Los meses anteriores dejan de contar.",
+        "Cuánto tenía cada cuenta al empezar el mes que elijas. Los meses anteriores dejan de contar.",
       ),
     ).toBeInTheDocument();
   });
@@ -119,38 +144,70 @@ describe("OpeningBalanceDrawer month", () => {
 });
 
 describe("OpeningBalanceDrawer amounts", () => {
-  it("gives every currency a group with its Digital and Efectivo inputs", () => {
+  it("gives every bank a group with one input per account", () => {
     renderDrawer(SAVED);
 
-    for (const currency of ["ARS", "USD"]) {
-      expect(group(currency).getByLabelText(/Digital/)).toBeInTheDocument();
-      expect(group(currency).getByLabelText(/Efectivo/)).toBeInTheDocument();
-    }
+    expect(
+      group("Banco Galicia").getByLabelText(/Caja de ahorro \(ARS\)/),
+    ).toBeInTheDocument();
+    expect(
+      group("Banco Galicia").getByLabelText(/Dólares \(USD\)/),
+    ).toBeInTheDocument();
+    expect(
+      group("Efectivo").getByLabelText(/Efectivo \(ARS\)/),
+    ).toBeInTheDocument();
   });
 
-  it("offers the default currency even when the user has nothing saved", () => {
-    renderDrawer(EMPTY);
+  it("renders two banks with the same name as two groups, without a repeated key", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(group("ARS").getByLabelText(/Digital/)).toHaveValue("");
-    expect(group("ARS").getByLabelText(/Efectivo/)).toHaveValue("");
+    renderDrawer({
+      month: null,
+      groups: [
+        {
+          bankId: "bank_a",
+          bankName: "Banco",
+          rows: [row(0, "acc_a", "Cuenta A (ARS)")],
+        },
+        {
+          bankId: "bank_b",
+          bankName: "Banco",
+          rows: [row(1, "acc_b", "Cuenta B (ARS)")],
+        },
+      ],
+    });
+
+    expect(screen.getAllByRole("group", { name: "Banco" })).toHaveLength(2);
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("asks no Digital nor Efectivo split any more", () => {
+    renderDrawer(SAVED);
+
+    // The positive twin: the account inputs are there, so the query below could find something.
+    expect(screen.getAllByRole("textbox")).toHaveLength(3);
+    expect(screen.queryByLabelText(/^Digital/)).not.toBeInTheDocument();
   });
 
   it("prefills the saved amounts", () => {
     renderDrawer(SAVED);
 
-    expect(group("ARS").getByLabelText(/Digital/)).toHaveValue("5000.50");
-    expect(group("ARS").getByLabelText(/Efectivo/)).toHaveValue("800");
-    expect(group("USD").getByLabelText(/Digital/)).toHaveValue("");
-    expect(group("USD").getByLabelText(/Efectivo/)).toHaveValue("120.25");
+    expect(group("Banco Galicia").getByLabelText(/Caja de ahorro/)).toHaveValue(
+      "5000.50",
+    );
+    expect(group("Banco Galicia").getByLabelText(/Dólares/)).toHaveValue("");
+    expect(group("Efectivo").getByLabelText(/Efectivo \(ARS\)/)).toHaveValue(
+      "800",
+    );
   });
 });
 
 describe("OpeningBalanceDrawer saving", () => {
-  it("sends the month and what was typed, one row per currency", async () => {
+  it("sends the month and what was typed, one row per account", async () => {
     actions.saveOpeningBalanceAction.mockResolvedValue({ status: "success" });
     const { onClose } = renderDrawer(SAVED);
 
-    fireEvent.change(group("USD").getByLabelText(/Digital/), {
+    fireEvent.change(group("Banco Galicia").getByLabelText(/Dólares/), {
       target: { value: "10" },
     });
     save();
@@ -161,8 +218,9 @@ describe("OpeningBalanceDrawer saving", () => {
     expect(saved()).toEqual({
       month: "2026-06",
       balances: [
-        { currency: "ARS", digital: "5000.50", cash: "800" },
-        { currency: "USD", digital: "10", cash: "120.25" },
+        { accountId: "acc_bank", currency: "ARS", amount: "5000.50" },
+        { accountId: "acc_usd", currency: "USD", amount: "10" },
+        { accountId: "acc_cash", currency: "ARS", amount: "800" },
       ],
     });
   });
@@ -171,7 +229,7 @@ describe("OpeningBalanceDrawer saving", () => {
     actions.saveOpeningBalanceAction.mockResolvedValue({ status: "success" });
     renderDrawer(EMPTY);
 
-    fireEvent.change(group("ARS").getByLabelText(/Digital/), {
+    fireEvent.change(group("Efectivo").getByLabelText(/Efectivo \(ARS\)/), {
       target: { value: "99" },
     });
     save();
@@ -220,7 +278,7 @@ describe("OpeningBalanceDrawer saving", () => {
       status: "error",
       message: "Corrige los campos resaltados.",
       fieldErrors: {
-        "balances.1.cash": [
+        "balances.1.amount": [
           "Ingresa un monto válido, con dígitos y un punto para los decimales.",
         ],
       },
@@ -230,11 +288,54 @@ describe("OpeningBalanceDrawer saving", () => {
     save();
 
     expect(
-      await group("USD").findByText(
+      await group("Banco Galicia").findByText(
         "Ingresa un monto válido, con dígitos y un punto para los decimales.",
       ),
     ).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("blames the right input when two banks' accounts interleave", async () => {
+    // Banks A and B with the accounts ordered A1, B1, A2: the groups hold indexes [0, 2] and [1].
+    const INTERLEAVED: OpeningBalanceData = {
+      month: null,
+      groups: [
+        {
+          bankId: "bank_a",
+          bankName: "Banco A",
+          rows: [
+            row(0, "acc_a1", "Cuenta A1 (ARS)"),
+            row(2, "acc_a2", "Cuenta A2 (ARS)"),
+          ],
+        },
+        {
+          bankId: "bank_b",
+          bankName: "Banco B",
+          rows: [row(1, "acc_b1", "Cuenta B1 (ARS)")],
+        },
+      ],
+    };
+
+    // Like the server: it blames the position of the offending row in the payload it received.
+    actions.saveOpeningBalanceAction.mockImplementation(
+      async (payload: { balances: { amount: string }[] }) => ({
+        status: "error",
+        message: "Corrige los campos resaltados.",
+        fieldErrors: {
+          [`balances.${payload.balances.findIndex(({ amount }) => amount === "x")}.amount`]:
+            ["Monto inválido."],
+        },
+      }),
+    );
+    renderDrawer(INTERLEAVED);
+
+    fireEvent.change(group("Banco B").getByLabelText(/Cuenta B1/), {
+      target: { value: "x" },
+    });
+    save();
+
+    expect(await group("Banco B").findByText("Monto inválido.")).toBeVisible();
+    expect(group("Banco A").queryByText("Monto inválido.")).toBeNull();
   });
 
   it("shows a general error when there is no field to blame", async () => {

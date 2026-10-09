@@ -10,6 +10,7 @@ const validInput = {
   currency: "ARS",
   date: "2026-09-12",
   categoryId: "cat_1",
+  accountId: "acc_1",
   notes: "",
 };
 
@@ -66,5 +67,20 @@ describe("expenseInputSchema expected reimbursement", () => {
         "expectedReimbursement",
       ),
     ).toEqual([]);
+  });
+
+  it("checks a reimbursement in a crypto currency instead of skipping it", () => {
+    const usdc = { currency: "USDC", amount: "10" };
+
+    expect(
+      parse({ ...usdc, expectedReimbursement: "1.5" }).data
+        ?.expectedReimbursement,
+    ).toBe(1500000);
+    expect(
+      messages(
+        { ...usdc, expectedReimbursement: "1.1234567" },
+        "expectedReimbursement",
+      ),
+    ).toEqual([EXPECTED_REIMBURSEMENT_MESSAGE]);
   });
 });

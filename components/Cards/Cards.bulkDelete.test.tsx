@@ -14,53 +14,32 @@ vi.mock("@/core/cards/actions", () => ({
   updateCardAction: vi.fn(),
 }));
 
+import type { BankChoice } from "@/core/banks/types";
+
 import { Cards } from "./Cards";
+import { creditCardRow } from "./testRows";
 import type { CardRow, CardsTableData } from "./types";
 
-const VISA: CardRow = {
-  id: "card_1",
-  last4: "1234",
-  brand: "VISA",
-  closingDay: 25,
-  dueDay: 5,
-  currency: "ARS",
-  limitMode: "MONTHLY",
-  limitAmount: 30000000,
-  committedTotal: 0,
-  monthUsed: 7500000,
-  used: 7500000,
-  available: 22500000,
-  tier: "available",
-  title: "Visa •••• 1234",
-  brandName: "Visa",
-  closingLabel: "Día 25",
-  dueLabel: "Día 5",
-  limitLabel: "$ 300.000,00 por mes",
-  usedLabel: "$ 75.000,00 de $ 300.000,00",
-  availableLabel: "$ 225.000,00",
-  limitDecimal: "300000.00",
-  percent: 25,
-};
+const VISA: CardRow = creditCardRow();
 
-const MASTERCARD: CardRow = {
-  ...VISA,
+const MASTERCARD: CardRow = creditCardRow({
   id: "card_2",
   last4: "9876",
   brand: "MASTERCARD",
   title: "Mastercard •••• 9876",
   brandName: "Mastercard",
-};
+});
 
-const AMEX: CardRow = {
-  ...VISA,
+const AMEX: CardRow = creditCardRow({
   id: "card_3",
   last4: "0007",
   brand: "OTHER",
   title: "Otra •••• 0007",
   brandName: "Otra",
-};
+});
 
 const TABLE: CardsTableData = { rows: [VISA, MASTERCARD, AMEX] };
+const BANKS: BankChoice[] = [{ id: "bank_1", name: "Banco Galicia" }];
 
 // The dialog is modal, so while it is open the page behind it is hidden from the accessibility tree.
 const HIDDEN = { hidden: true } as const;
@@ -99,7 +78,7 @@ beforeEach(() => {
 
 describe("Cards selection", () => {
   it("shows no bar until a card is selected, then counts them", () => {
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     expect(bar()).not.toBeInTheDocument();
 
@@ -111,7 +90,7 @@ describe("Cards selection", () => {
   });
 
   it("selects every card from the header and drops the selection with Quitar selección", () => {
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     fireEvent.click(
       screen.getByRole("checkbox", {
@@ -127,13 +106,13 @@ describe("Cards selection", () => {
   });
 
   it("forgets a selected card once the refreshed rows no longer have it", () => {
-    const { rerender } = render(<Cards table={TABLE} />);
+    const { rerender } = render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Otra •••• 0007");
     tick("Visa •••• 1234");
     expect(bar()).toHaveTextContent("2 seleccionadas");
 
-    rerender(<Cards table={{ rows: [VISA, MASTERCARD] }} />);
+    rerender(<Cards table={{ rows: [VISA, MASTERCARD] }} banks={BANKS} />);
 
     expect(bar()).toHaveTextContent("1 seleccionada");
   });
@@ -141,7 +120,7 @@ describe("Cards selection", () => {
 
 describe("Cards bulk delete", () => {
   it("asks with the right plural, and deletes nothing until confirmed", async () => {
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
 
@@ -162,7 +141,7 @@ describe("Cards bulk delete", () => {
       deleted: 2,
       skipped: 0,
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
     tick("Otra •••• 0007");
@@ -196,7 +175,7 @@ describe("Cards bulk delete", () => {
         finish = resolve;
       }),
     );
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
     tick("Mastercard •••• 9876");
@@ -229,7 +208,7 @@ describe("Cards bulk delete", () => {
       status: "error",
       message: "No se encontraron las tarjetas seleccionadas.",
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
 
@@ -254,7 +233,7 @@ describe("Cards bulk delete", () => {
       deleted: 1,
       skipped: 2,
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     fireEvent.click(
       screen.getByRole("checkbox", {
@@ -289,7 +268,7 @@ describe("Cards bulk delete", () => {
       deleted: 0,
       skipped: 2,
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
     tick("Mastercard •••• 9876");
@@ -314,7 +293,7 @@ describe("Cards bulk delete", () => {
       deleted: 0,
       skipped: 1,
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     tick("Visa •••• 1234");
 
@@ -351,7 +330,7 @@ describe("Cards single delete", () => {
         finish = resolve;
       }),
     );
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     await confirmSingle("Mastercard •••• 9876");
 
@@ -386,7 +365,7 @@ describe("Cards single delete", () => {
       status: "error",
       message: "Esta tarjeta tiene gastos pendientes.",
     });
-    render(<Cards table={TABLE} />);
+    render(<Cards table={TABLE} banks={BANKS} />);
 
     const dialog = await confirmSingle("Mastercard •••• 9876");
 

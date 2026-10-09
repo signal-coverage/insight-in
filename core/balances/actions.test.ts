@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -12,20 +12,35 @@ vi.mock("./service", () => ({
   saveOpeningBalances: mocks.saveOpeningBalances,
 }));
 
+import {
+  AccountCurrencyMismatchError,
+  AccountNotFoundError,
+} from "@/core/accounts/errors";
+
 import { saveOpeningBalanceAction } from "./actions";
 
 const USER_ID = "user_123";
 
 const payload = {
   month: "2026-06",
-  balances: [{ currency: "ARS", digital: "1500.50", cash: "200" }],
+  balances: [
+    { accountId: "acc_bank", currency: "ARS", amount: "1500.50" },
+    { accountId: "acc_cash", currency: "ARS", amount: "200" },
+  ],
 };
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  // 2026-10-15 in Argentina, whatever the machine's zone.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-15T15:00:00.000Z"));
   mocks.auth.mockResolvedValue({ userId: USER_ID });
   mocks.saveOpeningBalances.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("saveOpeningBalanceAction", () => {
@@ -46,8 +61,8 @@ describe("saveOpeningBalanceAction", () => {
     expect(mocks.saveOpeningBalances).toHaveBeenCalledWith(USER_ID, {
       month: "2026-06",
       amounts: [
-        { currency: "ARS", medium: "DIGITAL", amount: 150050 },
-        { currency: "ARS", medium: "CASH", amount: 20000 },
+        { accountId: "acc_bank", currency: "ARS", amount: 150050 },
+        { accountId: "acc_cash", currency: "ARS", amount: 20000 },
       ],
     });
   });
@@ -70,17 +85,42 @@ describe("saveOpeningBalanceAction", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/overview");
   });
 
+  it("refreshes the Banks board too, where the balances include the opening amounts", async () => {
+    await saveOpeningBalanceAction(payload);
+
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/banks");
+    expect(mocks.revalidatePath).toHaveBeenCalledTimes(2);
+  });
+
+  it("refuses a month that has not started yet and saves nothing", async () => {
+    const result = await saveOpeningBalanceAction({
+      ...payload,
+      month: "2026-11",
+    });
+
+    expect(result).toMatchObject({
+      status: "error",
+      fieldErrors: {
+        month: [
+          "El mes inicial no puede ser posterior al actual. Elegí el mes actual o uno anterior.",
+        ],
+      },
+    });
+    expect(mocks.saveOpeningBalances).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
   it("points at the field with an invalid amount and saves nothing", async () => {
     const result = await saveOpeningBalanceAction({
       ...payload,
-      balances: [{ currency: "ARS", digital: "-3", cash: "" }],
+      balances: [{ accountId: "acc_bank", currency: "ARS", amount: "-3" }],
     });
 
     expect(result).toEqual({
       status: "error",
       message: "Corrige los campos resaltados.",
       fieldErrors: {
-        "balances.0.digital": [
+        "balances.0.amount": [
           "Ingresa un monto válido, con dígitos y un punto para los decimales.",
         ],
       },
@@ -106,6 +146,22 @@ describe("saveOpeningBalanceAction", () => {
 
     expect(result.status).toBe("error");
     expect(mocks.saveOpeningBalances).not.toHaveBeenCalled();
+  });
+
+  it("asks to reopen the editor when an account changed meanwhile (gone, another user's or another currency)", async () => {
+    for (const error of [
+      new AccountNotFoundError(),
+      new AccountCurrencyMismatchError(),
+    ]) {
+      mocks.saveOpeningBalances.mockRejectedValueOnce(error);
+
+      expect(await saveOpeningBalanceAction(payload)).toEqual({
+        status: "error",
+        message:
+          "Tus cuentas cambiaron mientras editabas. Cerrá el saldo inicial y volvé a abrirlo.",
+      });
+    }
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("answers with a generic message when saving fails, without refreshing", async () => {
